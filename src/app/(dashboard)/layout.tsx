@@ -7,45 +7,45 @@ import type { UserRole } from '@/app/_lib/utils/constants';
 import { Sidebar } from '@/app/_components/layout/sidebar';
 import { Navbar } from '@/app/_components/layout/navbar';
 import DashboardShell from '@/app/_components/layout/dashboard-shell';
+import { Suspense } from 'react';
 
 /**
  * Dashboard shell — contains sidebar + navbar + main content area.
- * Enforces profile completion before allowing access to other dashboard pages.
+ * Optimized for production with parallel fetching and non-blocking Shell.
  */
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const user = await getCurrentUser();
-  const headerList = await headers();
-  const pathname = headerList.get('x-pathname') || ''; // Assuming middleware or similar sets this, or just use a simpler check
+  // Parallel fetch for core auth and profile data
+  const [user, profileData, headerList] = await Promise.all([
+    getCurrentUser(),
+    getFullProfile(),
+    headers()
+  ]);
 
   if (!user) {
     redirect('/login');
   }
 
-  // Check profile completion (PART 2 Requirement)
-  // We allow access to /profile and /profile/setup to avoid infinite loop
+  const pathname = headerList.get('x-pathname') || '';
+  const profile = profileData.data;
+
+  // Check profile completion (Non-blocking redirect logic)
   const isSetupPage = pathname.includes('/profile/setup') || pathname === '/profile';
   
-  if (!isSetupPage) {
-    const { data: profile } = await getFullProfile();
-    
-    if (profile) {
-      const isTeacherIncomplete = profile.role === 'teacher' && !profile.teacher?.teacher_id;
-      const isAdminIncomplete = (profile.role === 'admin' || profile.role === 'super_admin') && !profile.phone;
+  if (!isSetupPage && profile) {
+    const isTeacherIncomplete = profile.role === 'teacher' && !profile.teacher?.teacher_id;
+    const isAdminIncomplete = (profile.role === 'admin' || profile.role === 'super_admin') && !profile.phone;
 
-      if (isTeacherIncomplete || isAdminIncomplete) {
-        if (pathname && !pathname.includes('/profile/setup')) {
-          redirect('/profile/setup');
-        }
-      }
-      
-      const isStudentIncomplete = profile.role === 'student' && (!profile.student || !profile.student.roll_number);
-      if (isStudentIncomplete && pathname && pathname !== '/profile') {
-        redirect('/profile');
-      }
+    if ((isTeacherIncomplete || isAdminIncomplete) && !pathname.includes('/profile/setup')) {
+      redirect('/profile/setup');
+    }
+    
+    const isStudentIncomplete = profile.role === 'student' && (!profile.student || !profile.student.roll_number);
+    if (isStudentIncomplete && pathname !== '/profile') {
+      redirect('/profile');
     }
   }
   
@@ -54,21 +54,35 @@ export default async function DashboardLayout({
 
   return (
     <div className="flex h-screen overflow-hidden bg-bg-primary text-text-primary">
-      {/* Sidebar - Correct role passed from server */}
+      {/* Sidebar rendered immediately with cached navItems */}
       <Sidebar navItems={navItems} role={role} />
 
-      {/* Main content area wrapped in client shell for UI state */}
       <DashboardShell>
-        {/* Top Navbar */}
         <Navbar />
 
-        {/* Page content */}
         <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 bg-bg-primary">
           <div className="mx-auto max-w-7xl">
-            {children}
+            {/* Suspense boundary for page content to allow Shell to render first */}
+            <Suspense fallback={<DashboardLoadingSkeleton />}>
+              {children}
+            </Suspense>
           </div>
         </main>
       </DashboardShell>
+    </div>
+  );
+}
+
+function DashboardLoadingSkeleton() {
+  return (
+    <div className="animate-pulse space-y-6">
+      <div className="h-10 w-1/3 bg-bg-tertiary rounded-xl" />
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        {[1, 2, 3, 4].map(i => (
+          <div key={i} className="h-32 bg-bg-tertiary rounded-3xl" />
+        ))}
+      </div>
+      <div className="h-64 bg-bg-tertiary rounded-3xl" />
     </div>
   );
 }

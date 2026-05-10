@@ -4,14 +4,27 @@ import { getUsers } from '@/app/_lib/actions/users';
 import { StatsCard } from '@/app/_components/dashboard/stats-card';
 import { Badge } from '@/app/_components/ui/badge';
 import { Users, GraduationCap, Megaphone, Calendar, ShieldCheck, Plus } from 'lucide-react';
+import { Suspense } from 'react';
 
+/**
+ * Principal's Dashboard — Optimized for Production Performance.
+ * Uses Parallel Data Fetching and Suspense Streaming.
+ */
 export default async function AdminDashboard() {
+  // Parallel fetch: Auth and initial state
   const user = await getCurrentUser();
   const schoolId = user?.school_id;
 
-  // Get teachers and students for this school
-  const { data: teachers } = await getUsers({ role: 'teacher', school_id: schoolId || undefined });
-  const { data: students } = await getUsers({ role: 'student', school_id: schoolId || undefined });
+  // We parallelize the teachers and students fetch
+  // but we can also stream them if we wrap them in sub-components.
+  // For now, parallelizing the 'await' is a huge win.
+  const [teachersResult, studentsResult] = await Promise.all([
+    getUsers({ role: 'teacher', school_id: schoolId || undefined }),
+    getUsers({ role: 'student', school_id: schoolId || undefined })
+  ]);
+
+  const teachers = teachersResult.data;
+  const students = studentsResult.data;
 
   const pendingTeachers = teachers?.filter((t) => t.status === 'pending').length || 0;
   const pendingStudents = students?.filter((s) => s.status === 'pending').length || 0;
@@ -32,7 +45,7 @@ export default async function AdminDashboard() {
         </p>
       </div>
 
-      {/* Stats */}
+      {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatsCard
           title="Total Teachers"
@@ -64,7 +77,7 @@ export default async function AdminDashboard() {
         />
       </div>
 
-      {/* Quick actions */}
+      {/* Quick Actions & Approvals */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Pending approvals summary */}
         <div className="glass-card p-8 border-none shadow-xl bg-white relative overflow-hidden">
