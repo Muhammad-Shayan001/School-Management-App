@@ -33,12 +33,18 @@ export default async function DashboardLayout({
     const { data: profile } = await getFullProfile();
     
     if (profile) {
-      const isStudentIncomplete = profile.role === 'student' && !profile.student?.roll_number;
       const isTeacherIncomplete = profile.role === 'teacher' && !profile.teacher?.teacher_id;
       const isAdminIncomplete = (profile.role === 'admin' || profile.role === 'super_admin') && !profile.phone;
 
-      if (isStudentIncomplete || isTeacherIncomplete || isAdminIncomplete) {
-        redirect('/profile/setup');
+      if (isTeacherIncomplete || isAdminIncomplete) {
+        if (pathname && !pathname.includes('/profile/setup')) {
+          redirect('/profile/setup');
+        }
+      }
+      
+      const isStudentIncomplete = profile.role === 'student' && (!profile.student || !profile.student.roll_number);
+      if (isStudentIncomplete && pathname && pathname !== '/profile') {
+        redirect('/profile');
       }
     }
   }

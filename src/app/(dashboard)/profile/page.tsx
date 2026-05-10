@@ -49,10 +49,7 @@ export default async function ProfilePage() {
         <User className="h-10 w-10" />
       </div>
       <h2 className="text-2xl font-black text-text-primary">No Profile Found</h2>
-      <p className="text-text-secondary max-w-xs">Your profile hasn't been initialized yet. Please complete the setup.</p>
-      <Link href="/profile/setup">
-        <Button className="rounded-2xl px-10 h-14 btn-primary mt-4 font-black">Initialize Profile</Button>
-      </Link>
+      <p className="text-text-secondary max-w-xs">Your profile hasn't been initialized yet. Please contact your administrator or class teacher.</p>
     </div>
   );
 
@@ -87,14 +84,16 @@ export default async function ProfilePage() {
           </div>
         </div>
         
-        <Link href="/profile/setup">
-          <Button 
-            className="btn-primary gap-3 h-14 px-8 rounded-2xl shadow-2xl shadow-accent/20 font-black group transition-all hover:scale-105"
-          >
-            <Edit3 className="h-5 w-5 transition-transform group-hover:rotate-12" />
-            Update Records
-          </Button>
-        </Link>
+        {role !== 'student' && (
+          <Link href="/profile/setup">
+            <Button 
+              className="btn-primary gap-3 h-14 px-8 rounded-2xl shadow-2xl shadow-accent/20 font-black group transition-all hover:scale-105"
+            >
+              <Edit3 className="h-5 w-5 transition-transform group-hover:rotate-12" />
+              Update Records
+            </Button>
+          </Link>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">

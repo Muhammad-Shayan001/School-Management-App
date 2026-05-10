@@ -9,56 +9,61 @@ import { revalidatePath } from 'next/cache';
  * Uses the Admin Client to ensure data is always returned even if RLS is strict.
  */
 export async function getFullProfile() {
-  const supabase = await createClient();
-  const adminClient = createAdminClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { data: null, error: 'Unauthorized' };
+  try {
+    const supabase = await createClient();
+    const adminClient = createAdminClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: 'Unauthorized' };
 
-  // Get base profile
-  const { data: profile, error: dbError } = await adminClient
-    .from('profiles')
-    .select('*, schools!fk_school(*)')
-    .eq('id', user.id)
-    .single();
+    // Get base profile
+    const { data: profile, error: dbError } = await adminClient
+      .from('profiles')
+      .select('*, schools!fk_school(*)')
+      .eq('id', user.id)
+      .single();
 
-  if (!profile) {
-    return { data: null, error: 'Profile not found' };
+    if (!profile) {
+      return { data: null, error: 'Profile not found' };
+    }
+
+    let extraData: any = {};
+    
+    // Fetch role-specific data using Admin Client for maximum reliability
+    if (profile.role === 'student') {
+      const { data: student } = await adminClient
+        .from('student_profiles')
+        .select('*, classes(name, section)')
+        .eq('user_id', user.id)
+        .single();
+      extraData = { student };
+    } else if (profile.role === 'teacher') {
+      const { data: teacher } = await adminClient
+        .from('teacher_profiles')
+        .select('*, classes(name, section)')
+        .eq('user_id', user.id)
+        .single();
+        
+      // Fetch dynamic assignments
+      const { data: assignments } = await adminClient
+        .from('teacher_assignments')
+        .select('*, subjects(name), classes(name, section)')
+        .eq('teacher_id', user.id);
+        
+      extraData = { teacher, assignments };
+    } else if (profile.role === 'admin' || profile.role === 'super_admin') {
+      const { data: admin } = await adminClient
+        .from('admins')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+      extraData = { admin };
+    }
+
+    return { data: { ...profile, ...extraData }, error: null };
+  } catch (error) {
+    console.error('Error in getFullProfile:', error);
+    return { data: null, error: 'Internal Server Error' };
   }
-
-  let extraData: any = {};
-  
-  // Fetch role-specific data using Admin Client for maximum reliability
-  if (profile.role === 'student') {
-    const { data: student } = await adminClient
-      .from('student_profiles')
-      .select('*, classes(name, section)')
-      .eq('user_id', user.id)
-      .single();
-    extraData = { student };
-  } else if (profile.role === 'teacher') {
-    const { data: teacher } = await adminClient
-      .from('teacher_profiles')
-      .select('*, classes(name, section)')
-      .eq('user_id', user.id)
-      .single();
-      
-    // Fetch dynamic assignments
-    const { data: assignments } = await adminClient
-      .from('teacher_assignments')
-      .select('*, subjects(name), classes(name, section)')
-      .eq('teacher_id', user.id);
-      
-    extraData = { teacher, assignments };
-  } else if (profile.role === 'admin' || profile.role === 'super_admin') {
-    const { data: admin } = await adminClient
-      .from('admins')
-      .select('*')
-      .eq('user_id', user.id)
-      .single();
-    extraData = { admin };
-  }
-
-  return { data: { ...profile, ...extraData }, error: null };
 }
 
 /**

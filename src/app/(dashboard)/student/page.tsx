@@ -1,12 +1,12 @@
 import Link from 'next/link';
 import { StatsCard } from '@/app/_components/dashboard/stats-card';
-import { getCurrentUser } from '@/app/_lib/actions/auth';
-import { BarChart3, Calendar, Megaphone, FileText, UserCircle, ClipboardList, CreditCard } from 'lucide-react';
+import { getFullProfile } from '@/app/_lib/actions/profile';
+import { BarChart3, Calendar, Megaphone, FileText, UserCircle, ClipboardList, CreditCard, ShieldCheck, XCircle, AlertCircle } from 'lucide-react';
 import { AnnouncementWidget } from '@/app/_components/dashboard/AnnouncementWidget';
 import { NextExamWidget } from '@/app/_components/dashboard/NextExamWidget';
 
 export default async function StudentDashboard() {
-  const user = await getCurrentUser();
+  const { data: user } = await getFullProfile();
   
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -16,12 +16,24 @@ export default async function StudentDashboard() {
           <p className="mt-1 text-sm text-text-secondary font-medium">Welcome back, {user?.full_name}</p>
         </div>
         <div className="w-full lg:w-auto lg:min-w-[350px]">
+           {user?.student?.fee_status !== 'paid' && (
+             <div className="bg-red-50 border border-red-100 p-4 rounded-2xl flex items-center gap-3 mb-4 animate-pulse">
+               <AlertCircle className="h-5 w-5 text-red-500" />
+               <p className="text-[10px] font-black text-red-700 uppercase tracking-widest">Attendance restricted: Please clear your dues</p>
+             </div>
+           )}
            <NextExamWidget />
         </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 stagger-children">
-        <StatsCard title="My Results" value="-" icon={BarChart3} variant="accent" subtitle="View grades" />
+        <StatsCard 
+          title="Fee Status" 
+          value={user?.student?.fee_status?.toUpperCase() || 'UNPAID'} 
+          icon={CreditCard} 
+          variant={user?.student?.fee_status === 'paid' ? 'success' : user?.student?.fee_status === 'pending' ? 'warning' : 'danger'} 
+          subtitle={user?.student?.fee_status === 'paid' ? 'Eligible for Attendance' : 'Attendance Blocked'} 
+        />
         <StatsCard title="Timetable" value="-" icon={Calendar} variant="success" subtitle="Class schedule" />
         <StatsCard title="Announcements" value="-" icon={Megaphone} variant="warning" subtitle="School news" />
         <StatsCard title="Assignments" value="-" icon={FileText} variant="default" subtitle="Due tasks" />

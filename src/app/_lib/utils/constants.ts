@@ -21,6 +21,15 @@ export const STATUSES = {
 
 export type UserStatus = (typeof STATUSES)[keyof typeof STATUSES];
 
+// Fee statuses
+export const FEE_STATUS = {
+  PAID: 'paid',
+  UNPAID: 'unpaid',
+  PENDING: 'pending',
+} as const;
+
+export type FeeStatus = (typeof FEE_STATUS)[keyof typeof FEE_STATUS];
+
 // Class names (1-10)
 export const CLASS_NAMES = [
   'Class 1',
@@ -86,6 +95,16 @@ export const STATUS_CONFIG: Record<
   rejected: { label: 'Rejected', color: 'danger' },
 };
 
+// Fee status labels with colors
+export const FEE_STATUS_CONFIG: Record<
+  FeeStatus,
+  { label: string; color: string }
+> = {
+  paid: { label: 'Paid', color: 'success' },
+  unpaid: { label: 'Unpaid', color: 'danger' },
+  pending: { label: 'Pending', color: 'warning' },
+};
+
 // Dashboard routes per role
 export const DASHBOARD_ROUTES: Record<UserRole, string> = {
   super_admin: '/super-admin',
@@ -111,6 +130,7 @@ export const SIDEBAR_NAV: Record<
     { label: 'Attendance', href: '/admin/attendance', icon: 'ClipboardCheck' },
     { label: 'Teachers', href: '/admin/teachers', icon: 'GraduationCap' },
     { label: 'Students', href: '/admin/students', icon: 'Users' },
+    { label: 'Fees', href: '/admin/fees', icon: 'CreditCard' },
     { label: 'Announcements', href: '/admin/announcements', icon: 'Megaphone' },
     { label: 'Timetable', href: '/admin/timetable', icon: 'Calendar' },
     { label: 'Exam Schedule', href: '/admin/exam-timetable', icon: 'ClipboardList' },

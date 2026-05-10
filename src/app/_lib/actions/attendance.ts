@@ -48,6 +48,22 @@ export async function markAttendance(params: {
     }
   }
 
+  // FEE VALIDATION
+  if (params.role === 'student') {
+    const { data: studentFeeData } = await adminClient
+      .from('student_profiles')
+      .select('fee_status')
+      .eq('user_id', params.userId)
+      .single();
+
+    if (studentFeeData && studentFeeData.fee_status !== 'paid') {
+      return { 
+        error: `Attendance blocked: Fee status is ${studentFeeData.fee_status.toUpperCase()}. Payment required.`,
+        blockedByFees: true
+      };
+    }
+  }
+
   const attendanceDate = params.date || new Date().toISOString().split('T')[0];
   
   // Default status logic
@@ -294,7 +310,7 @@ export async function getAttendanceStudents() {
   // Fetch only students in the assigned class
   const { data: studentProfiles } = await adminClient
     .from('student_profiles')
-    .select('user_id, roll_number')
+    .select('user_id, roll_number, fee_status')
     .eq('class_id', teacherProfile.class_id);
 
   const userIds = studentProfiles?.map((sp: any) => sp.user_id) || [];
@@ -309,10 +325,14 @@ export async function getAttendanceStudents() {
     .in('id', userIds)
     .order('full_name', { ascending: true });
 
-  const merged = profiles?.map(p => ({
-    ...p,
-    roll_number: studentProfiles?.find((sp: any) => sp.user_id === p.id)?.roll_number
-  })) || [];
+  const merged = profiles?.map(p => {
+    const sp = studentProfiles?.find((sp: any) => sp.user_id === p.id);
+    return {
+      ...p,
+      roll_number: sp?.roll_number,
+      fee_status: sp?.fee_status || 'unpaid'
+    };
+  }) || [];
 
   return { data: merged, error: null };
 }

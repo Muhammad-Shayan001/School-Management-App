@@ -127,7 +127,7 @@ export async function middleware(request: NextRequest) {
   return supabaseResponse;
 }
 
-// Map the middleware function to the expected export name if needed
+// Map the middleware function to the expected export name
 export { middleware as proxy };
 
 export const config = {

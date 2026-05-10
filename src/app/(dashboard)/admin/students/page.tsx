@@ -11,10 +11,12 @@ import type { UserStatus } from '@/app/_lib/utils/constants';
 import type { Profile } from '@/app/_lib/types/database';
 import { formatDate } from '@/app/_lib/utils/format';
 import { cn } from '@/app/_lib/utils/cn';
-import { Check, X, Users } from 'lucide-react';
+import { Check, X, Users as UsersIcon } from 'lucide-react';
 import { PageSpinner } from '@/app/_components/ui/spinner';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/app/_components/ui/tabs';
+import { StudentManagementClient } from '@/app/_components/dashboard/StudentManagementClient';
 
-export default function AdminStudentsPage() {
+function RegistrationsTab() {
   const { user } = useAuthStore();
   const [students, setStudents] = useState<Profile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -47,18 +49,14 @@ export default function AdminStudentsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-text-primary tracking-tight">Students</h1>
-        <p className="mt-1 text-sm text-text-secondary">Manage student registrations</p>
-      </div>
+    <div className="space-y-6 mt-6">
       <div className="flex gap-1 p-1 rounded-xl bg-bg-tertiary border border-border w-fit">
         {(['all','pending','approved','rejected'] as const).map(t=>(
           <button key={t} onClick={()=>setFilter(t)} className={cn('px-4 py-2 rounded-lg text-sm font-medium capitalize transition-all',filter===t?'bg-accent text-white shadow-sm':'text-text-secondary hover:text-text-primary hover:bg-glass-hover')}>{t}</button>
         ))}
       </div>
       {isLoading ? <PageSpinner /> : students.length===0 ? (
-        <div className="glass-card p-12 text-center"><Users className="h-12 w-12 text-text-tertiary mx-auto mb-3 opacity-50"/><p className="text-text-secondary">No students found</p></div>
+        <div className="glass-card p-12 text-center"><UsersIcon className="h-12 w-12 text-text-tertiary mx-auto mb-3 opacity-50"/><p className="text-text-secondary">No registrations found</p></div>
       ) : (
         <div className="space-y-3">
           {students.map(s=>{const sc=STATUS_CONFIG[s.status as UserStatus];return(
@@ -81,6 +79,25 @@ export default function AdminStudentsPage() {
           );})}
         </div>
       )}
+    </div>
+  );
+}
+
+export default function AdminStudentsPage() {
+  return (
+    <div className="space-y-6">
+      <Tabs defaultValue="management">
+        <TabsList>
+          <TabsTrigger value="management">Manage Profiles</TabsTrigger>
+          <TabsTrigger value="registrations">Registrations</TabsTrigger>
+        </TabsList>
+        <TabsContent value="management">
+          <StudentManagementClient role="admin" />
+        </TabsContent>
+        <TabsContent value="registrations">
+          <RegistrationsTab />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

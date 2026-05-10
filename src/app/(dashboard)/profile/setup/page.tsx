@@ -62,6 +62,11 @@ export default function ProfileSetupPage() {
     async function loadData() {
       const { data } = await getFullProfile();
       if (data) {
+        if (data.role === 'student') {
+          router.push('/profile');
+          return;
+        }
+
         setProfile(data);
         setAvatarUrl(data.avatar_url || '');
         

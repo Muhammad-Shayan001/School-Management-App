@@ -324,21 +324,26 @@ export async function logout() {
  * Get the current authenticated user's profile.
  */
 export async function getCurrentUser() {
-  const supabase = await createClient();
+  try {
+    const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-  if (!user) return null;
+    if (!user) return null;
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single();
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single();
 
-  return profile;
+    return profile;
+  } catch (error) {
+    console.error('Error in getCurrentUser:', error);
+    return null;
+  }
 }
 
 /**

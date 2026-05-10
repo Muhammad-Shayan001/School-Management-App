@@ -205,10 +205,41 @@ input:focus, select:focus, textarea:focus {
 .stagger-children > *:nth-child(5) { animation-delay: 300ms; }
 .stagger-children > *:nth-child(6) { animation-delay: 375ms; }
 
-/* ─── Auth Background ──────────────────────────────────────────────────────── */
-.auth-background {
-  background: radial-gradient(circle at top right, var(--accent-subtle), transparent),
-              radial-gradient(circle at bottom left, var(--success-subtle), transparent),
-              var(--bg-primary);
+/* ─── Landing Page Specific Animations ──────────────────────────────────────── */
+@keyframes reveal {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.reveal {
+  opacity: 0;
+  animation: reveal 0.8s ease-out forwards;
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+}
+
+.float-animation {
+  animation: float 4s ease-in-out infinite;
+}
+
+.gradient-bg {
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+}
+
+.text-gradient {
+  background: linear-gradient(to right, var(--accent), var(--accent-muted));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.nav-blur {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
 }
 

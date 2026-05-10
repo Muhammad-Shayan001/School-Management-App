@@ -3,15 +3,17 @@ import { Card } from '@/app/_components/ui/card';
 import { Badge } from '@/app/_components/ui/badge';
 import { 
   Calendar as CalendarIcon, CheckCircle2, XCircle, Clock, 
-  TrendingUp, CalendarDays, PieChart, AlertCircle, ShieldCheck
+  TrendingUp, CalendarDays, PieChart, AlertCircle, ShieldCheck, CreditCard
 } from 'lucide-react';
 import { cn } from '@/app/_lib/utils/cn';
 import { createClient } from '@/app/_lib/supabase/server';
 import { redirect } from 'next/navigation';
 
+import { getFullProfile } from '@/app/_lib/actions/profile';
+
 export default async function StudentAttendancePage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: profile } = await getFullProfile();
+  const user = profile;
 
   if (!user) redirect('/login');
 
@@ -38,6 +40,34 @@ export default async function StudentAttendancePage() {
            My Attendance
         </h1>
         <p className="text-text-secondary font-medium font-bold">Track your daily presence, verified logs, and pending scan requests</p>
+      </div>
+
+      {/* Fee Status Banner */}
+      <div className={cn(
+        "p-6 rounded-3xl border flex flex-col md:flex-row items-center justify-between gap-4",
+        user?.student?.fee_status === 'paid' ? "bg-emerald-50 border-emerald-100" : user?.student?.fee_status === 'pending' ? "bg-amber-50 border-amber-100" : "bg-red-50 border-red-100"
+      )}>
+        <div className="flex items-center gap-4">
+          <div className={cn(
+            "h-12 w-12 rounded-2xl flex items-center justify-center shadow-sm",
+            user?.student?.fee_status === 'paid' ? "bg-emerald-500 text-white" : user?.student?.fee_status === 'pending' ? "bg-amber-500 text-white" : "bg-red-500 text-white"
+          )}>
+            <CreditCard className="h-6 w-6" />
+          </div>
+          <div>
+            <h3 className="font-black text-text-primary tracking-tight">Fee Verification Status</h3>
+            <p className="text-[10px] font-black uppercase tracking-widest text-text-tertiary">Current status: <span className={cn(
+              user?.student?.fee_status === 'paid' ? "text-emerald-600" : user?.student?.fee_status === 'pending' ? "text-amber-600" : "text-red-600"
+            )}>{user?.student?.fee_status?.toUpperCase() || 'UNPAID'}</span></p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          {user?.student?.fee_status === 'paid' ? (
+            <Badge variant="success" className="px-4 py-2 rounded-xl">Attendance Unlocked</Badge>
+          ) : (
+            <Badge variant="danger" className="px-4 py-2 rounded-xl">Attendance Restricted</Badge>
+          )}
+        </div>
       </div>
 
       {/* Overview Dashboard */}

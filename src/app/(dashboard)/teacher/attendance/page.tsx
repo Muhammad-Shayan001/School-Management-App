@@ -376,26 +376,43 @@ export default function TeacherAttendancePage() {
                   )}
                 </div>
 
+                <div className="flex items-center gap-2 mb-4">
+                  <Badge 
+                    variant={student.fee_status === 'paid' ? 'success' : student.fee_status === 'pending' ? 'warning' : 'danger'} 
+                    dot 
+                    className="text-[10px] uppercase font-black"
+                  >
+                    Fees: {student.fee_status}
+                  </Badge>
+                  {student.fee_status !== 'paid' && (
+                    <span className="text-[9px] font-black text-red-500 uppercase tracking-tighter">Payment Required</span>
+                  )}
+                </div>
+
                 <div className="flex gap-3">
                   <Button
                     onClick={() => handleManualMark(student.id, 'present')}
                     isLoading={isSaving === student.id}
+                    disabled={student.fee_status !== 'paid'}
                     variant={record?.status === 'present' ? 'primary' : 'outline'}
                     className={cn(
                       "flex-1 h-12 rounded-2xl",
-                      record?.status === 'present' ? "bg-emerald-500 hover:bg-emerald-600" : "border-emerald-100 text-emerald-600 hover:bg-emerald-50"
+                      record?.status === 'present' ? "bg-emerald-500 hover:bg-emerald-600" : "border-emerald-100 text-emerald-600 hover:bg-emerald-50",
+                      student.fee_status !== 'paid' && "opacity-50 grayscale cursor-not-allowed"
                     )}
                     leftIcon={<CheckCircle2 className="h-4 w-4" />}
                   >
-                    Present
+                    {student.fee_status === 'paid' ? 'Present' : 'Blocked'}
                   </Button>
                   <Button
                     onClick={() => handleManualMark(student.id, 'absent')}
                     isLoading={isSaving === student.id}
+                    disabled={student.fee_status !== 'paid'}
                     variant={record?.status === 'absent' ? 'danger' : 'outline'}
                     className={cn(
                       "flex-1 h-12 rounded-2xl",
-                      record?.status === 'absent' ? "bg-red-500 hover:bg-red-600" : "border-red-100 text-red-600 hover:bg-red-50"
+                      record?.status === 'absent' ? "bg-red-500 hover:bg-red-600" : "border-red-100 text-red-600 hover:bg-red-50",
+                      student.fee_status !== 'paid' && "opacity-50 grayscale cursor-not-allowed"
                     )}
                     leftIcon={<XCircle className="h-4 w-4" />}
                   >
