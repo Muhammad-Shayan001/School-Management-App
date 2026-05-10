@@ -319,9 +319,9 @@ export default async function HomePage() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
-              { name: 'Sarah Jenkins', role: 'Principal', comment: 'The QR attendance system has saved us hours of manual logging every single morning. Simply revolutionary.' },
-              { name: 'Robert Miller', role: 'Senior Teacher', comment: 'Uploading results and managing assignments has never been easier. The UI is clean and very easy to use.' },
-              { name: 'David Wilson', role: 'Admin Officer', comment: 'The security and role-based access give us peace of mind knowing student data is always protected.' }
+              { name: 'Muhammad Umar', role: 'Principal', comment: 'The QR attendance system has saved us hours of manual logging every single morning. Simply revolutionary.' },
+              { name: 'Muhammad Ali', role: 'Senior Teacher', comment: 'Uploading results and managing assignments has never been easier. The UI is clean and very easy to use.' },
+              { name: 'Ayan Khan', role: 'Admin Officer', comment: 'The security and role-based access give us peace of mind knowing student data is always protected.' }
             ].map((t, i) => (
               <div key={i} className="reveal glass-card p-8 space-y-6 border-white shadow-sm hover:shadow-lg transition-all">
                 <div className="flex gap-1 text-amber-500">
@@ -386,7 +386,7 @@ export default async function HomePage() {
               <div className="pt-8">
                 <p className="text-sm font-bold text-text-secondary mb-4 uppercase tracking-widest">Connect Directly</p>
                 <a 
-                  href="https://wa.me/yournumber" 
+                  href="https://wa.me/1234567890" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-[#25D366] text-white font-black shadow-lg hover:shadow-[#25D366]/40 hover:-translate-y-1 transition-all duration-300"
