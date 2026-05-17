@@ -40,12 +40,16 @@ export default function StudentIdCardPage() {
   const downloadAsPdf = async () => {
     if (!cardRef.current) return;
     setIsDownloading(true);
-    const { toPng } = await import('html-to-image');
-    const { jsPDF } = await import('jspdf');
-    const dataUrl = await toPng(cardRef.current, { cacheBust: true, pixelRatio: 3 });
-    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: [85.6, 54] });
-    pdf.addImage(dataUrl, 'PNG', 0, 0, 85.6, 54);
-    pdf.save(`${profile?.full_name?.replace(/ /g, '_')}_StudentID.pdf`);
+    try {
+      const { toPng } = await import('html-to-image');
+      const { jsPDF } = await import('jspdf');
+      const dataUrl = await toPng(cardRef.current, { cacheBust: true, pixelRatio: 3 });
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: [54, 85.6] });
+      pdf.addImage(dataUrl, 'PNG', 0, 0, 54, 85.6);
+      pdf.save(`${profile?.full_name?.replace(/ /g, '_')}_StudentID.pdf`);
+    } catch (err) {
+      console.error('Failed to generate PDF:', err);
+    }
     setIsDownloading(false);
   };
 
@@ -119,7 +123,7 @@ export default function StudentIdCardPage() {
             <div style={{ background: '#ffffff', display: 'flex', justifyContent: 'center' }}>
               <div style={{ marginTop: '-45px', width: '90px', height: '90px', borderRadius: '50%', border: '5px solid #fff', overflow: 'hidden', boxShadow: '0 8px 25px rgba(5,150,105,0.3)', background: 'linear-gradient(135deg, #059669, #34d399)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', zIndex: 10 }}>
                 {profile?.avatar_url
-                  ? <img src={profile.avatar_url} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top' }} />
+                  ? <img src={`${profile.avatar_url}?cb=${new Date().getTime()}`} crossOrigin="anonymous" alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top' }} />
                   : <span style={{ color: '#fff', fontSize: '30px', fontWeight: 900 }}>{initials}</span>
                 }
               </div>

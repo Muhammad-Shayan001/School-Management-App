@@ -40,12 +40,16 @@ export default function AdminIdCardPage() {
   const downloadAsPdf = async () => {
     if (!cardRef.current) return;
     setIsDownloading(true);
-    const { toPng } = await import('html-to-image');
-    const { jsPDF } = await import('jspdf');
-    const dataUrl = await toPng(cardRef.current, { cacheBust: true, pixelRatio: 3 });
-    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: [85.6, 54] });
-    pdf.addImage(dataUrl, 'PNG', 0, 0, 85.6, 54);
-    pdf.save(`${profile?.full_name?.replace(/ /g, '_')}_PrincipalID.pdf`);
+    try {
+      const { toPng } = await import('html-to-image');
+      const { jsPDF } = await import('jspdf');
+      const dataUrl = await toPng(cardRef.current, { cacheBust: true, pixelRatio: 3 });
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: [54, 85.6] });
+      pdf.addImage(dataUrl, 'PNG', 0, 0, 54, 85.6);
+      pdf.save(`${profile?.full_name?.replace(/ /g, '_')}_PrincipalID.pdf`);
+    } catch (err) {
+      console.error('Failed to generate PDF:', err);
+    }
     setIsDownloading(false);
   };
 
@@ -133,7 +137,7 @@ export default function AdminIdCardPage() {
               <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 {profile?.schools?.logo_url && (
                    <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '8px', border: '1px solid rgba(255,255,255,0.3)', overflow: 'hidden' }}>
-                      <img src={profile.schools.logo_url} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <img src={`${profile.schools.logo_url}?cb=${new Date().getTime()}`} crossOrigin="anonymous" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                    </div>
                 )}
                 <h2 style={{ fontSize: '16px', fontWeight: 900, letterSpacing: '0.02em', margin: 0, textShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>{schoolName.toUpperCase()}</h2>
@@ -158,7 +162,7 @@ export default function AdminIdCardPage() {
                 justifyContent: 'center'
               }}>
                 {profile?.avatar_url
-                  ? <img src={profile.avatar_url} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top' }} />
+                  ? <img src={`${profile.avatar_url}?cb=${new Date().getTime()}`} crossOrigin="anonymous" alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top' }} />
                   : <div style={{ width: '100%', height: '100%', background: `linear-gradient(135deg, ${campusColor}, ${campusColor}aa)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <span style={{ color: '#fff', fontSize: '40px', fontWeight: 900 }}>{initials}</span>
                     </div>

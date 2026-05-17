@@ -1,17 +1,61 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
+// Helper to safely load and convert external images to base64 with CORS support
+function getBase64ImageFromUrl(url: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.setAttribute('crossOrigin', 'anonymous');
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(img, 0, 0);
+        const dataURL = canvas.toDataURL('image/png');
+        resolve(dataURL);
+      } else {
+        reject(new Error('Could not get canvas context'));
+      }
+    };
+    img.onerror = (error) => {
+      reject(error);
+    };
+    img.src = url + (url.includes('?') ? '&' : '?') + 'cb=' + new Date().getTime();
+  });
+}
+
 export async function generateAdmissionForm(student: any, school: any) {
   const doc = new jsPDF();
   const primaryColor = '#101828'; // Deep Navy
   const accentColor = '#2563eb'; // Blue Accent
   
-  // Header Branding
+  // Pre-load images to avoid CORS and canvas tainting issues
+  let logoBase64 = null;
   if (school?.logo_url) {
     try {
-      doc.addImage(school.logo_url, 'PNG', 15, 15, 30, 30);
+      logoBase64 = await getBase64ImageFromUrl(school.logo_url);
     } catch (e) {
-      console.error('Failed to load school logo for PDF', e);
+      console.error('Failed to preload school logo for PDF', e);
+    }
+  }
+
+  let avatarBase64 = null;
+  if (student.profiles?.avatar_url) {
+    try {
+      avatarBase64 = await getBase64ImageFromUrl(student.profiles.avatar_url);
+    } catch (e) {
+      console.error('Failed to preload student avatar for PDF', e);
+    }
+  }
+
+  // Header Branding
+  if (logoBase64) {
+    try {
+      doc.addImage(logoBase64, 'PNG', 15, 15, 30, 30);
+    } catch (e) {
+      console.error('Failed to render school logo in PDF', e);
     }
   }
   
@@ -42,9 +86,9 @@ export async function generateAdmissionForm(student: any, school: any) {
   // Student Portrait Space
   doc.setDrawColor('#eaecf0');
   doc.rect(155, 75, 35, 45);
-  if (student.profiles?.avatar_url) {
+  if (avatarBase64) {
     try {
-      doc.addImage(student.profiles.avatar_url, 'JPEG', 156, 76, 33, 43);
+      doc.addImage(avatarBase64, 'PNG', 156, 76, 33, 43);
     } catch (e) {
       doc.setFontSize(8);
       doc.text('NO PHOTO', 165, 100);
@@ -82,7 +126,7 @@ export async function generateAdmissionForm(student: any, school: any) {
   });
 
   // section 2: Contact & Address
-  let finalY = (doc as any).lastAutoTable?.finalY || 150;
+  let finalY = ((doc as any).lastAutoTable?.finalY || 150) + 12;
   doc.setFontSize(12);
   doc.setTextColor(accentColor);
   doc.text('SECTION II: CONTACT & ORIGIN', 15, finalY);
@@ -96,7 +140,7 @@ export async function generateAdmissionForm(student: any, school: any) {
   ];
 
   autoTable(doc, {
-    startY: finalY + 5,
+    startY: finalY + 4,
     margin: { left: 15 },
     tableWidth: 180,
     body: contactData,
@@ -106,7 +150,7 @@ export async function generateAdmissionForm(student: any, school: any) {
   });
 
   // section 3: Guardian Details
-  finalY = (doc as any).lastAutoTable?.finalY || finalY + 10;
+  finalY = ((doc as any).lastAutoTable?.finalY || finalY + 10) + 12;
   doc.setFontSize(12);
   doc.setTextColor(accentColor);
   doc.text('SECTION III: FAMILY & GUARDIANS', 15, finalY);
@@ -122,7 +166,7 @@ export async function generateAdmissionForm(student: any, school: any) {
   ];
 
   autoTable(doc, {
-    startY: finalY + 5,
+    startY: finalY + 4,
     margin: { left: 15 },
     tableWidth: 180,
     body: familyData,
@@ -132,7 +176,7 @@ export async function generateAdmissionForm(student: any, school: any) {
   });
 
   // Financials & Notes
-  finalY = (doc as any).lastAutoTable?.finalY || finalY + 10;
+  finalY = ((doc as any).lastAutoTable?.finalY || finalY + 10) + 12;
   doc.setFontSize(12);
   doc.setTextColor(accentColor);
   doc.text('SECTION IV: ADMINISTRATIVE NOTES', 15, finalY);
@@ -144,7 +188,7 @@ export async function generateAdmissionForm(student: any, school: any) {
   ];
 
   autoTable(doc, {
-    startY: finalY + 5,
+    startY: finalY + 4,
     margin: { left: 15 },
     tableWidth: 180,
     body: adminData,
