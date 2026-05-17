@@ -4,14 +4,15 @@ import { useUIStore } from '@/app/_lib/store/ui-store';
 import { useAuthStore } from '@/app/_lib/store/auth-store';
 import { NotificationBell } from '@/app/_components/layout/notification-bell';
 import { ProfileDropdown } from '@/app/_components/layout/profile-dropdown';
-import { Menu, Search, LogOut } from 'lucide-react';
+import { CampusSwitcher } from '@/app/_components/layout/campus-switcher';
+import { Menu, Search, LogOut, School } from 'lucide-react';
 import { logout } from '@/app/_lib/actions/auth';
 import { cn } from '@/app/_lib/utils/cn';
 
 /**
  * Top navigation bar with hamburger menu, search, notifications, and profile dropdown.
  */
-export function Navbar() {
+export function Navbar({ school, userRole }: { school?: { name: string; logo_url: string | null } | null; userRole?: string }) {
   const { toggleSidebar, sidebarCollapsed, toggleSidebarCollapse } = useUIStore();
   const { user } = useAuthStore();
 
@@ -42,10 +43,30 @@ export function Navbar() {
           <Search className="h-4 w-4 flex-shrink-0 opacity-60" />
           <input
             type="text"
-            placeholder="Search school records..."
+            placeholder="Search campus records..."
             className="bg-transparent text-[13px] font-bold text-text-primary placeholder:text-text-tertiary outline-none w-full leading-none"
           />
         </div>
+
+        {/* Campus Switcher for admin/super_admin, static badge for others */}
+        {(userRole === 'admin' || userRole === 'super_admin') ? (
+          <div className="hidden lg:block">
+            <CampusSwitcher variant="navbar" userRole={userRole} userSchoolId={null} />
+          </div>
+        ) : school ? (
+          <div className="hidden lg:flex items-center gap-3 px-4 py-2 rounded-2xl bg-emerald-500/5 border border-emerald-500/10 shadow-sm animate-in fade-in slide-in-from-left duration-700">
+             <div className="h-7 w-7 rounded-lg bg-emerald-500 flex items-center justify-center overflow-hidden shadow-md">
+                {(school as any).logo_url ? (
+                  <img src={(school as any).logo_url} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  <School className="h-4 w-4 text-white" />
+                )}
+             </div>
+             <span className="text-[11px] font-black text-emerald-600 uppercase tracking-widest truncate max-w-[200px]">
+               {(school as any).name}
+             </span>
+          </div>
+        ) : null}
       </div>
 
       {/* Right side */}

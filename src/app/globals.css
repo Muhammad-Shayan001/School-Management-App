@@ -242,4 +242,56 @@ input:focus, select:focus, textarea:focus {
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
 }
+/* ─── Premium Scrollbar Design ────────────────────────────────────────────── */
+.scrollbar-premium::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
 
+.scrollbar-premium::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-premium::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.2);
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+}
+
+.scrollbar-premium::-webkit-scrollbar-thumb:hover {
+  background: rgba(37, 99, 235, 0.4);
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ─── Advanced UI Utilities ────────────────────────────────────────────────── */
+.text-balance {
+  text-wrap: balance;
+}
+
+.mask-gradient-bottom {
+  mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+}
+
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+}
+
+.glass-dark {
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}

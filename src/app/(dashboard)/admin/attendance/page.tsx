@@ -3,16 +3,18 @@
 import { useState, useEffect } from 'react';
 import { getSchoolAttendance, approveAttendance, rejectAttendance } from '@/app/_lib/actions/attendance';
 import { getHolidays, addHoliday, deleteHoliday } from '@/app/_lib/actions/holidays';
+import { getClasses } from '@/app/_lib/actions/schools';
 import AttendanceScanner from '@/app/_components/attendance/AttendanceScanner';
 import { Badge } from '@/app/_components/ui/badge';
 import { Card } from '@/app/_components/ui/card';
 import { Button } from '@/app/_components/ui/button';
 import { PageSpinner } from '@/app/_components/ui/spinner';
+import { Select } from '@/app/_components/ui/select';
 import { 
   Calendar as CalendarIcon, UserCheck, UserX, Scan, ListChecks, 
   Search, BarChart3, Clock, GraduationCap, Users, ShieldCheck, 
   XCircle, CheckCircle2, History, Filter, Plus, Trash2, CalendarX,
-  Palmtree, Users2
+  Palmtree, Users2, Layers
 } from 'lucide-react';
 import { formatDate } from '@/app/_lib/utils/format';
 import { cn } from '@/app/_lib/utils/cn';
@@ -21,10 +23,12 @@ export default function AdminAttendancePage() {
   const [activeMainTab, setActiveMainTab] = useState<'daily' | 'holidays'>('daily');
   const [attendance, setAttendance] = useState<any[]>([]);
   const [holidays, setHolidays] = useState<any[]>([]);
+  const [classes, setClasses] = useState<any[]>([]);
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'present' | 'rejected'>('all');
+  const [classFilter, setClassFilter] = useState<string>('all');
   const [processingId, setProcessingId] = useState<string | null>(null);
 
   // Holiday Form State
@@ -38,9 +42,15 @@ export default function AdminAttendancePage() {
     setIsLoading(true);
     if (activeMainTab === 'daily') {
       const { data } = await getSchoolAttendance(date, { 
-        status: statusFilter === 'all' ? undefined : (statusFilter === 'present' ? 'present' : statusFilter) 
+        status: statusFilter === 'all' ? undefined : (statusFilter === 'present' ? 'present' : statusFilter),
+        classId: classFilter === 'all' ? undefined : classFilter
       });
       setAttendance(data || []);
+      
+      if (classes.length === 0) {
+        const { data: clsData } = await getClasses();
+        setClasses(clsData || []);
+      }
     } else {
       const { data } = await getHolidays();
       setHolidays(data || []);
@@ -50,7 +60,7 @@ export default function AdminAttendancePage() {
 
   useEffect(() => {
     fetchData();
-  }, [date, statusFilter, activeMainTab]);
+  }, [date, statusFilter, classFilter, activeMainTab]);
 
   const handleAction = async (id: string, action: 'approve' | 'reject') => {
     setProcessingId(id);
@@ -168,12 +178,23 @@ export default function AdminAttendancePage() {
                      />
                    </div>
                     <div className="flex gap-2 overflow-x-auto pb-1">
+                     <div className="w-48 shrink-0">
+                       <Select
+                         value={classFilter}
+                         onChange={(e) => setClassFilter(e.target.value)}
+                         options={[
+                           { label: 'All Classes', value: 'all' },
+                           ...classes.map(c => ({ label: `${c.name} - ${c.section}`, value: c.id }))
+                         ]}
+                         className="h-10 text-[10px] font-black uppercase tracking-widest bg-white"
+                       />
+                     </div>
                      {(['all', 'pending', 'present', 'rejected'] as const).map((s) => (
                        <button
                          key={s}
                          onClick={() => setStatusFilter(s)}
                          className={cn(
-                           "px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                           "px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all h-10 whitespace-nowrap",
                            statusFilter === s ? "bg-accent text-white" : "bg-white text-text-tertiary border"
                          )}
                        >

@@ -45,6 +45,7 @@ export async function createAssignment(data: FormData) {
       max_marks: max_marks || null,
       attachment_url,
       school_id: profile.school_id,
+      campus_id: data.get("campus_id") as string || null,
     })
     .select()
     .single();
@@ -55,6 +56,11 @@ export async function createAssignment(data: FormData) {
   }
 
   revalidatePath("/teacher/assignments");
+  revalidatePath("/student/assignments");
+  
+  // REDIRECT back to the list
+  import("next/navigation").then(({ redirect }) => redirect("/teacher/assignments"));
+  
   return assignment;
 }
 
@@ -70,7 +76,8 @@ export async function getTeacherAssignments(classId?: string) {
     .select(`
       *,
       subject:subjects(name),
-      class:classes(name, section)
+      class:classes(name, section),
+      submissions:assignment_submissions(count)
     `)
     .eq("teacher_id", user.id)
     .order("created_at", { ascending: false });
@@ -86,7 +93,11 @@ export async function getTeacherAssignments(classId?: string) {
     return [];
   }
 
-  return data;
+  // Map counts to a simpler property
+  return data.map(a => ({
+    ...a,
+    submissionCount: (a.submissions as any)?.[0]?.count || 0
+  }));
 }
 
 export async function getStudentAssignments() {

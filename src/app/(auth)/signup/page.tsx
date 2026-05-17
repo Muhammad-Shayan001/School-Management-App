@@ -11,7 +11,6 @@ import { ROLES } from '@/app/_lib/utils/constants';
 import { Mail, Lock, User, Phone, School, UserPlus, BookOpen } from 'lucide-react';
 
 const roleOptions = [
-  { value: ROLES.ADMIN, label: 'Admin (Principal)' },
   { value: ROLES.TEACHER, label: 'Teacher' },
   { value: ROLES.STUDENT, label: 'Student' },
 ];
@@ -75,7 +74,7 @@ export default function SignupPage() {
           Create Account
         </h1>
         <p className="mt-2 text-sm text-text-secondary">
-          Join SchoolMS and get started
+          Join Skolic and get started
         </p>
       </div>
 
@@ -146,27 +145,36 @@ export default function SignupPage() {
 
         {/* Dynamic Fields based on Role */}
         <div className="animate-slide-in-up space-y-4">
-          {selectedRole === ROLES.ADMIN && (
-            <Input
-              name="school_name"
-              type="text"
-              label="New School Name"
-              placeholder="Springfield High School"
-              required
-              leftIcon={<School className="h-4 w-4" />}
-            />
-          )}
+          {/* No longer allowing school creation from signup */}
 
           {(selectedRole === ROLES.TEACHER || selectedRole === ROLES.STUDENT) && (
-            <Select
-              name="school_id"
-              label="Select School"
-              required
-              options={schools.map(s => ({ value: s.id, label: s.name }))}
-              value={selectedSchool}
-              onChange={(e) => setSelectedSchool(e.target.value)}
-              placeholder="Choose your school"
-            />
+            <div className="space-y-4 animate-in fade-in duration-500">
+              <Select
+                name="school_id"
+                label="Select School"
+                required
+                options={schools.map(s => ({ value: s.id, label: s.name }))}
+                value={selectedSchool}
+                onChange={(e) => setSelectedSchool(e.target.value)}
+                placeholder="Choose your school"
+              />
+
+              {selectedSchool && schools.find(s => s.id === selectedSchool) && (
+                <div className="flex items-center gap-4 p-4 rounded-2xl bg-bg-tertiary/50 border border-border/30 group">
+                   <div className="h-12 w-12 rounded-xl bg-white flex items-center justify-center overflow-hidden shadow-sm group-hover:shadow-md transition-all">
+                      {schools.find(s => s.id === selectedSchool)?.logo_url ? (
+                        <img src={schools.find(s => s.id === selectedSchool).logo_url} alt="School Logo" className="h-full w-full object-cover" />
+                      ) : (
+                        <School className="h-6 w-6 text-accent" />
+                      )}
+                   </div>
+                   <div>
+                      <p className="text-[10px] font-black text-text-tertiary uppercase tracking-widest">Enrolling into</p>
+                      <p className="text-sm font-bold text-text-primary">{schools.find(s => s.id === selectedSchool).name}</p>
+                   </div>
+                </div>
+              )}
+            </div>
           )}
 
           {selectedRole === ROLES.STUDENT && selectedSchool && (

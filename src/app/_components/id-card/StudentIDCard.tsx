@@ -18,10 +18,13 @@ interface StudentData {
   phone: string;
   image?: string;
   schoolName: string;
+  themeColor?: string;
+  schoolLogo?: string | null;
 }
 
 export default function StudentIDCard({ student }: { student: StudentData }) {
   const cardRef = useRef<HTMLDivElement>(null);
+  const themeColor = student.themeColor || '#2563eb'; // Default blue-600
 
   const downloadAsImage = async () => {
     if (cardRef.current === null) return;
@@ -42,8 +45,6 @@ export default function StudentIDCard({ student }: { student: StudentData }) {
       const dataUrl = await toPng(cardRef.current, { cacheBust: true, pixelRatio: 2 });
       const pdf = new jsPDF('p', 'mm', 'a4');
       const imgProps = pdf.getImageProperties(dataUrl);
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
       
       pdf.addImage(dataUrl, 'PNG', 10, 10, 80, (80 * imgProps.height) / imgProps.width);
       pdf.save(`student-id-${student.rollNo}.pdf`);
@@ -60,15 +61,30 @@ export default function StudentIDCard({ student }: { student: StudentData }) {
         className="w-[350px] rounded-2xl shadow-2xl overflow-hidden bg-white border border-border/50 animate-fade-in"
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-5 text-center">
-          <h1 className="text-xl font-bold tracking-tight">{student.schoolName}</h1>
-          <p className="text-[10px] uppercase tracking-widest opacity-80 mt-0.5">Student Identification Card</p>
+        <div 
+          className="text-white p-5 text-center relative overflow-hidden"
+          style={{ backgroundColor: themeColor }}
+        >
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16" />
+          <div className="relative z-10 flex flex-col items-center gap-2">
+            <div className="h-16 w-16 bg-white rounded-2xl p-2 shadow-2xl flex items-center justify-center border-2 border-white/50 overflow-hidden transform -rotate-3">
+              <img 
+                src={student.schoolLogo || "/images/Skolic app icon.svg"} 
+                alt="Logo" 
+                className="h-full w-full object-contain" 
+              />
+            </div>
+            <h1 className="text-2xl font-black tracking-tighter leading-tight">{student.schoolName}</h1>
+            <div className="px-3 py-0.5 bg-white/20 backdrop-blur-md rounded-full border border-white/30">
+              <p className="text-[9px] uppercase font-black tracking-[0.2em] text-white">Student Passport</p>
+            </div>
+          </div>
         </div>
 
         {/* Body */}
         <div className="p-6 flex flex-col items-center relative">
           {/* Decorative element */}
-          <div className="absolute top-0 right-0 w-24 h-24 bg-blue-50 rounded-bl-full -z-10 opacity-50" />
+          <div className="absolute top-0 right-0 w-24 h-24 rounded-bl-full -z-10 opacity-10" style={{ backgroundColor: themeColor }} />
           
           {/* Profile Image */}
           <div className="relative">
@@ -82,34 +98,42 @@ export default function StudentIDCard({ student }: { student: StudentData }) {
                 priority
               />
             </div>
-            <div className="absolute -bottom-2 -right-2 bg-blue-600 text-white p-1.5 rounded-lg shadow-md">
+            <div 
+              className="absolute -bottom-2 -right-2 text-white p-1.5 rounded-lg shadow-md"
+              style={{ backgroundColor: themeColor }}
+            >
               <BookOpen className="h-4 w-4" />
             </div>
           </div>
 
           {/* Info */}
           <div className="mt-4 text-center">
-            <h2 className="text-xl font-bold text-text-primary">
+            <h2 className="text-xl font-black text-text-primary tracking-tight">
               {student.name}
             </h2>
-            <div className="mt-1 inline-block px-3 py-0.5 bg-blue-50 text-blue-700 rounded-full text-xs font-semibold border border-blue-100">
+            <div 
+              className="mt-2 inline-block px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border"
+              style={{ 
+                backgroundColor: themeColor + '15', 
+                color: themeColor,
+                borderColor: themeColor + '30'
+              }}
+            >
               Roll No: {student.rollNo}
             </div>
           </div>
 
-          <div className="mt-5 grid grid-cols-1 gap-y-2.5 w-full text-sm">
-            <div className="flex justify-between items-center border-b border-gray-50 pb-2">
-              <span className="text-text-tertiary font-medium">Class & Section</span>
-              <span className="text-text-primary font-semibold">{student.class} - {student.section}</span>
-            </div>
-            <div className="flex justify-between items-center border-b border-gray-50 pb-2">
-              <span className="text-text-tertiary font-medium">Parent/Guardian</span>
-              <span className="text-text-primary font-semibold">{student.parentName}</span>
-            </div>
-            <div className="flex justify-between items-center border-b border-gray-50 pb-2">
-              <span className="text-text-tertiary font-medium">Emergency Contact</span>
-              <span className="text-text-primary font-semibold">{student.phone}</span>
-            </div>
+          <div className="mt-6 grid grid-cols-1 gap-y-1 w-full text-sm">
+            {[
+              { label: 'Class & Section', value: `${student.class} - ${student.section}` },
+              { label: 'Parent/Guardian', value: student.parentName },
+              { label: 'Emergency Contact', value: student.phone },
+            ].map((item, i) => (
+              <div key={i} className="flex justify-between items-center py-2 border-b border-gray-50 last:border-0">
+                <span className="text-[10px] font-bold text-text-tertiary uppercase tracking-wider">{item.label}</span>
+                <span className="text-xs font-black text-text-primary">{item.value || '—'}</span>
+              </div>
+            ))}
           </div>
 
           {/* QR Code */}
@@ -117,14 +141,19 @@ export default function StudentIDCard({ student }: { student: StudentData }) {
             <div className="bg-white p-2.5 rounded-xl shadow-md border border-gray-100">
               <QRCode value={student.id} size={90} level="H" />
             </div>
-            <span className="text-[10px] text-text-tertiary font-medium">Scan for Attendance</span>
+            <span className="text-[10px] text-text-tertiary font-bold uppercase tracking-widest opacity-60">Scan for Attendance</span>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="bg-bg-tertiary text-center text-[10px] p-3 text-text-tertiary border-t border-border/30">
-          <p className="font-medium">Valid Session: 2025-2026</p>
-          <p className="mt-0.5 opacity-60">This card is property of {student.schoolName}</p>
+        <div className="bg-bg-tertiary text-center p-5 border-t border-border/30 relative">
+          <div className="flex flex-col items-center gap-1">
+            <p className="text-[10px] font-black tracking-[0.2em] uppercase text-text-primary">Session 2025-2026</p>
+            <div className="flex items-center gap-2 opacity-40 grayscale group-hover:grayscale-0 transition-all">
+               <img src="/images/Skolic app icon.svg" className="h-4 w-4" alt="Skolic" />
+               <span className="text-[8px] font-black uppercase tracking-widest">Powered by Skolic</span>
+            </div>
+          </div>
         </div>
       </div>
 

@@ -5,89 +5,157 @@ import {
   CheckCircle2, 
   Clock, 
   AlertCircle,
-  FileText
+  ChevronRight,
+  Target,
+  BookOpen,
+  ArrowRight
 } from "lucide-react";
 import Link from "next/link";
-import {
-  Card,
-  CardBody,
-  CardHeader,
-} from "@/app/_components/ui/card";
 import { Badge } from "@/app/_components/ui/badge";
-import { Button } from "@/app/_components/ui/button";
+import { cn } from "@/app/_lib/utils/cn";
+
+export const metadata = {
+  title: "Assignments | Student Dashboard",
+};
 
 export default async function StudentAssignmentsPage() {
   const assignments = await getStudentAssignments();
 
-  const getStatusBadge = (submission: any, deadline: string) => {
+  const getStatusConfig = (submission: any, deadline: string) => {
     if (submission) {
       if (submission.status === 'graded') {
-        return <Badge variant="success" className="flex items-center gap-1"><CheckCircle2 className="w-3 h-3"/> Graded</Badge>;
+        return { 
+            label: 'Graded', 
+            variant: 'success' as const, 
+            icon: <CheckCircle2 className="w-3.5 h-3.5"/>,
+            bg: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
+        };
       }
-      return <Badge variant="info" className="flex items-center gap-1"><CheckCircle2 className="w-3 h-3"/> Submitted</Badge>;
+      return { 
+          label: 'Submitted', 
+          variant: 'info' as const, 
+          icon: <CheckCircle2 className="w-3.5 h-3.5"/>,
+          bg: 'bg-blue-500/10 text-blue-600 border-blue-500/20'
+      };
     }
     
     if (deadline && new Date() > new Date(deadline)) {
-      return <Badge variant="danger" className="flex items-center gap-1"><AlertCircle className="w-3 h-3"/> Overdue</Badge>;
+      return { 
+          label: 'Overdue', 
+          variant: 'danger' as const, 
+          icon: <AlertCircle className="w-3.5 h-3.5"/>,
+          bg: 'bg-rose-500/10 text-rose-600 border-rose-500/20'
+      };
     }
 
-    return <Badge variant="warning" className="flex items-center gap-1"><Clock className="w-3 h-3"/> Pending</Badge>;
+    return { 
+        label: 'Pending', 
+        variant: 'warning' as const, 
+        icon: <Clock className="w-3.5 h-3.5"/>,
+        bg: 'bg-amber-500/10 text-amber-600 border-amber-500/20'
+    };
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Assignments</h1>
-        <p className="text-slate-500 mt-2">
-          View and submit your class assignments
-        </p>
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20 max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 mb-1">
+             <Badge variant="accent" dot>Academic Management</Badge>
+             <span className="text-text-tertiary text-[10px] font-black uppercase tracking-widest">My Learning Portal</span>
+          </div>
+          <h1 className="text-4xl font-black text-text-primary tracking-tighter">Assignments</h1>
+          <p className="text-text-secondary font-medium font-bold">Track your coursework, submit tasks, and view your grades</p>
+        </div>
+
+        <div className="flex items-center gap-4 bg-white/50 backdrop-blur-md p-2 rounded-2xl border border-border/30">
+            <div className="px-4 py-2 text-center">
+                <p className="text-[10px] font-black text-text-tertiary uppercase tracking-widest">Total Tasks</p>
+                <p className="text-xl font-black text-text-primary">{assignments?.length || 0}</p>
+            </div>
+            <div className="w-px h-8 bg-border/50" />
+            <div className="px-4 py-2 text-center text-emerald-600">
+                <p className="text-[10px] font-black opacity-60 uppercase tracking-widest">Completed</p>
+                <p className="text-xl font-black">{assignments?.filter((a: any) => a.submissions?.[0])?.length || 0}</p>
+            </div>
+        </div>
       </div>
 
       {!assignments || assignments.length === 0 ? (
-        <Card className="border-dashed bg-slate-50/50">
-          <CardBody className="flex flex-col items-center justify-center h-64 text-center">
-            <div className="rounded-full bg-slate-100 p-3 mb-4">
-              <ClipboardList className="h-8 w-8 text-slate-400" />
+        <div className="py-24 text-center bg-white/50 backdrop-blur-md border border-dashed border-border/50 rounded-[40px] flex flex-col items-center justify-center">
+            <div className="bg-accent/10 p-6 rounded-3xl mb-6 shadow-inner ring-1 ring-accent/20">
+              <ClipboardList className="h-12 w-12 text-accent" />
             </div>
-            <h3 className="font-semibold text-lg text-slate-900">No Assignments</h3>
-            <p className="text-slate-500 max-w-sm mt-2">
-              You don&apos;t have any assignments right now.
+            <h3 className="text-2xl font-black text-text-primary tracking-tight mb-2">Clean Slate!</h3>
+            <p className="text-text-tertiary font-bold max-w-xs mx-auto">
+              You don&apos;t have any active assignments at the moment. Check back later!
             </p>
-          </CardBody>
-        </Card>
+        </div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {assignments.map((assignment: any) => {
             const submission = assignment.submissions?.[0];
+            const status = getStatusConfig(submission, assignment.deadline);
+            const deadline = new Date(assignment.deadline);
             
             return (
-              <Card key={assignment.id} className="flex flex-col hover:shadow-md transition-shadow">
-                <CardHeader className="pb-3 border-b bg-slate-50/50">
-                  <div className="flex justify-between items-start mb-2">
-                    <Badge variant="default" className="bg-white">
-                      {assignment.subject?.name || "Subject"}
-                    </Badge>
-                    {getStatusBadge(submission, assignment.deadline)}
+              <Link 
+                key={assignment.id} 
+                href={`/student/assignments/${assignment.id}`}
+                className="group relative flex flex-col justify-between p-8 bg-white/80 backdrop-blur-sm border border-border/30 rounded-[32px] shadow-xl hover:shadow-2xl hover:-translate-y-1.5 transition-all duration-500 overflow-hidden"
+              >
+                <div className={cn("absolute top-0 left-0 w-2 h-full transition-opacity duration-500", 
+                    submission ? "bg-emerald-500 opacity-20 group-hover:opacity-100" : "bg-accent opacity-10 group-hover:opacity-100"
+                )} />
+                
+                <div className="space-y-6">
+                  <div className="flex justify-between items-start">
+                    <div className="h-10 w-10 rounded-xl bg-bg-tertiary flex items-center justify-center border border-border/30 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
+                        <BookOpen className="h-5 w-5 text-accent" />
+                    </div>
+                    <div className={cn("px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border flex items-center gap-1.5", status.bg)}>
+                        {status.icon}
+                        {status.label}
+                    </div>
                   </div>
-                  <h3 className="text-lg font-bold line-clamp-1">{assignment.title}</h3>
-                  <div className="flex items-center gap-2 mt-2">
-                    <Calendar className="w-4 h-4" />
-                    Due {new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" }).format(new Date(assignment.deadline))}
+
+                  <div>
+                    <p className="text-[10px] font-black text-text-tertiary uppercase tracking-[0.2em] mb-1">{assignment.subject?.name || "Academic"}</p>
+                    <h3 className="font-black text-xl text-text-primary line-clamp-2 group-hover:text-accent transition-colors tracking-tight leading-tight mb-4">
+                      {assignment.title}
+                    </h3>
+                    <p className="text-sm text-text-secondary font-medium line-clamp-2 opacity-80 leading-relaxed">
+                        {assignment.description || "No specific instructions provided. View details for more information."}
+                    </p>
                   </div>
-                </CardHeader>
-                <CardBody className="pt-4 flex-1">
-                  <p className="text-sm text-slate-600 line-clamp-3">
-                    {assignment.description || "No description provided."}
-                  </p>
-                </CardBody>
-                <div className="pt-4 border-t">
-                  <Link href={`/student/assignments/${assignment.id}`} className="w-full">
-                    <Button variant={submission ? "outline" : "primary"} className="w-full">
-                      {submission ? "View Submission" : "View Details"}
-                    </Button>
-                  </Link>
+                  
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3 text-[11px] font-black text-text-secondary uppercase tracking-widest">
+                      <div className={cn(
+                        "h-8 w-8 rounded-lg flex items-center justify-center border border-border/30",
+                        status.label === 'Overdue' ? "bg-rose-50 text-rose-500" : "bg-bg-tertiary text-accent"
+                      )}>
+                        <Calendar className="h-4 w-4" />
+                      </div>
+                      <span className={status.label === 'Overdue' ? "text-rose-600" : ""}>
+                        Due: {deadline.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-              </Card>
+                
+                <div className="mt-8 flex items-center justify-between pt-6 border-t border-border/50">
+                   <div className="flex items-center gap-2">
+                     <span className="text-[10px] font-black uppercase tracking-widest text-text-tertiary group-hover:text-accent transition-colors">
+                       {submission ? "Review My Work" : "Start Assignment"}
+                     </span>
+                   </div>
+                   <div className="h-8 w-8 rounded-full bg-bg-tertiary flex items-center justify-center group-hover:bg-accent group-hover:text-white transition-all duration-300">
+                     <ArrowRight className="h-4 w-4" />
+                   </div>
+                </div>
+              </Link>
             );
           })}
         </div>

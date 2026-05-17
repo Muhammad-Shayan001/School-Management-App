@@ -58,9 +58,19 @@ export default function TeacherIDCard({ teacher }: { teacher: TeacherData }) {
         className="w-[350px] rounded-2xl shadow-2xl overflow-hidden bg-white border border-border/50 animate-fade-in"
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white p-5 text-center">
-          <h1 className="text-xl font-bold tracking-tight">{teacher.schoolName}</h1>
-          <p className="text-[10px] uppercase tracking-widest opacity-80 mt-0.5">Faculty Identification Card</p>
+        <div className="bg-gradient-to-br from-emerald-600 to-teal-700 text-white p-6 text-center relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-32 h-32 bg-white/10 rounded-full -ml-16 -mt-16" />
+          <div className="relative z-10 flex flex-col items-center gap-3">
+            <div className="h-16 w-16 bg-white rounded-2xl p-2 shadow-2xl flex items-center justify-center border-2 border-white/50 overflow-hidden transform rotate-3">
+              <img src="/images/Skolic app icon.svg" alt="Logo" className="h-full w-full object-contain" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-black tracking-tighter leading-tight">{teacher.schoolName}</h1>
+              <div className="mt-1 inline-block px-3 py-0.5 bg-white/20 backdrop-blur-md rounded-full border border-white/30">
+                <p className="text-[9px] uppercase font-black tracking-[0.2em] text-white">Faculty Identification</p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Body */}
@@ -126,9 +136,14 @@ export default function TeacherIDCard({ teacher }: { teacher: TeacherData }) {
         </div>
 
         {/* Footer */}
-        <div className="bg-bg-tertiary text-center text-[10px] p-3 text-text-tertiary border-t border-border/30">
-          <p className="font-medium">Authorized Staff Only</p>
-          <p className="mt-0.5 opacity-60">School Year: 2025-2026</p>
+        <div className="bg-bg-tertiary text-center p-5 border-t border-border/30 relative">
+          <div className="flex flex-col items-center gap-1">
+            <p className="text-[10px] font-black tracking-[0.2em] uppercase text-text-primary">Staff Session 2025-2026</p>
+            <div className="flex items-center gap-2 opacity-40 grayscale transition-all">
+               <img src="/images/Skolic app icon.svg" className="h-4 w-4" alt="Skolic" />
+               <span className="text-[8px] font-black uppercase tracking-widest">Powered by Skolic</span>
+            </div>
+          </div>
         </div>
       </div>
 

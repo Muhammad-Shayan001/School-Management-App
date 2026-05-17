@@ -32,19 +32,15 @@ export default async function DashboardLayout({
   const pathname = headerList.get('x-pathname') || '';
   const profile = profileData.data;
 
-  // Check profile completion (Non-blocking redirect logic)
-  const isSetupPage = pathname.includes('/profile/setup') || pathname === '/profile';
-  
+  // Profile completion redirects — only for students with missing roll numbers.
+  // Admins/super_admins can access the dashboard without completing their profile
+  // to prevent redirect loops when coming from a fresh database setup.
+  const isSetupPage = pathname.startsWith('/profile');
   if (!isSetupPage && profile) {
-    const isTeacherIncomplete = profile.role === 'teacher' && !profile.teacher?.teacher_id;
-    const isAdminIncomplete = (profile.role === 'admin' || profile.role === 'super_admin') && !profile.phone;
-
-    if ((isTeacherIncomplete || isAdminIncomplete) && !pathname.includes('/profile/setup')) {
-      redirect('/profile/setup');
-    }
-    
-    const isStudentIncomplete = profile.role === 'student' && (!profile.student || !profile.student.roll_number);
-    if (isStudentIncomplete && pathname !== '/profile') {
+    const isStudentIncomplete =
+      profile.role === 'student' &&
+      (!profile.student || !profile.student.roll_number);
+    if (isStudentIncomplete) {
       redirect('/profile');
     }
   }
@@ -54,11 +50,11 @@ export default async function DashboardLayout({
 
   return (
     <div className="flex h-screen overflow-hidden bg-bg-primary text-text-primary">
-      {/* Sidebar rendered immediately with cached navItems */}
-      <Sidebar navItems={navItems} role={role} />
+      {/* Sidebar rendered immediately with cached navItems and school branding */}
+      <Sidebar navItems={navItems} role={role} school={profile?.schools} />
 
       <DashboardShell>
-        <Navbar />
+        <Navbar school={profile?.schools} userRole={role} />
 
         <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 bg-bg-primary">
           <div className="mx-auto max-w-7xl">

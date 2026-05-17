@@ -1,18 +1,31 @@
 import { createClient } from '@supabase/supabase-js';
-import { readFileSync } from 'fs';
+import dotenv from 'dotenv';
 
-const envConfig = String(readFileSync('.env.local')).split('\n').reduce((acc, line) => {
-    const [k, v] = line.split('=');
-    if (k && v) acc[k.trim()] = v.trim();
-    return acc;
-}, {});
+dotenv.config({ path: '.env.local' });
 
-const supabase = createClient(envConfig.NEXT_PUBLIC_SUPABASE_URL, envConfig.SUPABASE_SERVICE_ROLE_KEY);
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
-async function check() {
-  const { data, error } = await supabase.rpc('get_policies_for_profiles'); // won't work for storage
-  // Let's just create the bucket properly via API to be totally sure, and insert the policies.
-  const { data: buckets, error: bErr } = await supabase.storage.listBuckets();
-  console.log("Buckets:", buckets?.map(b => b.name), "Err:", bErr);
+async function setupStorage() {
+  console.log('Setting up storage buckets...');
+  
+  // Create 'profiles' bucket if it doesn't exist
+  const { data: buckets } = await supabase.storage.listBuckets();
+  const profilesExists = buckets?.find(b => b.name === 'profiles');
+  
+  if (!profilesExists) {
+    const { error } = await supabase.storage.createBucket('profiles', {
+      public: true,
+      fileSizeLimit: 2097152, // 2MB
+      allowedMimeTypes: ['image/png', 'image/jpeg', 'image/webp']
+    });
+    if (error) console.error('Error creating profiles bucket:', error);
+    else console.log('Created profiles bucket');
+  } else {
+    console.log('Profiles bucket already exists');
+  }
 }
-check();
+
+setupStorage();

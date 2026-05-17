@@ -14,8 +14,9 @@ export async function getUsers(filters?: { role?: UserRole; status?: UserStatus;
 
   if (!user) return { data: null, error: 'Unauthorized' };
 
-  // Fetch caller profile to verify permissions
-  const { data: caller } = await supabase
+  // Use admin client to bypass RLS for caller profile check
+  const adminClient = createAdminClient();
+  const { data: caller } = await adminClient
     .from('profiles')
     .select('role, school_id')
     .eq('id', user.id)
@@ -30,8 +31,7 @@ export async function getUsers(filters?: { role?: UserRole; status?: UserStatus;
     return { data: null, error: 'Unauthorized: Teachers can only view students.' };
   }
 
-  // Use admin client to bypass RLS for fetching the user list
-  const adminClient = createAdminClient();
+  // Build query using the admin client already created above
   let query = adminClient.from('profiles').select('*').order('created_at', { ascending: false });
 
   if (filters?.role) query = query.eq('role', filters.role);
@@ -151,6 +151,37 @@ export async function rejectUser(userId: string) {
 }
 
 /**
+ * Update student fee status.
+ */
+export async function updateFeeStatus(studentId: string, status: 'paid' | 'unpaid') {
+  const adminClient = createAdminClient();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { error: 'Unauthorized' };
+
+  const { data: caller } = await adminClient
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
+  if (!caller || !['super_admin', 'admin'].includes(caller.role)) {
+    return { error: 'Unauthorized: Only admins can manage fee status.' };
+  }
+
+  const { error } = await adminClient
+    .from('student_profiles')
+    .update({ fee_status: status })
+    .eq('user_id', studentId);
+
+  if (error) return { error: error.message };
+
+  revalidatePath('/admin/students');
+  return { success: true };
+}
+
+/**
  * Get user count statistics by role and status.
  */
 export async function getUserStats() {
@@ -169,7 +200,7 @@ export async function getUserStats() {
   };
 }
 
-export async function getStudentProfiles(filters?: { class_id?: string; query?: string }) {
+export async function getStudentProfiles(filters?: { class_id?: string; query?: string; campus_id?: string }) {
   const adminClient = createAdminClient();
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -227,6 +258,10 @@ export async function getStudentProfiles(filters?: { class_id?: string; query?: 
     query = query.in('class_id', allowedClassIds);
   }
 
+  if (filters?.campus_id) {
+    query = query.eq('campus_id', filters.campus_id);
+  }
+
   const { data, error } = await query;
   if (error) return { data: null, error: error.message };
 
@@ -244,7 +279,116 @@ export async function getStudentProfiles(filters?: { class_id?: string; query?: 
   return { data: result, error: null };
 }
 
+/**
+ * Generates a unique Student ID in format: STD-YYYY-XXX
+ */
+async function generateStudentId() {
+  const adminClient = createAdminClient();
+  const year = new Date().getFullYear();
+  const prefix = `STD-${year}-`;
+  
+  const { data } = await adminClient
+    .from('student_profiles')
+    .select('student_id')
+    .like('student_id', `${prefix}%`)
+    .order('student_id', { ascending: false })
+    .limit(1);
+
+  let nextNumber = 1;
+  if (data && data.length > 0 && data[0].student_id) {
+    const lastId = data[0].student_id;
+    const lastNumber = parseInt(lastId.split('-')[2]);
+    nextNumber = lastNumber + 1;
+  }
+
+  return `${prefix}${nextNumber.toString().padStart(3, '0')}`;
+}
+
+/**
+ * Generates a unique Teacher ID in format: TCH-YYYY-XXX
+ */
+async function generateTeacherId() {
+  const adminClient = createAdminClient();
+  const year = new Date().getFullYear();
+  const prefix = `TCH-${year}-`;
+  
+  const { data } = await adminClient
+    .from('teacher_profiles')
+    .select('teacher_id')
+    .like('teacher_id', `${prefix}%`)
+    .order('teacher_id', { ascending: false })
+    .limit(1);
+
+  let nextNumber = 1;
+  if (data && data.length > 0 && data[0].teacher_id) {
+    const lastId = data[0].teacher_id;
+    const lastNumber = parseInt(lastId.split('-')[2]);
+    nextNumber = lastNumber + 1;
+  }
+
+  return `${prefix}${nextNumber.toString().padStart(3, '0')}`;
+}
+
 export async function createOrUpdateStudentProfile(formData: FormData) {
+  const adminClient = createAdminClient();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'Unauthorized: No active session found.' };
+
+  const { data: caller } = await adminClient
+    .from('profiles')
+    .select('role, school_id')
+    .eq('id', user.id)
+    .single();
+
+  if (!caller || !['super_admin', 'admin'].includes(caller.role)) {
+    return { error: `Unauthorized: Your role is ${caller?.role || 'unknown'}. Only admins can modify/add students.` };
+  }
+
+  const userId = formData.get('user_id') as string | null;
+
+  if (userId) {
+    // Update existing student
+    const fullName = formData.get('full_name') as string;
+    
+    await adminClient.from('profiles').update({
+      full_name: fullName,
+      phone: formData.get('phone') as string,
+      updated_at: new Date().toISOString()
+    }).eq('id', userId);
+
+    const studentData: any = {
+      user_id: userId,
+      school_id: caller.school_id,
+      roll_number: formData.get('roll_number') || null,
+      class_id: formData.get('class_id') || null,
+      section: formData.get('section') || null,
+      parent_name: formData.get('parent_name') || null,
+      parent_phone: formData.get('parent_phone') || null,
+      gender: formData.get('gender') || 'male',
+      dob: formData.get('dob') || null,
+      address: formData.get('address') || null,
+    };
+
+    const { error: studentErr } = await adminClient
+      .from('student_profiles')
+      .upsert(studentData, { onConflict: 'user_id' });
+
+    if (studentErr) return { error: 'Failed to save student details: ' + studentErr.message };
+
+    revalidatePath('/admin/students');
+    return { success: true };
+  } else {
+    // Creating new student using existing createManualStudent logic
+    const plainData: any = {};
+    for (const [key, value] of formData.entries()) {
+      plainData[key] = value;
+    }
+    return createManualStudent(plainData);
+  }
+}
+
+export async function createManualStudent(formData: any) {
   const adminClient = createAdminClient();
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -256,98 +400,241 @@ export async function createOrUpdateStudentProfile(formData: FormData) {
     .eq('id', user.id)
     .single();
 
-  if (!caller || !['super_admin', 'admin', 'teacher'].includes(caller.role)) {
-    return { error: 'Unauthorized' };
+  if (!caller || !['super_admin', 'admin'].includes(caller.role)) {
+    return { error: 'Unauthorized: Only admins can manually create students.' };
   }
 
-  const studentUserId = formData.get('user_id') as string;
-  const fullName = formData.get('full_name') as string;
-  const classId = formData.get('class_id') as string;
+  const email = formData.email;
+  const fullName = formData.full_name;
+  // Generate a professional random password
+  const autoPassword = Math.random().toString(36).slice(-8) + 'Sc!';
+  const studentId = await generateStudentId();
+  const rollNumber = formData.roll_number || studentId.replace('STD-', '');
 
-  if (caller.role === 'teacher') {
-    const { data: teacherProfile } = await adminClient
-      .from('teacher_profiles')
-      .select('class_id, is_class_teacher')
-      .eq('user_id', user.id)
-      .single();
-      
-    let allowedClassIds: string[] = [];
-    if (teacherProfile?.is_class_teacher && teacherProfile.class_id) {
-       allowedClassIds = [teacherProfile.class_id];
-    } else {
-       const { data: assignments } = await adminClient.from('teacher_assignments').select('class_id').eq('teacher_id', user.id);
-       allowedClassIds = assignments ? assignments.map(a => a.class_id) : [];
-    }
-    
-    if (!allowedClassIds.includes(classId)) {
-      return { error: 'Unauthorized: Can only manage students in assigned classes' };
-    }
-  }
+  // 1. Create Auth Account
+  const { data: newAuthUser, error: authError } = await adminClient.auth.admin.createUser({
+    email,
+    password: formData.password || autoPassword,
+    email_confirm: true,
+    user_metadata: { role: 'student', full_name: fullName, school_id: caller.school_id, status: 'approved' }
+  });
 
-  let finalUserId = studentUserId;
-  
-  if (!finalUserId) {
-    // Generate a secure random password for new student accounts
-    const email = formData.get('email') as string || `student_${Date.now()}@school.edu`;
-    const tempPassword = 'Student123!@#';
-    
-    const { data: newAuthUser, error: authError } = await adminClient.auth.admin.createUser({
-      email,
-      password: tempPassword,
-      email_confirm: true,
-      user_metadata: { role: 'student', full_name: fullName }
-    });
-    
-    if (authError) return { error: 'Failed to create student account: ' + authError.message };
-    finalUserId = newAuthUser.user.id;
-    
-    // Insert into profiles
-    await adminClient.from('profiles').insert({
-      id: finalUserId,
-      email: email,
-      full_name: fullName,
-      role: 'student',
-      school_id: caller.school_id,
-      status: 'approved',
-      avatar_url: formData.get('avatar_url') as string,
-      phone: formData.get('phone') as string
-    });
-  } else {
-    // Update existing profile
-    await adminClient.from('profiles').update({
-      full_name: fullName,
-      phone: formData.get('phone') as string,
-      avatar_url: formData.get('avatar_url') as string,
-      updated_at: new Date().toISOString()
-    }).eq('id', finalUserId);
-  }
+  if (authError) return { error: 'Failed to create auth account: ' + authError.message };
+  const studentUserId = newAuthUser.user.id;
 
-  // Upsert student_profiles
+  // 2. Create Profile
+  const { error: profileError } = await adminClient.from('profiles').insert({
+    id: studentUserId,
+    email: email,
+    full_name: fullName,
+    role: 'student',
+    school_id: caller.school_id,
+    status: 'approved',
+    avatar_url: formData.avatar_url,
+    phone: formData.phone
+  });
+
+  if (profileError) return { error: 'Failed to create profile: ' + profileError.message };
+
+  // 3. Create Student Profile record
   const { error: studentErr } = await adminClient
     .from('student_profiles')
-    .upsert({
-      user_id: finalUserId,
+    .insert({
+      user_id: studentUserId,
       school_id: caller.school_id,
-      roll_number: formData.get('roll_number'),
-      cnic: formData.get('cnic'),
-      class_id: classId || null,
-      section: formData.get('section'),
-      dob: formData.get('dob'),
-      gender: formData.get('gender'),
-      student_email: formData.get('student_email'),
-      phone: formData.get('phone'),
-      parent_name: formData.get('parent_name'),
-      parent_cnic: formData.get('parent_cnic'),
-      parent_phone: formData.get('parent_phone'),
-      address: formData.get('address'),
-      admission_date: formData.get('admission_date'),
-    }, { onConflict: 'user_id' });
+      campus_id: formData.campus_id || null,
+      student_id: studentId,
+      roll_number: rollNumber,
+      cnic: formData.cnic,
+      class_id: formData.class_id || null,
+      section: formData.section,
+      dob: formData.dob || null,
+      gender: formData.gender,
+      phone: formData.phone,
+      fee_status: 'unpaid',
+      registration_no: formData.registration_no,
+      admission_date: formData.admission_date || new Date().toISOString().split('T')[0],
+      fee_discount: parseFloat(formData.fee_discount || '0'),
+      sms_phone: formData.sms_phone,
+      birth_form_id: formData.birth_form_id,
+      is_orphan: formData.is_orphan === 'true',
+      student_cast: formData.student_cast,
+      is_osc: formData.is_osc === 'true',
+      id_mark: formData.id_mark,
+      previous_school: formData.previous_school,
+      religion: formData.religion,
+      blood_group: formData.blood_group,
+      family_id: formData.family_id,
+      disease: formData.disease,
+      additional_note: formData.additional_note,
+      total_siblings: parseInt(formData.total_siblings || '0'),
+      address: formData.address,
+      father_name: formData.father_name,
+      father_cnic: formData.father_cnic,
+      father_occupation: formData.father_occupation,
+      father_education: formData.father_education,
+      father_phone: formData.father_phone,
+      father_profession: formData.father_profession,
+      father_income: formData.father_income,
+      mother_name: formData.mother_name,
+      mother_cnic: formData.mother_cnic,
+      mother_occupation: formData.mother_occupation,
+      mother_education: formData.mother_education,
+      mother_phone: formData.mother_phone,
+      mother_profession: formData.mother_profession,
+      mother_income: formData.mother_income,
+      shift: formData.shift,
+      group: formData.group,
+      session_year: formData.session_year || new Date().getFullYear().toString()
+    });
 
   if (studentErr) return { error: 'Failed to save student details: ' + studentErr.message };
 
-  revalidatePath('/teacher/students');
   revalidatePath('/admin/students');
-  return { success: true };
+  return { 
+    success: true, 
+    credentials: {
+      email,
+      password: formData.password || autoPassword,
+      studentId,
+      rollNumber
+    }
+  };
+}
+
+export async function createManualTeacher(formData: any) {
+  const adminClient = createAdminClient();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'Unauthorized' };
+
+  const { data: caller } = await adminClient
+    .from('profiles')
+    .select('role, school_id')
+    .eq('id', user.id)
+    .single();
+
+  if (!caller || !['super_admin', 'admin'].includes(caller.role)) {
+    return { error: 'Unauthorized: Only admins can manually create teachers.' };
+  }
+
+  const email = formData.email;
+  const fullName = formData.full_name;
+  const autoPassword = Math.random().toString(36).slice(-8) + 'Tch!';
+  const teacherId = await generateTeacherId();
+
+  // 1. Create Auth Account
+  const { data: newAuthUser, error: authError } = await adminClient.auth.admin.createUser({
+    email,
+    password: formData.password || autoPassword,
+    email_confirm: true,
+    user_metadata: { role: 'teacher', full_name: fullName, school_id: caller.school_id, status: 'approved' }
+  });
+
+  if (authError) return { error: 'Failed to create teacher auth: ' + authError.message };
+  const teacherUserId = newAuthUser.user.id;
+
+  // 2. Create Profile
+  const { error: profError } = await adminClient.from('profiles').insert({
+    id: teacherUserId,
+    email: email,
+    full_name: fullName,
+    role: 'teacher',
+    school_id: caller.school_id,
+    status: 'approved',
+    avatar_url: formData.avatar_url,
+    phone: formData.phone
+  });
+
+  if (profError) {
+    await adminClient.auth.admin.deleteUser(teacherUserId);
+    return { error: 'Failed to create profile: ' + profError.message };
+  }
+
+  // 3. Create Teacher Profile record
+  const { error: teacherErr } = await adminClient
+    .from('teacher_profiles')
+    .insert({
+      user_id: teacherUserId,
+      school_id: caller.school_id,
+      campus_id: formData.campus_id || null,
+      teacher_id: teacherId,
+      is_class_teacher: formData.is_class_teacher === 'true',
+      class_id: formData.class_id || null,
+      qualification: formData.qualification,
+      experience: formData.experience,
+      cnic: formData.cnic,
+      address: formData.address,
+      gender: formData.gender,
+      dob: formData.dob || null,
+      city: formData.city,
+      country: formData.country
+    });
+
+  if (teacherErr) {
+    await adminClient.from('profiles').delete().eq('id', teacherUserId);
+    await adminClient.auth.admin.deleteUser(teacherUserId);
+    return { error: 'Failed to save teacher details: ' + teacherErr.message };
+  }
+
+  // 4. Handle Subject/Class Assignments if provided
+  if (formData.assignments && Array.isArray(formData.assignments)) {
+    const assignmentsToInsert = [];
+    for (const a of formData.assignments) {
+      if (!a.class_id) continue;
+      
+      let finalSubjectId = a.subject_id;
+      
+      // If "Other" was selected and custom_subject provided, create it first
+      if (a.subject_id === 'other' && a.custom_subject) {
+        const { data: newSubject, error: newSubjErr } = await adminClient
+          .from('subjects')
+          .insert({
+            name: a.custom_subject,
+            school_id: caller.school_id
+          })
+          .select()
+          .single();
+          
+        if (newSubject) {
+          finalSubjectId = newSubject.id;
+        } else {
+          console.error("Failed to create custom subject:", newSubjErr);
+          continue; // Skip this assignment if subject creation failed
+        }
+      }
+
+      if (finalSubjectId) {
+        assignmentsToInsert.push({
+          teacher_id: teacherUserId,
+          class_id: a.class_id,
+          subject_id: finalSubjectId,
+          school_id: caller.school_id
+        });
+      }
+    }
+    
+    if (assignmentsToInsert.length > 0) {
+      const { error: assignErr } = await adminClient.from('teacher_assignments').insert(assignmentsToInsert);
+      if (assignErr) {
+        // Rollback
+        await adminClient.from('teacher_profiles').delete().eq('user_id', teacherUserId);
+        await adminClient.from('profiles').delete().eq('id', teacherUserId);
+        await adminClient.auth.admin.deleteUser(teacherUserId);
+        return { error: 'Failed to save assignments: ' + assignErr.message };
+      }
+    }
+  }
+
+  revalidatePath('/admin/teachers');
+  return { 
+    success: true, 
+    credentials: {
+      email,
+      password: formData.password || autoPassword,
+      teacherId
+    }
+  };
 }
 
 export async function deleteStudentProfile(userId: string) {
@@ -374,3 +661,184 @@ export async function deleteStudentProfile(userId: string) {
   revalidatePath('/admin/students');
   return { success: true };
 }
+export async function getTeacherProfiles(filters?: { query?: string; status?: string; campus_id?: string }) {
+  const adminClient = createAdminClient();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { data: null, error: 'Unauthorized' };
+
+  const { data: caller } = await adminClient
+    .from('profiles')
+    .select('role, school_id')
+    .eq('id', user.id)
+    .single();
+
+  if (!caller || !['super_admin', 'admin'].includes(caller.role)) {
+    return { data: null, error: 'Unauthorized' };
+  }
+
+  let query = adminClient
+    .from('teacher_profiles')
+    .select(`
+      *,
+      profiles(id, full_name, email, avatar_url, phone, status)
+    `)
+    .eq('school_id', caller.school_id);
+
+  if (filters?.status && filters.status !== 'all') {
+    // This is tricky because status is in profiles table. 
+    // We can filter after fetching or use a join-based filter if possible.
+  }
+  
+  if (filters?.campus_id) {
+    query = query.eq('campus_id', filters.campus_id);
+  }
+
+  const { data, error } = await query;
+  if (error) return { data: null, error: error.message };
+
+  let result = data;
+  if (filters?.query) {
+    const q = filters.query.toLowerCase();
+    result = result.filter((t: any) => 
+      t.profiles?.full_name?.toLowerCase().includes(q) ||
+      t.profiles?.email?.toLowerCase().includes(q) ||
+      t.teacher_id?.toLowerCase().includes(q)
+    );
+  }
+
+  return { data: result, error: null };
+}
+
+export async function updateOrDeleteTeacherProfile(formData: FormData) {
+  const adminClient = createAdminClient();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'Unauthorized' };
+
+  const { data: caller } = await adminClient
+    .from('profiles')
+    .select('role, school_id')
+    .eq('id', user.id)
+    .single();
+
+  if (!caller || !['super_admin', 'admin'].includes(caller.role)) {
+    return { error: 'Unauthorized' };
+  }
+
+  const teacherUserId = formData.get('user_id') as string;
+  const fullName = formData.get('full_name') as string;
+
+  await adminClient.from('profiles').update({
+    full_name: fullName,
+    phone: formData.get('phone') as string,
+    avatar_url: formData.get('avatar_url') as string,
+    updated_at: new Date().toISOString()
+  }).eq('id', teacherUserId);
+
+  const teacherData: any = {
+    user_id: teacherUserId,
+    school_id: caller.school_id,
+    teacher_id: formData.get('teacher_id'),
+    is_class_teacher: formData.get('is_class_teacher') === 'true',
+    class_id: formData.get('class_id') || null,
+    qualification: formData.get('qualification'),
+    experience: formData.get('experience'),
+    address: formData.get('address'),
+    cnic: formData.get('cnic') || null,
+    gender: formData.get('gender') || null,
+    city: formData.get('city') || null,
+    state: formData.get('state') || null,
+    country: formData.get('country') || null,
+    blood_group: formData.get('blood_group') || null,
+    dob: formData.get('dob') || null,
+    campus_id: formData.get('campus_id') || null,
+  };
+
+  const { error: teacherErr } = await adminClient
+    .from('teacher_profiles')
+    .upsert(teacherData, { onConflict: 'user_id' });
+
+  if (teacherErr) return { error: 'Failed to save teacher details: ' + teacherErr.message };
+
+  revalidatePath('/admin/teachers');
+  return { success: true };
+}
+
+/**
+ * Super Admin manually creates an Admin account for a school.
+ */
+export async function createManualAdmin(formData: any) {
+  const adminClient = createAdminClient();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'Unauthorized' };
+
+  const { data: caller } = await adminClient
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
+  if (!caller || caller.role !== 'super_admin') {
+    return { error: 'Unauthorized: Only Super Admin can create Admin accounts.' };
+  }
+
+  const email = formData.email.toLowerCase();
+  const fullName = formData.full_name;
+  const schoolId = formData.school_id;
+  const autoPassword = Math.random().toString(36).slice(-8) + 'Adm@123';
+
+  // 1. Create Auth Account
+  const { data: newAuthUser, error: authError } = await adminClient.auth.admin.createUser({
+    email,
+    password: formData.password || autoPassword,
+    email_confirm: true,
+    user_metadata: { role: 'admin', full_name: fullName, school_id: schoolId, status: 'approved' }
+  });
+
+  if (authError) return { error: 'Auth Error: ' + authError.message };
+  const adminUserId = newAuthUser.user.id;
+
+  // 2. Create Profile
+  const { error: profileErr } = await adminClient.from('profiles').insert({
+    id: adminUserId,
+    email: email,
+    full_name: fullName,
+    role: 'admin',
+    school_id: schoolId,
+    status: 'approved',
+    phone: formData.phone,
+    cnic: formData.cnic
+  });
+
+  if (profileErr) return { error: 'Profile Database Error: ' + profileErr.message };
+
+  // 3. Create admin_campuses record
+  const { error: adminErr } = await adminClient.from('admin_campuses').insert({
+    admin_id: adminUserId,
+    school_id: schoolId,
+    is_primary: true
+  });
+
+  if (adminErr) {
+    // Cleanup if this fails
+    await adminClient.from('profiles').delete().eq('id', adminUserId);
+    await adminClient.auth.admin.deleteUser(adminUserId);
+    return { error: 'Campus Assignment Error: ' + adminErr.message };
+  }
+
+  // 4. Update the school with the new admin_id
+  await adminClient.from('schools').update({ admin_id: adminUserId }).eq('id', schoolId);
+
+  revalidatePath('/super-admin/admins');
+  return { 
+    success: true, 
+    credentials: {
+      email,
+      password: formData.password || autoPassword
+    }
+  };
+}
+

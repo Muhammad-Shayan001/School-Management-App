@@ -1,7 +1,7 @@
 import TimetableClient from './TimetableClient';
 
 export const metadata = {
-  title: 'Class Timetable | SchoolMS',
+  title: 'Class Timetable | Skolic',
 };
 
 export default function AdminTimetablePage() {

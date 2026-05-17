@@ -12,13 +12,11 @@ export default function AuthLayout({
   return (
     <div className="auth-background min-h-screen flex flex-col items-center justify-center p-4 relative">
       {/* Logo */}
-      <div className="relative z-10 flex items-center gap-2.5 mb-8 animate-fade-in">
-        <div className="h-10 w-10 rounded-xl bg-accent flex items-center justify-center shadow-lg shadow-accent/20">
-          <BookOpen className="h-5 w-5 text-white" />
+      <div className="relative z-10 flex flex-col items-center gap-6 mb-12 animate-fade-in group cursor-default">
+        <div className="h-24 w-24 rounded-[2rem] bg-gradient-to-br from-accent to-accent-hover flex items-center justify-center shadow-3xl shadow-accent/40 overflow-hidden border-2 border-white/30 transform group-hover:scale-110 transition-all duration-700">
+          <img src="/images/Skolic app icon.svg" alt="Skolic" className="h-14 w-14 object-contain brightness-110 drop-shadow-lg" />
         </div>
-        <span className="text-xl font-bold text-text-primary tracking-tight">
-          SchoolMS
-        </span>
+        <img src="/images/Skolic logo.svg" alt="Skolic" className="h-1 w-auto object-contain brightness-110" />
       </div>
 
       {/* Auth Card */}
@@ -30,7 +28,7 @@ export default function AuthLayout({
 
       {/* Footer */}
       <p className="relative z-10 mt-8 text-xs text-text-tertiary animate-fade-in">
-        © {new Date().getFullYear()} SchoolMS — School Management System
+        © {new Date().getFullYear()} Skolic — School Management System
       </p>
     </div>
   );

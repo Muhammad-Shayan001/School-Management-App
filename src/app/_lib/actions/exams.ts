@@ -13,6 +13,7 @@ export async function createExam(params: {
   room?: string;
   term?: string;
   title?: string;
+  campus_id?: string | null;
 }) {
   console.log('createExam params:', params);
   const adminClient = createAdminClient();
@@ -52,6 +53,7 @@ export async function createExam(params: {
       room: params.room || '',
       term: params.term || 'Final Term',
       school_id: profile.school_id,
+      campus_id: params.campus_id || null,
       teacher_id: user.id
     })
     .select();
@@ -77,6 +79,7 @@ export async function addExamSchedule(formData: FormData) {
     title: formData.get('title') as string,
     room: formData.get('room') as string || '',
     term: formData.get('term') as string || 'Final Term',
+    campus_id: formData.get('campus_id') as string || null,
   };
   return createExam(params);
 }
@@ -129,6 +132,7 @@ export async function getExamSchedules(filters?: any) {
     }
     if (filters.teacher_id) query = query.eq('teacher_id', filters.teacher_id);
     if (filters.term) query = query.eq('term', filters.term);
+    if (filters.campus_id) query = query.eq('campus_id', filters.campus_id);
   }
 
   const { data, error } = await query;

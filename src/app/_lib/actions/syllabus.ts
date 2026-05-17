@@ -48,15 +48,42 @@ export async function getClasses() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { data: [], error: 'Unauthorized' };
 
-  const { data: profile } = await supabase.from('profiles').select('school_id').eq('id', user.id).single();
+  // Fetch school_id using adminClient to bypass RLS
+  const { data: profile } = await adminClient.from('profiles').select('school_id').eq('id', user.id).single();
+  if (!profile?.school_id) return { data: [], error: 'No school associated' };
   
-  const { data, error } = await adminClient
+  const { data: existingClasses, error } = await adminClient
     .from('classes')
     .select('*')
-    .eq('school_id', profile?.school_id)
+    .eq('school_id', profile.school_id)
     .order('name');
+
+  if (error) return { data: [], error: error.message };
+
+  // Ensure Class 1-10 exist
+  const { CLASS_NAMES } = await import('@/app/_lib/utils/constants');
+  const existingNames = new Set(existingClasses?.map(c => c.name));
+  const missingNames = CLASS_NAMES.filter(name => !existingNames.has(name));
+
+  if (missingNames.length > 0) {
+    const newClasses = missingNames.map(name => ({
+      name,
+      school_id: profile.school_id,
+      section: 'A'
+    }));
+    await adminClient.from('classes').insert(newClasses);
+    
+    // Fetch again after seeding
+    const { data: updatedClasses } = await adminClient
+      .from('classes')
+      .select('*')
+      .eq('school_id', profile.school_id)
+      .order('name');
+    
+    return { data: updatedClasses || [], error: null };
+  }
   
-  return { data: data || [], error: error?.message };
+  return { data: existingClasses || [], error: null };
 }
 
 export async function getSubjects() {

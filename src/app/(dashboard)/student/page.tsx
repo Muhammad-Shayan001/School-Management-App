@@ -8,6 +8,10 @@ import { NextExamWidget } from '@/app/_components/dashboard/NextExamWidget';
 export default async function StudentDashboard() {
   const { data: user } = await getFullProfile();
   
+  // Fetch assignments for this student
+  const { getStudentAssignments } = await import("@/app/_lib/actions/assignments");
+  const assignments = await getStudentAssignments();
+  
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
@@ -36,7 +40,13 @@ export default async function StudentDashboard() {
         />
         <StatsCard title="Timetable" value="-" icon={Calendar} variant="success" subtitle="Class schedule" />
         <StatsCard title="Announcements" value="-" icon={Megaphone} variant="warning" subtitle="School news" />
-        <StatsCard title="Assignments" value="-" icon={FileText} variant="default" subtitle="Due tasks" />
+        <StatsCard 
+          title="Assignments" 
+          value={assignments?.length || 0} 
+          icon={FileText} 
+          variant="default" 
+          subtitle={`${assignments?.filter((a: any) => a.submissions?.[0]).length || 0} turned in`} 
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

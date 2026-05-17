@@ -9,7 +9,7 @@ export type FeeStatus = 'paid' | 'unpaid' | 'pending';
 /**
  * Get students with their fee status for Admin/Principal.
  */
-export async function getStudentsWithFees(filters?: { class_id?: string; query?: string; fee_status?: FeeStatus }) {
+export async function getStudentsWithFees(filters?: { class_id?: string; query?: string; fee_status?: FeeStatus; campus_id?: string }) {
   const adminClient = createAdminClient();
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -34,8 +34,28 @@ export async function getStudentsWithFees(filters?: { class_id?: string; query?:
       fee_status,
       profiles(full_name, email),
       classes(name, section)
-    `)
-    .eq('school_id', caller.school_id);
+    `);
+
+  // Multi-campus logic: 
+  // 1. If campus_id is explicitly provided (from UI switcher), use it
+  // 2. Otherwise, if caller has a fixed school_id, use that
+  if (filters?.campus_id) {
+    query = query.eq('school_id', filters.campus_id);
+  } else if (caller.school_id) {
+    query = query.eq('school_id', caller.school_id);
+  } else if (caller.role !== 'super_admin') {
+    // If admin has no fixed school_id and didn't provide one, they might be multi-campus
+    // but the UI should have passed one. As a fallback, we fetch their first campus.
+    const { data: adminCampuses } = await adminClient
+      .from('admin_campuses')
+      .select('school_id')
+      .eq('admin_id', user.id)
+      .limit(1)
+      .single();
+    if (adminCampuses) {
+      query = query.eq('school_id', adminCampuses.school_id);
+    }
+  }
 
   if (filters?.class_id) query = query.eq('class_id', filters.class_id);
   if (filters?.fee_status) query = query.eq('fee_status', filters.fee_status);

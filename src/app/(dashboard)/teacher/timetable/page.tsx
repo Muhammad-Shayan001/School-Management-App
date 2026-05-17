@@ -3,7 +3,7 @@ import { createAdminClient } from '@/app/_lib/supabase/admin';
 import TeacherTimetableClient from './TeacherTimetableClient';
 
 export const metadata = {
-  title: 'My Timetable | SchoolMS',
+  title: 'My Timetable | Skolic',
 };
 
 export default async function TeacherTimetablePage() {

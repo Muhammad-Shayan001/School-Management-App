@@ -54,24 +54,20 @@ export function ImageUpload({
     setIsUploading(true);
 
     try {
-      const fileExt = file.name.split('.').pop();
-      // Use the passed userId for a clean filename
-      const filePath = `${userId}.${fileExt}`;
+      const { uploadFile } = await import('@/app/_lib/actions/profile');
+      
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('userId', userId);
+      formData.append('bucket', bucket);
 
-      const { error: uploadError } = await supabase.storage
-        .from(bucket)
-        .upload(filePath, file, {
-          cacheControl: '0',
-          upsert: true
-        });
+      const result = await uploadFile(formData);
 
-      if (uploadError) throw uploadError;
+      if (result.error) throw new Error(result.error);
+      if (!result.publicUrl) throw new Error('Upload failed — no URL returned');
 
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, '');
-      const publicUrl = `${supabaseUrl}/storage/v1/object/public/${bucket}/${filePath}?t=${new Date().getTime()}`;
-
-      setPreviewUrl(publicUrl);
-      onUploadComplete(publicUrl);
+      setPreviewUrl(result.publicUrl);
+      onUploadComplete(result.publicUrl);
     } catch (error: any) {
       console.error('Upload Error:', error);
       setError(error.message || 'Upload failed. Please try again.');

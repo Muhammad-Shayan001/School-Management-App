@@ -24,6 +24,10 @@ export default async function TeacherDashboard() {
   });
 
   const pendingStudents = students?.filter((s) => s.status === 'pending').length || 0;
+  
+  // Fetch assignments for this teacher
+  const { getTeacherAssignments } = await import("@/app/_lib/actions/assignments");
+  const assignments = await getTeacherAssignments();
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
@@ -61,7 +65,13 @@ export default async function TeacherDashboard() {
           variant="accent" 
           subtitle={pendingStudents > 0 ? `${pendingStudents} pending` : 'All active'} 
         />
-        <StatsCard title="Assignments" value="-" icon={FileText} variant="success" subtitle="Active tasks" />
+        <StatsCard 
+          title="Assignments" 
+          value={assignments?.length || 0} 
+          icon={FileText} 
+          variant="success" 
+          subtitle={`${assignments?.filter((a: any) => a.submissionCount > 0).length || 0} with submissions`} 
+        />
         <StatsCard title="Attendance" value="-" icon={ClipboardCheck} variant="warning" subtitle="Daily records" />
         <StatsCard title="Results" value="-" icon={BarChart3} variant="default" subtitle="Compiled grades" />
       </div>

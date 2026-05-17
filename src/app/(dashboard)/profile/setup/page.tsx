@@ -62,11 +62,6 @@ export default function ProfileSetupPage() {
     async function loadData() {
       const { data } = await getFullProfile();
       if (data) {
-        if (data.role === 'student') {
-          router.push('/profile');
-          return;
-        }
-
         setProfile(data);
         setAvatarUrl(data.avatar_url || '');
         
@@ -317,6 +312,7 @@ export default function ProfileSetupPage() {
                         onChange={handleInputChange}
                         placeholder="e.g. 2024-ST-001"
                         leftIcon={<Award className="h-5 w-5" />}
+                        disabled={!!profile?.student?.roll_number}
                         required
                       />
                       <Select 
@@ -324,6 +320,7 @@ export default function ProfileSetupPage() {
                         name="class_id"
                         value={formData.class_id}
                         onChange={handleInputChange}
+                        disabled={!!profile?.student?.class_id}
                         options={[
                           { value: '', label: 'Select your class' },
                           ...classes.map(c => ({ value: c.id, label: `${c.name} ${c.section ? `- ${c.section}` : ''}` }))
@@ -335,6 +332,7 @@ export default function ProfileSetupPage() {
                         name="section"
                         value={formData.section}
                         onChange={handleInputChange}
+                        disabled={!!profile?.student?.section}
                         placeholder="e.g. Alpha"
                       />
                       <Input 

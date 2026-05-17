@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { cn } from '@/app/_lib/utils/cn';
 import { getInitials } from '@/app/_lib/utils/format';
 
@@ -27,12 +28,15 @@ const dotSizes = {
  * Avatar component with image fallback to initials and online status dot.
  */
 export function Avatar({ src, name, size = 'md', className, online }: AvatarProps) {
+  const [imageError, setImageError] = useState(false);
+
   return (
     <div className={cn('relative inline-flex flex-shrink-0', className)}>
-      {src ? (
+      {src && !imageError ? (
         <img
           src={src}
           alt={name || 'Avatar'}
+          onError={() => setImageError(true)}
           className={cn(
             'rounded-full object-cover ring-2 ring-glass-border',
             sizeClasses[size]

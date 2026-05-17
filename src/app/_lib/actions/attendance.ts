@@ -66,13 +66,14 @@ export async function markAttendance(params: {
 
   const attendanceDate = params.date || new Date().toISOString().split('T')[0];
   
-  // Default status logic
+  // LOGIC CHANGE: QR scans are now AUTO-APPROVED ('present')
+  // Manual attendance is also 'present' by default
   let finalStatus = params.status;
   if (!finalStatus) {
-    finalStatus = params.method === 'qr' ? 'pending' : 'present';
+    finalStatus = 'present'; 
   }
 
-  // Check for existing record correctly
+  // Check for existing record using 'user_id' (matching the DB schema)
   const { data: existing, error: fetchError } = await adminClient
     .from('attendance')
     .select('id, status')
@@ -83,11 +84,11 @@ export async function markAttendance(params: {
   if (fetchError) return { error: fetchError.message };
 
   if (existing && params.method === 'qr' && existing.status !== 'rejected') {
-    return { error: 'Request already exists or is approved' };
+    return { error: 'Attendance already marked for today.' };
   }
 
   const attendanceData = {
-    user_id: params.userId,
+    user_id: params.userId, 
     role: params.role,
     status: finalStatus,
     method: params.method,
@@ -95,19 +96,17 @@ export async function markAttendance(params: {
     marked_by: caller.id,
     school_id: callerProfile.school_id,
     class_id: params.classId || null,
-    approved_by: finalStatus === 'present' ? caller.id : null
+    approved_by: caller.id // Auto-approved by the person marking it (Student or Teacher)
   };
 
   let error;
   if (existing) {
-    // UPDATE existing record
     const { error: updateErr } = await adminClient
       .from('attendance')
       .update(attendanceData)
       .eq('id', existing.id);
     error = updateErr;
   } else {
-    // INSERT new record
     const { error: insertErr } = await adminClient
       .from('attendance')
       .insert(attendanceData);
@@ -270,10 +269,18 @@ export async function getUserAttendance(userId: string) {
       .eq('user_id', userId)
       .order('date', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase Attendance Query Error:', {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint
+      });
+      throw error;
+    }
     return { data: data || [], error: null };
   } catch (err: any) {
-    console.error('getUserAttendance Error:', err);
+    console.error('getUserAttendance Unexpected Error:', err);
     return { data: [], error: err.message || 'Failed to fetch attendance records' };
   }
 }

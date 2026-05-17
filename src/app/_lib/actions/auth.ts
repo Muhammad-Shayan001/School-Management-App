@@ -3,7 +3,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/app/_lib/supabase/server';
 import { createAdminClient } from '@/app/_lib/supabase/admin';
-import { unstable_cache } from 'next/cache';
 import { ROLES, DASHBOARD_ROUTES } from '@/app/_lib/utils/constants';
 import type { UserRole } from '@/app/_lib/utils/constants';
 import { sendEmail } from '@/app/_lib/utils/email';
@@ -31,12 +30,18 @@ export async function signup(formData: FormData) {
     return { error: 'Password must be at least 6 characters.' };
   }
 
-  const superAdminEmail = process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL;
-  if (role === ROLES.SUPER_ADMIN && email !== superAdminEmail) {
+  // Strictly block public Admin signup
+  if (role === ROLES.ADMIN) {
+    return { error: 'Administrator registration is restricted. Please contact the system owner.' };
+  }
+
+  const superAdminEmail = process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL?.toLowerCase();
+  const lowerEmail = email.toLowerCase();
+  if (role === ROLES.SUPER_ADMIN && lowerEmail !== superAdminEmail) {
     return { error: 'You are not authorized to register as Super Admin.' };
   }
 
-  const isSuperAdmin = email === superAdminEmail && role === ROLES.SUPER_ADMIN;
+  const isSuperAdmin = lowerEmail === superAdminEmail && role === ROLES.SUPER_ADMIN;
   const status = isSuperAdmin ? 'approved' : 'pending';
 
   const adminClient = createAdminClient();
@@ -78,13 +83,25 @@ export async function signup(formData: FormData) {
   const [profileResult] = await Promise.all([profilePromise, ...extraPromises]);
   if (profileResult.error) return { error: 'Failed to create profile: ' + profileResult.error.message };
 
-  if (role === ROLES.ADMIN && schoolName) {
-    const { data: schoolData, error: schoolError } = await adminClient.from('schools').insert({ name: schoolName, admin_id: authData.user.id, email }).select('id').single();
-    if (!schoolError && schoolData) {
-      await adminClient.from('profiles').update({ school_id: schoolData.id }).eq('id', authData.user.id);
-      const { CLASS_NAMES } = await import('@/app/_lib/utils/constants');
-      const defaultClasses = CLASS_NAMES.map(name => ({ name, school_id: schoolData.id, section: 'A' }));
-      await adminClient.from('classes').insert(defaultClasses);
+  // 1. Notify the User
+  await adminClient.from('notifications').insert({
+    user_id: authData.user.id,
+    title: 'Registration Pending ⏳',
+    message: `Your ${role} account has been created. Please wait for the school administrator to approve your access.`,
+    type: 'approval'
+  });
+
+  // 2. Notify the School Admin (if schoolId is provided)
+  if (schoolId) {
+    const { data: school } = await adminClient.from('schools').select('admin_id, name').eq('id', schoolId).single();
+    if (school?.admin_id) {
+      await adminClient.from('notifications').insert({
+        user_id: school.admin_id,
+        title: 'New Approval Request 👤',
+        message: `A new ${role} (${fullName}) has registered for ${school.name} and is waiting for your approval.`,
+        link: '/admin/approvals',
+        type: 'approval'
+      });
     }
   }
 
@@ -92,12 +109,6 @@ export async function signup(formData: FormData) {
     await adminClient.from('notifications').insert({ user_id: authData.user.id, title: 'Welcome!', message: 'Your Super Admin account has been created successfully.', type: 'approval' });
     redirect(DASHBOARD_ROUTES.super_admin);
   }
-
-  // Handle Notifications (simplified for brevity)
-  let link = '';
-  if (role === ROLES.ADMIN) link = '/super-admin/approvals';
-  else if (role === ROLES.TEACHER) link = '/admin/teachers';
-  else if (role === ROLES.STUDENT) link = '/teacher/students';
 
   redirect('/pending');
 }
@@ -109,16 +120,35 @@ export async function login(formData: FormData) {
 
   if (!email || !password) return { error: 'Email and password are required.' };
 
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) return { error: 'Invalid email or password.' };
+  const lowerEmail = email.toLowerCase();
+  const { data, error } = await supabase.auth.signInWithPassword({ email: lowerEmail, password });
+  if (error) {
+    console.error('Auth Login Error:', error.message, error.status);
+    return { error: 'Invalid email or password.' };
+  }
 
+  // Use the authenticated user client (RLS-aware) to read the profile.
+  // RLS policy allows users to read their own profile, so no admin client needed here.
   const { data: profile } = await supabase.from('profiles').select('*').eq('id', data.user.id).single();
-  if (!profile) return { error: 'User profile not found.' };
+  
+  // Fallback: try admin client if RLS client fails (e.g. profile created by super admin without RLS)
+  let resolvedProfile = profile;
+  if (!resolvedProfile) {
+    try {
+      const adminClient = createAdminClient();
+      const { data: adminProfile } = await adminClient.from('profiles').select('*').eq('id', data.user.id).single();
+      resolvedProfile = adminProfile;
+    } catch {
+      // admin client also failed — likely missing SERVICE_ROLE_KEY
+    }
+  }
 
-  if (profile.status === 'pending') { await supabase.auth.signOut(); redirect('/pending'); }
-  if (profile.status === 'rejected') { await supabase.auth.signOut(); return { error: 'Your account has been rejected.' }; }
+  if (!resolvedProfile) return { error: 'User profile not found. Please contact your administrator.' };
 
-  redirect(DASHBOARD_ROUTES[profile.role as UserRole] || '/');
+  if (resolvedProfile.status === 'pending') { await supabase.auth.signOut(); redirect('/pending'); }
+  if (resolvedProfile.status === 'rejected') { await supabase.auth.signOut(); return { error: 'Your account has been rejected.' }; }
+
+  redirect(DASHBOARD_ROUTES[resolvedProfile.role as UserRole] || '/');
 }
 
 export async function logout() {
@@ -128,26 +158,50 @@ export async function logout() {
 }
 
 /**
- * Get the current authenticated user's profile.
- * Wrapped in unstable_cache for production performance.
+ * Get the user profile by ID using the user's own authenticated session.
+ * RLS allows users to read their own profiles, so no admin client is needed.
+ * Falls back to admin client if the regular query fails.
  */
-export const getCurrentUser = unstable_cache(
-  async () => {
-    try {
-      const supabase = await createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return null;
+async function fetchUserProfile(userId: string, supabase: Awaited<ReturnType<typeof createClient>>) {
+  // Primary: use the user's own session (works with anon key + RLS)
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .single();
 
-      const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-      return profile;
-    } catch (error) {
-      console.error('Error in getCurrentUser:', error);
-      return null;
-    }
-  },
-  ['current-user'],
-  { revalidate: 60, tags: ['auth'] }
-);
+  if (profile) return profile;
+
+  // Fallback: try the admin client if regular query fails
+  try {
+    const adminClient = createAdminClient();
+    const { data: adminProfile } = await adminClient
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+    return adminProfile;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Get the current authenticated user's profile.
+ * Uses the user's own session to avoid dependency on SERVICE_ROLE_KEY.
+ */
+export async function getCurrentUser() {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    return fetchUserProfile(user.id, supabase);
+  } catch (error) {
+    console.error('Error in getCurrentUser:', error);
+    return null;
+  }
+}
 
 export async function requestPasswordReset(formData: FormData) {
   const email = formData.get('email') as string;

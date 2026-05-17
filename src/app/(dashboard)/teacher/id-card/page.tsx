@@ -57,7 +57,7 @@ export default function TeacherIdCardPage() {
     );
   }
 
-  const isIncomplete = !profile?.teacher?.teacher_id || !profile?.full_name;
+  const isIncomplete = !profile?.full_name;
   const initials = profile?.full_name?.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) || '?';
   const schoolName = profile?.schools?.name || 'Your School';
   const isClassTeacher = profile?.teacher?.is_class_teacher;
@@ -121,10 +121,10 @@ export default function TeacherIdCardPage() {
 
             {/* Avatar */}
             <div style={{ background: '#ffffff', display: 'flex', justifyContent: 'center' }}>
-              <div style={{ marginTop: '-36px', width: '80px', height: '80px', borderRadius: '50%', border: '4px solid #fff', overflow: 'hidden', boxShadow: '0 8px 25px rgba(124,58,237,0.3)', background: 'linear-gradient(135deg, #4c1d95, #a78bfa)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ marginTop: '-45px', width: '90px', height: '90px', borderRadius: '50%', border: '5px solid #fff', overflow: 'hidden', boxShadow: '0 8px 25px rgba(124,58,237,0.3)', background: 'linear-gradient(135deg, #4c1d95, #a78bfa)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', zIndex: 10 }}>
                 {profile?.avatar_url
-                  ? <img src={profile.avatar_url} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  : <span style={{ color: '#fff', fontSize: '26px', fontWeight: 900 }}>{initials}</span>
+                  ? <img src={profile.avatar_url} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top' }} />
+                  : <span style={{ color: '#fff', fontSize: '30px', fontWeight: 900 }}>{initials}</span>
                 }
               </div>
             </div>

@@ -12,6 +12,7 @@ export async function createAnnouncement(params: {
   target_id?: string | null;
   attachment_url?: string | null;
   expires_at?: string | null;
+  campus_id?: string | null;
 }) {
   const supabase = await createClient();
   const adminClient = createAdminClient();
@@ -29,26 +30,35 @@ export async function createAnnouncement(params: {
     return { error: 'Only administrators can publish announcements' };
   }
 
-  const { error } = await adminClient
-    .from('announcements')
-    .insert({
-      school_id: profile.school_id,
-      title: params.title,
-      content: params.content,
-      priority: params.priority,
-      target_type: params.target_type,
-      target_id: params.target_id || null,
-      attachment_url: params.attachment_url,
-      expires_at: params.expires_at || null,
-      created_by: user.id
-    });
+  try {
+    const { error } = await adminClient
+      .from('announcements')
+      .insert({
+        school_id: profile.school_id,
+        title: params.title,
+        content: params.content,
+        priority: params.priority,
+        target_type: params.target_type,
+        target_id: params.target_id || null,
+        attachment_url: params.attachment_url,
+        expires_at: params.expires_at || null,
+        created_by: user.id,
+        campus_id: params.campus_id || null
+      });
 
-  if (error) return { error: error.message };
+    if (error) {
+      console.error('Database error in createAnnouncement:', error);
+      return { error: `Database failure: ${error.message}` };
+    }
 
-  revalidatePath('/admin/announcements');
-  revalidatePath('/teacher');
-  revalidatePath('/student');
-  return { success: true };
+    revalidatePath('/admin/announcements');
+    revalidatePath('/teacher');
+    revalidatePath('/student');
+    return { success: true };
+  } catch (err: any) {
+    console.error('Unexpected error in createAnnouncement:', err);
+    return { error: 'An unexpected error occurred while creating the announcement' };
+  }
 }
 
 export async function deleteAnnouncement(id: string) {
@@ -90,8 +100,24 @@ export async function getRelevantAnnouncements() {
     .from('announcements')
     .select('*')
     .eq('school_id', profile.school_id)
-    .or(`expires_at.is.null,expires_at.gte.${today}`)
-    .order('priority', { ascending: false }) // Urgent first
+    .or(`expires_at.is.null,expires_at.gte.${today}`);
+
+  // For campus filtering
+  if (profile.role === 'admin' || profile.role === 'super_admin') {
+    // We fetch all for admin, and let the frontend filter by selected campus
+  } else if (profile.role === 'teacher') {
+    const campusId = (profile.teacher_profiles as any)?.[0]?.campus_id;
+    if (campusId) {
+       query = query.eq('campus_id', campusId);
+    }
+  } else if (profile.role === 'student') {
+    const campusId = (profile.student_profiles as any)?.[0]?.campus_id;
+    if (campusId) {
+       query = query.eq('campus_id', campusId);
+    }
+  }
+    
+  query = query.order('priority', { ascending: false }) // Urgent first
     .order('created_at', { ascending: false });
 
   // Filtering logic based on role
@@ -112,7 +138,7 @@ export async function getRelevantAnnouncements() {
   return { data: data || [], error: error?.message };
 }
 
-export async function getAllAnnouncements() {
+export async function getAllAnnouncements(campusId?: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { data: [] };
@@ -123,11 +149,16 @@ export async function getAllAnnouncements() {
     .eq('id', user.id)
     .single();
 
-  const { data } = await supabase
+  let query = supabase
     .from('announcements')
     .select('*')
-    .eq('school_id', profile?.school_id)
-    .order('created_at', { ascending: false });
+    .eq('school_id', profile?.school_id);
+    
+  if (campusId) {
+    query = query.eq('campus_id', campusId);
+  }
+
+  const { data } = await query.order('created_at', { ascending: false });
 
   return { data: data || [] };
 }

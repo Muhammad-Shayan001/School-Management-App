@@ -36,7 +36,7 @@ export async function markAttendanceByUid(uid: string) {
     const result = await markAttendance({
       userId: profile.id,
       role: profile.role as any,
-      status: 'pending', // IMPORTANT: QR scans are always pending
+      status: 'present', // QR scans are now AUTO-VERIFIED
       method: 'qr',
       classId: classId
     });
@@ -47,7 +47,7 @@ export async function markAttendanceByUid(uid: string) {
 
     return { 
       success: true, 
-      message: `Request sent for ${profile.full_name}. Awaiting approval.` 
+      message: `Attendance verified for ${profile.full_name}.` 
     };
   } catch (error) {
     return { success: false, message: 'Internal server error' };

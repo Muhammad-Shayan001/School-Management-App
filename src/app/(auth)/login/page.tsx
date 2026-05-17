@@ -1,12 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { login } from '@/app/_lib/actions/auth';
+import { getPublicSchools } from '@/app/_lib/actions/schools';
 import { Button } from '@/app/_components/ui/button';
 import { Input } from '@/app/_components/ui/input';
-import { Mail, Lock, LogIn } from 'lucide-react';
+import { Select } from '@/app/_components/ui/select';
+import { Mail, Lock, LogIn, School } from 'lucide-react';
 
 export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
@@ -34,13 +36,17 @@ export default function LoginPage() {
 
   return (
     <>
-      {/* Header */}
-      <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold text-text-primary tracking-tight">
-          Welcome Back
+      {/* Dynamic Brand Header */}
+      <div className="flex flex-col items-center text-center mb-10 animate-in fade-in slide-in-from-top duration-700">
+        <div className="h-20 w-20 rounded-[2rem] bg-bg-tertiary flex items-center justify-center mb-6 shadow-2xl shadow-black/[0.05] overflow-hidden border border-white relative group">
+          <School className="h-10 w-10 text-accent" />
+          <div className="absolute inset-0 bg-accent/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+        </div>
+        <h1 className="text-3xl font-black text-text-primary tracking-tight uppercase">
+          Portal Access
         </h1>
-        <p className="mt-2 text-sm text-text-secondary">
-          Sign in to your SchoolMS account
+        <p className="mt-2 text-sm font-bold text-text-tertiary uppercase tracking-widest opacity-60">
+          Enter your institutional credentials to continue
         </p>
       </div>
 
@@ -52,7 +58,7 @@ export default function LoginPage() {
       )}
 
       {/* Login Form */}
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} className="space-y-6">
         <Input
           name="email"
           type="email"

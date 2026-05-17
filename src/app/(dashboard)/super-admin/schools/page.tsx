@@ -8,7 +8,7 @@ import { Modal } from '@/app/_components/ui/modal';
 import { Badge } from '@/app/_components/ui/badge';
 import { formatDate } from '@/app/_lib/utils/format';
 import { PageSpinner } from '@/app/_components/ui/spinner';
-import { School, Plus, MapPin, Phone, Mail } from 'lucide-react';
+import { School, Plus, MapPin, Phone, Mail, Lock, User } from 'lucide-react';
 
 interface SchoolWithAdmin {
   id: string;
@@ -68,10 +68,10 @@ export default function SchoolsPage() {
           </p>
         </div>
         <Button
-          onClick={() => setShowModal(true)}
+          onClick={() => window.location.href = '/super-admin/schools/new'}
           leftIcon={<Plus className="h-4 w-4" />}
         >
-          Add School
+          Add New School
         </Button>
       </div>
 
@@ -87,127 +87,79 @@ export default function SchoolsPage() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 stagger-children">
-          {schools.map((school) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 stagger-children">
+          {schools.map((school: any) => (
             <div
               key={school.id}
-              className="glass-card glass-card-hover p-5 space-y-4"
+              className="glass-card glass-card-hover p-6 space-y-5"
             >
-              {/* School icon + name */}
-              <div className="flex items-start gap-3">
-                <div className="h-11 w-11 rounded-xl bg-accent-subtle flex items-center justify-center flex-shrink-0">
-                  <School className="h-5 w-5 text-accent" />
+              {/* School logo + name */}
+              <div className="flex items-start gap-4">
+                <div className="h-14 w-14 rounded-2xl bg-bg-tertiary flex items-center justify-center flex-shrink-0 overflow-hidden border border-border/50 shadow-sm">
+                  {school.logo_url ? (
+                    <img src={school.logo_url} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <School className="h-6 w-6 text-accent" />
+                  )}
                 </div>
-                <div className="min-w-0">
-                  <h3 className="text-sm font-semibold text-text-primary truncate">
-                    {school.name}
-                  </h3>
-                  <p className="text-[10px] text-text-tertiary mt-0.5">
-                    Added {formatDate(school.created_at)}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-bold text-text-primary truncate">
+                      {school.name}
+                    </h3>
+                    {school.is_active ? (
+                      <Badge variant="success" className="text-[9px] uppercase tracking-wider">Active</Badge>
+                    ) : (
+                      <Badge variant="default" className="text-[9px] uppercase tracking-wider">Disabled</Badge>
+                    )}
+                  </div>
+                  <p className="text-xs font-black text-accent uppercase tracking-widest mt-1">
+                    CODE: {school.code || 'N/A'}
                   </p>
                 </div>
               </div>
 
-              {/* Details */}
-              <div className="space-y-2">
-                {school.address && (
-                  <div className="flex items-center gap-2 text-xs text-text-secondary">
-                    <MapPin className="h-3.5 w-3.5 flex-shrink-0 text-text-tertiary" />
-                    <span className="truncate">{school.address}</span>
+              {/* Details Grid */}
+              <div className="grid grid-cols-1 gap-3 pt-2">
+                <div className="flex items-center gap-3 text-xs text-text-secondary">
+                  <div className="h-7 w-7 rounded-lg bg-bg-tertiary flex items-center justify-center">
+                    <MapPin className="h-3.5 w-3.5 text-text-tertiary" />
                   </div>
-                )}
-                {school.phone && (
-                  <div className="flex items-center gap-2 text-xs text-text-secondary">
-                    <Phone className="h-3.5 w-3.5 flex-shrink-0 text-text-tertiary" />
-                    <span>{school.phone}</span>
+                  <span className="truncate">{school.city}, {school.country}</span>
+                </div>
+                <div className="flex items-center gap-3 text-xs text-text-secondary">
+                   <div className="h-7 w-7 rounded-lg bg-bg-tertiary flex items-center justify-center">
+                    <Phone className="h-3.5 w-3.5 text-text-tertiary" />
                   </div>
-                )}
-                {school.email && (
-                  <div className="flex items-center gap-2 text-xs text-text-secondary">
-                    <Mail className="h-3.5 w-3.5 flex-shrink-0 text-text-tertiary" />
-                    <span className="truncate">{school.email}</span>
+                  <span>{school.phone}</span>
+                </div>
+                <div className="flex items-center gap-3 text-xs text-text-secondary">
+                   <div className="h-7 w-7 rounded-lg bg-bg-tertiary flex items-center justify-center">
+                    <Mail className="h-3.5 w-3.5 text-text-tertiary" />
                   </div>
-                )}
+                  <span className="truncate">{school.email}</span>
+                </div>
               </div>
 
-              {/* Admin info */}
-              {school.admin && (
-                <div className="pt-3 border-t border-glass-border flex items-center justify-between">
-                  <div>
-                    <p className="text-[10px] text-text-tertiary uppercase tracking-wider">
-                      Principal
-                    </p>
-                    <p className="text-xs font-medium text-text-primary mt-0.5">
-                      {school.admin.full_name}
-                    </p>
-                  </div>
-                  <Badge
-                    variant={school.admin.status === 'approved' ? 'success' : 'warning'}
-                    dot
-                  >
-                    {school.admin.status}
-                  </Badge>
+              {/* Governance */}
+              <div className="pt-4 border-t border-border/40 flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] font-black text-text-tertiary uppercase tracking-wider">
+                    Governance
+                  </p>
+                  <p className="text-xs font-bold text-text-primary mt-1">
+                    {school.principal_name || 'No Principal Assigned'}
+                  </p>
                 </div>
-              )}
+                <Button variant="outline" size="sm" className="h-8 rounded-xl text-[10px] font-black uppercase tracking-widest border-border/50">
+                  Manage
+                </Button>
+              </div>
             </div>
           ))}
         </div>
       )}
 
-      {/* Add School Modal */}
-      <Modal
-        isOpen={showModal}
-        onClose={() => setShowModal(false)}
-        title="Add New School"
-        description="Enter the school details below."
-      >
-        {error && (
-          <div className="mb-4 p-3 rounded-lg bg-danger-subtle border border-danger/20 text-sm text-danger">
-            {error}
-          </div>
-        )}
-        <form onSubmit={handleCreateSchool} className="space-y-4">
-          <Input
-            name="name"
-            label="School Name"
-            placeholder="Springfield High School"
-            required
-            leftIcon={<School className="h-4 w-4" />}
-          />
-          <Input
-            name="address"
-            label="Address"
-            placeholder="123 Main Street, City"
-            leftIcon={<MapPin className="h-4 w-4" />}
-          />
-          <Input
-            name="phone"
-            label="Phone"
-            placeholder="+1 (555) 000-0000"
-            leftIcon={<Phone className="h-4 w-4" />}
-          />
-          <Input
-            name="email"
-            label="Email"
-            type="email"
-            placeholder="admin@school.com"
-            leftIcon={<Mail className="h-4 w-4" />}
-          />
-          <div className="flex gap-3 pt-2">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => setShowModal(false)}
-              className="flex-1"
-            >
-              Cancel
-            </Button>
-            <Button type="submit" className="flex-1" isLoading={formLoading}>
-              Create School
-            </Button>
-          </div>
-        </form>
-      </Modal>
     </div>
   );
 }

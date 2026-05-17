@@ -12,6 +12,8 @@ import { Search, CreditCard, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { PageSpinner } from '@/app/_components/ui/spinner';
 import { FEE_STATUS_CONFIG, FEE_STATUS } from '@/app/_lib/utils/constants';
 import type { FeeStatus } from '@/app/_lib/utils/constants';
+import { useCampusStore } from '@/app/_lib/store/campus-store';
+import { useAuthStore } from '@/app/_lib/store/auth-store';
 
 export function FeeManagementClient() {
   const [students, setStudents] = useState<any[]>([]);
@@ -21,10 +23,12 @@ export function FeeManagementClient() {
   const [filterClass, setFilterClass] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const { activeCampus } = useCampusStore();
+  const { user } = useAuthStore();
 
   useEffect(() => {
     fetchData();
-  }, [query, filterClass, filterStatus]);
+  }, [query, filterClass, filterStatus, activeCampus?.id]);
 
   async function fetchData() {
     setIsLoading(true);
@@ -32,9 +36,10 @@ export function FeeManagementClient() {
       getStudentsWithFees({ 
         query, 
         class_id: filterClass || undefined, 
-        fee_status: filterStatus as FeeStatus || undefined 
+        fee_status: filterStatus as FeeStatus || undefined,
+        campus_id: activeCampus?.id
       }),
-      getClasses()
+      getClasses(activeCampus?.id)
     ]);
     
     if (studentsRes.data) setStudents(studentsRes.data);

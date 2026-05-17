@@ -1,16 +1,28 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { requestPasswordReset } from '@/app/_lib/actions/auth';
+import { getPublicSchools } from '@/app/_lib/actions/schools';
 import { Button } from '@/app/_components/ui/button';
 import { Input } from '@/app/_components/ui/input';
-import { Mail, ArrowLeft, CheckCircle } from 'lucide-react';
+import { Select } from '@/app/_components/ui/select';
+import { Mail, ArrowLeft, CheckCircle, School } from 'lucide-react';
 
 export default function ForgotPasswordPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [schools, setSchools] = useState<any[]>([]);
+  const [selectedSchool, setSelectedSchool] = useState('');
+
+  useEffect(() => {
+    async function loadSchools() {
+      const { data } = await getPublicSchools();
+      if (data) setSchools(data);
+    }
+    loadSchools();
+  }, []);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -29,18 +41,20 @@ export default function ForgotPasswordPage() {
     setIsLoading(false);
   }
 
+  const currentSchool = schools.find(s => s.id === selectedSchool);
+
   if (success) {
     return (
-      <div className="text-center animate-slide-in-up">
-        <CheckCircle className="mx-auto h-12 w-12 text-success mb-4" />
-        <h1 className="text-2xl font-bold text-text-primary tracking-tight mb-2">
+      <div className="text-center animate-slide-in-up p-8">
+        <CheckCircle className="mx-auto h-16 w-16 text-success mb-6" />
+        <h1 className="text-2xl font-black text-text-primary tracking-tight mb-2 uppercase">
           Check your email
         </h1>
-        <p className="text-sm text-text-secondary mb-6">
+        <p className="text-sm font-medium text-text-secondary mb-8">
           We have generated a new temporary password and sent it to your email address. Please log in with this new password.
         </p>
         <Link href="/login" className="w-full">
-          <Button variant="outline" className="w-full">
+          <Button className="w-full h-12 rounded-2xl font-black uppercase tracking-widest">
             Return to Login
           </Button>
         </Link>
@@ -50,13 +64,20 @@ export default function ForgotPasswordPage() {
 
   return (
     <>
-      {/* Header */}
-      <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold text-text-primary tracking-tight">
+      {/* Dynamic Brand Header */}
+      <div className="flex flex-col items-center text-center mb-10 animate-in fade-in slide-in-from-top duration-700">
+        <div className="h-16 w-16 rounded-2xl bg-bg-tertiary flex items-center justify-center mb-6 shadow-xl shadow-black/[0.05] overflow-hidden border border-white">
+           {currentSchool?.logo_url ? (
+              <img src={currentSchool.logo_url} alt="Logo" className="h-full w-full object-cover" />
+           ) : (
+              <School className="h-8 w-8 text-accent" />
+           )}
+        </div>
+        <h1 className="text-2xl font-black text-text-primary tracking-tight uppercase">
           Reset Password
         </h1>
-        <p className="mt-2 text-sm text-text-secondary">
-          Enter your email and we'll send you a reset link
+        <p className="mt-2 text-sm font-bold text-text-tertiary uppercase tracking-widest opacity-60">
+          Recover your {currentSchool?.name || 'Skolic'} account
         </p>
       </div>
 
@@ -68,7 +89,18 @@ export default function ForgotPasswordPage() {
       )}
 
       {/* Forgot Password Form */}
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <Select
+          name="school_id"
+          label="Institution"
+          placeholder="Select your school"
+          required
+          options={schools.map(s => ({ value: s.id, label: s.name }))}
+          value={selectedSchool}
+          onChange={(e) => setSelectedSchool(e.target.value)}
+          className="bg-white/50 border-white/30"
+        />
+
         <Input
           name="email"
           type="email"

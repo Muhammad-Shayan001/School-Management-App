@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getStudentProfiles, createOrUpdateStudentProfile, deleteStudentProfile } from '@/app/_lib/actions/users';
+import { getStudentProfiles, createManualStudent, deleteStudentProfile, createOrUpdateStudentProfile } from '@/app/_lib/actions/users';
 import { getClasses } from '@/app/_lib/actions/schools';
 import { Button } from '@/app/_components/ui/button';
 import { Input } from '@/app/_components/ui/input';
@@ -110,9 +110,11 @@ export function StudentManagementClient({ role }: { role: 'teacher' | 'admin' | 
             {role === 'teacher' ? 'Manage students in your assigned classes' : 'Manage all student profiles'}
           </p>
         </div>
-        <Button onClick={handleCreate} className="btn-primary gap-2" leftIcon={<Plus className="h-4 w-4" />}>
-          New Student
-        </Button>
+        {(role === 'admin' || role === 'super_admin') && (
+          <Button onClick={handleCreate} className="btn-primary gap-2" leftIcon={<Plus className="h-4 w-4" />}>
+            New Student
+          </Button>
+        )}
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4 glass-card p-4 rounded-2xl">

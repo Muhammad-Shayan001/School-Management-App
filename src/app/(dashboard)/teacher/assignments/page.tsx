@@ -96,7 +96,14 @@ export default async function TeacherAssignmentsPage() {
                 </div>
                 
                 <div className="mt-8 flex items-center justify-between pt-6 border-t border-border/50">
-                   <span className="text-xs font-black uppercase tracking-widest text-text-tertiary group-hover:text-accent transition-colors">View Submissions</span>
+                   <div className="flex items-center gap-2">
+                     <div className="h-6 w-6 rounded-full bg-accent/10 flex items-center justify-center">
+                       <Users className="h-3 w-3 text-accent" />
+                     </div>
+                     <span className="text-[10px] font-black uppercase tracking-widest text-text-tertiary">
+                       {assignment.submissionCount} Submissions
+                     </span>
+                   </div>
                    <div className="h-8 w-8 rounded-full bg-bg-tertiary flex items-center justify-center group-hover:bg-accent group-hover:text-white transition-all duration-300">
                      <ChevronRight className="h-4 w-4" />
                    </div>

@@ -60,6 +60,7 @@ export default function AdminIdCardPage() {
   const isIncomplete = !profile?.full_name;
   const initials = profile?.full_name?.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) || '?';
   const schoolName = profile?.schools?.name || 'Your School';
+  const campusColor = profile?.schools?.theme_color || '#d97706';
   const cnic = profile?.admin?.cnic || '—';
   const phone = profile?.admin?.phone || profile?.phone || '—';
   const role = profile?.role === 'super_admin' ? 'Super Administrator' : 'Principal / Administrator';
@@ -69,7 +70,7 @@ export default function AdminIdCardPage() {
       <div className="flex flex-col md:flex-row justify-between md:items-end gap-4">
         <div>
           <h1 className="text-3xl font-black text-text-primary tracking-tight flex items-center gap-3">
-            <CreditCard className="h-8 w-8 text-amber-500" />
+            <CreditCard className="h-8 w-8" style={{ color: campusColor }} />
             Principal ID Card
           </h1>
           <p className="mt-1 text-sm text-text-secondary font-medium">Your official digital administrator identity card</p>
@@ -77,11 +78,13 @@ export default function AdminIdCardPage() {
         {!isIncomplete && (
           <div className="flex gap-3">
             <button onClick={downloadAsPng} disabled={isDownloading}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 text-white font-bold text-sm hover:bg-amber-600 transition-all shadow-lg shadow-amber-500/30 disabled:opacity-60">
+              style={{ backgroundColor: campusColor }}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-white font-bold text-sm hover:opacity-90 transition-all shadow-lg shadow-black/10 disabled:opacity-60">
               <ImageIcon className="h-4 w-4" /> Download PNG
             </button>
             <button onClick={downloadAsPdf} disabled={isDownloading}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white border-2 border-amber-500 text-amber-600 font-bold text-sm hover:bg-amber-50 transition-all shadow-md disabled:opacity-60">
+              style={{ borderColor: campusColor, color: campusColor }}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white border-2 font-bold text-sm hover:bg-gray-50 transition-all shadow-md disabled:opacity-60">
               <FileText className="h-4 w-4" /> Download PDF
             </button>
           </div>
@@ -115,7 +118,7 @@ export default function AdminIdCardPage() {
 
             {/* Top Pattern Header */}
             <div style={{ 
-              background: 'linear-gradient(135deg, #78350f 0%, #d97706 100%)', 
+              background: `linear-gradient(135deg, ${campusColor} 0%, ${campusColor}dd 100%)`, 
               height: '140px', 
               padding: '24px', 
               position: 'relative',
@@ -127,7 +130,12 @@ export default function AdminIdCardPage() {
               <div style={{ position: 'absolute', top: '-10%', right: '-10%', width: '120px', height: '120px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', filter: 'blur(20px)' }} />
               <div style={{ position: 'absolute', bottom: '10%', left: '-5%', width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(0,0,0,0.1)', filter: 'blur(15px)' }} />
               
-              <div style={{ position: 'relative', zIndex: 2, textAlign: 'center' }}>
+              <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                {profile?.schools?.logo_url && (
+                   <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '8px', border: '1px solid rgba(255,255,255,0.3)', overflow: 'hidden' }}>
+                      <img src={profile.schools.logo_url} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                   </div>
+                )}
                 <h2 style={{ fontSize: '16px', fontWeight: 900, letterSpacing: '0.02em', margin: 0, textShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>{schoolName.toUpperCase()}</h2>
                 <div style={{ display: 'inline-block', marginTop: '8px', padding: '4px 12px', background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(8px)', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.3)' }}>
                   <p style={{ fontSize: '9px', fontWeight: 800, letterSpacing: '0.15em', margin: 0 }}>ADMINISTRATOR IDENTITY</p>
@@ -136,12 +144,12 @@ export default function AdminIdCardPage() {
             </div>
 
             {/* Profile Image Section */}
-            <div style={{ display: 'flex', justifyContent: 'center', position: 'relative', zIndex: 10, marginTop: '-50px' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', position: 'relative', zIndex: 10, marginTop: '-55px' }}>
               <div style={{ 
-                width: '100px', 
-                height: '100px', 
+                width: '110px', 
+                height: '110px', 
                 borderRadius: '50%', 
-                border: '5px solid #fff', 
+                border: '6px solid #fff', 
                 overflow: 'hidden', 
                 boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
                 background: '#f8fafc',
@@ -150,9 +158,9 @@ export default function AdminIdCardPage() {
                 justifyContent: 'center'
               }}>
                 {profile?.avatar_url
-                  ? <img src={profile.avatar_url} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  : <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, #d97706, #78350f)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <span style={{ color: '#fff', fontSize: '36px', fontWeight: 900 }}>{initials}</span>
+                  ? <img src={profile.avatar_url} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top' }} />
+                  : <div style={{ width: '100%', height: '100%', background: `linear-gradient(135deg, ${campusColor}, ${campusColor}aa)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <span style={{ color: '#fff', fontSize: '40px', fontWeight: 900 }}>{initials}</span>
                     </div>
                 }
               </div>
@@ -161,13 +169,13 @@ export default function AdminIdCardPage() {
             {/* Info Section */}
             <div style={{ padding: '20px 28px 24px', textAlign: 'center' }}>
               <h3 style={{ fontSize: '22px', fontWeight: 900, color: '#0f172a', margin: '0 0 4px', letterSpacing: '-0.02em' }}>{profile?.full_name}</h3>
-              <p style={{ fontSize: '13px', fontWeight: 700, color: '#d97706', margin: '0 0 24px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <p style={{ fontSize: '13px', fontWeight: 700, color: campusColor, margin: '0 0 24px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 {role}
               </p>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
                 {[
-                  { label: 'School Admin', value: schoolName },
+                  { label: 'Campus/School', value: schoolName },
                   { label: 'CNIC', value: cnic },
                   { label: 'Official Phone', value: phone },
                   { label: 'Email', value: profile?.email || '—' },
@@ -193,8 +201,8 @@ export default function AdminIdCardPage() {
                 <p style={{ fontSize: '9px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '2px' }}>Access Level</p>
                 <p style={{ fontSize: '12px', fontWeight: 700, color: '#475569' }}>Full Administrative Access</p>
                 <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#d97706' }} />
-                  <p style={{ fontSize: '10px', fontWeight: 700, color: '#d97706' }}>Secure Identity</p>
+                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: campusColor }} />
+                  <p style={{ fontSize: '10px', fontWeight: 700, color: campusColor }}>Secure Identity</p>
                 </div>
               </div>
               
@@ -215,7 +223,7 @@ export default function AdminIdCardPage() {
 
             {/* Footer Stripe */}
             <div style={{ 
-              background: '#d97706', 
+              background: campusColor, 
               padding: '10px', 
               textAlign: 'center'
             }}>

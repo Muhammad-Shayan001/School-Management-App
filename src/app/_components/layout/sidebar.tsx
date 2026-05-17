@@ -1,12 +1,15 @@
 'use client';
 
+import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/app/_lib/utils/cn';
 import { useUIStore } from '@/app/_lib/store/ui-store';
 import { useAuthStore } from '@/app/_lib/store/auth-store';
+import { useCampusStore } from '@/app/_lib/store/campus-store';
 import { ROLE_LABELS } from '@/app/_lib/utils/constants';
 import { logout } from '@/app/_lib/actions/auth';
+import { CampusSwitcher } from '@/app/_components/layout/campus-switcher';
 import type { UserRole } from '@/app/_lib/utils/constants';
 import {
   BookOpen,
@@ -29,6 +32,8 @@ import {
   CreditCard,
   LogOut,
   User,
+  Building2,
+  FileUp,
 } from 'lucide-react';
 
 // Icon map for dynamic rendering
@@ -49,6 +54,9 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   BarChart3,
   CreditCard,
   User,
+  Building2,
+  Shield: UserCheck,
+  FileUp,
 };
 
 interface NavItem {
@@ -60,16 +68,25 @@ interface NavItem {
 interface SidebarProps {
   navItems: NavItem[];
   role: UserRole;
+  school?: {
+    name: string;
+    logo_url: string | null;
+  } | null;
 }
 
 /**
  * Collapsible sidebar with role-based navigation, active state indicators,
  * and responsive overlay on mobile.
  */
-export function Sidebar({ navItems, role }: SidebarProps) {
+export function Sidebar({ navItems, role, school: propSchool }: SidebarProps) {
   const pathname = usePathname();
-  const { sidebarOpen, sidebarCollapsed, setSidebarOpen, toggleSidebarCollapse } = useUIStore();
   const { user } = useAuthStore();
+  const { activeCampus } = useCampusStore();
+  const { sidebarOpen, sidebarCollapsed, setSidebarOpen, toggleSidebarCollapse } = useUIStore();
+  const [logoError, setLogoError] = useState(false);
+
+  // For admins, the active campus from store takes precedence for branding
+  const school = (role === 'admin' || role === 'super_admin') ? activeCampus : propSchool;
 
   return (
     <>
@@ -96,25 +113,51 @@ export function Sidebar({ navItems, role }: SidebarProps) {
         )}
       >
         {/* Header */}
-        <div className="flex items-center justify-between h-16 px-4 border-b border-glass-border">
+        <div className="flex items-center justify-between h-24 px-4 border-b border-glass-border bg-white/40 backdrop-blur-md">
           <Link
             href="/"
             className={cn(
-              'flex items-center gap-2.5',
+              'flex items-center gap-3',
               sidebarCollapsed && 'lg:justify-center'
             )}
           >
-            <div className="h-8 w-8 rounded-lg bg-accent flex items-center justify-center flex-shrink-0">
-              <BookOpen className="h-4 w-4 text-white" />
-            </div>
-            <span
-              className={cn(
-                'text-base font-bold text-text-primary tracking-tight',
-                sidebarCollapsed && 'lg:hidden'
+            <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-accent to-accent-hover flex items-center justify-center flex-shrink-0 shadow-xl shadow-accent/20 overflow-hidden border border-white/30 transform group-hover:scale-105 transition-transform duration-500">
+              {role === 'super_admin' ? (
+                <img 
+                  src="/images/Skolic app icon.svg" 
+                  alt="Skolic Icon" 
+                  className="h-10 w-10 object-contain brightness-110" 
+                />
+              ) : school?.logo_url && !logoError ? (
+                <img 
+                  src={school.logo_url} 
+                  alt="" 
+                  className="h-full w-full object-cover" 
+                  onError={() => setLogoError(true)}
+                />
+              ) : (
+                <BookOpen className="h-7 w-7 text-white" />
               )}
-            >
-              SchoolMS
-            </span>
+            </div>
+            {role === 'super_admin' ? (
+              <img 
+                src="/images/Skolic logo.svg" 
+                alt="Skolic" 
+                className={cn(
+                  "h-10 w-auto object-contain brightness-105",
+                  sidebarCollapsed && "lg:hidden"
+                )}
+              />
+            ) : (
+              <span
+                className={cn(
+                  'text-xl font-black text-text-primary tracking-tighter uppercase max-w-[150px] truncate',
+                  sidebarCollapsed && 'lg:hidden'
+                )}
+              >
+                {school?.name || 'Skolic'}
+              </span>
+            )}
           </Link>
 
           {/* Close button (mobile) */}
@@ -157,6 +200,14 @@ export function Sidebar({ navItems, role }: SidebarProps) {
             {ROLE_LABELS[role]?.charAt(0)}
           </span>
         </div>
+
+        {/* Campus Switcher — only for admin/super_admin */}
+        <CampusSwitcher
+          collapsed={sidebarCollapsed}
+          variant="sidebar"
+          userRole={role}
+          userSchoolId={null}
+        />
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto py-4 px-4 space-y-2 overscroll-contain">

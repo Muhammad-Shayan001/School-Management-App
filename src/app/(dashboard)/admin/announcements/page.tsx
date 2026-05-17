@@ -10,8 +10,10 @@ import { PageSpinner } from '@/app/_components/ui/spinner';
 import { 
   Megaphone, Plus, Trash2, Calendar, Users, 
   AlertTriangle, Info, BellRing, Target, FileText,
-  Search, Filter, ChevronRight, X, Sparkles, Clock
+  Search, Filter, ChevronRight, X, Sparkles, Clock,
+  Building2
 } from 'lucide-react';
+import { useCampusStore } from '@/app/_lib/store/campus-store';
 import { formatDate } from '@/app/_lib/utils/format';
 import { cn } from '@/app/_lib/utils/cn';
 
@@ -22,6 +24,7 @@ export default function AdminAnnouncementsPage() {
   const [showModal, setShowModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const { activeCampus } = useCampusStore();
 
   // Form State
   const [formData, setFormData] = useState({
@@ -36,7 +39,7 @@ export default function AdminAnnouncementsPage() {
   const fetchData = async () => {
     setIsLoading(true);
     const [annRes, classRes] = await Promise.all([
-      getAllAnnouncements(),
+      getAllAnnouncements(activeCampus?.id),
       getClasses()
     ]);
     setAnnouncements(annRes.data || []);
@@ -46,12 +49,17 @@ export default function AdminAnnouncementsPage() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [activeCampus?.id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    const res = await createAnnouncement(formData);
+    
+    const res = await createAnnouncement({
+      ...formData,
+      campus_id: activeCampus?.id
+    });
+
     if (res.success) {
       setShowModal(false);
       setFormData({
@@ -59,6 +67,8 @@ export default function AdminAnnouncementsPage() {
         target_type: 'all', target_id: '', expires_at: ''
       });
       fetchData();
+    } else {
+      alert(res.error || 'Failed to create announcement');
     }
     setIsSubmitting(false);
   };
@@ -89,7 +99,9 @@ export default function AdminAnnouncementsPage() {
           <h1 className="text-4xl font-black text-text-primary tracking-tighter flex items-center gap-3">
              Notices & Alerts
           </h1>
-          <p className="text-text-secondary font-medium">Broadcast messages across the school campus</p>
+          <p className="text-text-secondary font-medium">
+            Broadcast messages across the {activeCampus ? <span className="text-accent font-bold">{activeCampus.name}</span> : 'school'} campus
+          </p>
         </div>
 
         <Button 

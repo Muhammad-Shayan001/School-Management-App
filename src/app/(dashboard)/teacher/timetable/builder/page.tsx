@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import TeacherTimetableBuilderClient from './TeacherTimetableBuilderClient';
 
 export const metadata = {
-  title: 'Timetable Builder | SchoolMS',
+  title: 'Timetable Builder | Skolic',
 };
 
 export default async function TeacherTimetableBuilderPage() {

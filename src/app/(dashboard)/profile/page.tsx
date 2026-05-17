@@ -84,16 +84,14 @@ export default async function ProfilePage() {
           </div>
         </div>
         
-        {role !== 'student' && (
-          <Link href="/profile/setup">
-            <Button 
-              className="btn-primary gap-3 h-14 px-8 rounded-2xl shadow-2xl shadow-accent/20 font-black group transition-all hover:scale-105"
-            >
-              <Edit3 className="h-5 w-5 transition-transform group-hover:rotate-12" />
-              Update Records
-            </Button>
-          </Link>
-        )}
+        <Link href="/profile/setup">
+          <Button 
+            className="btn-primary gap-3 h-14 px-8 rounded-2xl shadow-2xl shadow-accent/20 font-black group transition-all hover:scale-105"
+          >
+            <Edit3 className="h-5 w-5 transition-transform group-hover:rotate-12" />
+            Update Records
+          </Button>
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">

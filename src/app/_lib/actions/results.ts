@@ -14,32 +14,23 @@ export async function getTeacherAssignments() {
   // 1. Fetch raw assignments
   const { data: assignments, error } = await adminClient
     .from('teacher_assignments')
-    .select('*')
+    .select('*, subjects(id, name), classes(id, name, section)')
     .eq('teacher_id', user.id);
 
   if (error) return { error: error.message };
-  if (!assignments || assignments.length === 0) return { data: [] };
+  
+  // 2. Fetch if they are a class teacher
+  const { data: profile } = await adminClient
+    .from('teacher_profiles')
+    .select('is_class_teacher, class_id, classes(id, name, section)')
+    .eq('user_id', user.id)
+    .single();
 
-  // 2. Fetch subjects and classes manually
-  const subjectIds = [...new Set(assignments.map(a => a.subject_id))];
-  const classIds = [...new Set(assignments.map(a => a.class_id))];
-
-  const [{ data: subjects }, { data: classes }] = await Promise.all([
-    adminClient.from('subjects').select('id, name').in('id', subjectIds),
-    adminClient.from('classes').select('id, name, section').in('id', classIds)
-  ]);
-
-  const subjectMap = (subjects || []).reduce((acc: any, s: any) => ({ ...acc, [s.id]: s }), {});
-  const classMap = (classes || []).reduce((acc: any, c: any) => ({ ...acc, [c.id]: c }), {});
-
-  // 3. Map back
-  const mappedData = assignments.map(a => ({
-    ...a,
-    subjects: subjectMap[a.subject_id],
-    classes: classMap[a.class_id]
-  }));
-
-  return { data: mappedData };
+  return { 
+    data: assignments || [], 
+    isClassTeacher: profile?.is_class_teacher || false,
+    classTeacherClass: profile?.classes || null
+  };
 }
 
 export async function checkIfClassTeacher() {
@@ -55,6 +46,26 @@ export async function checkIfClassTeacher() {
     .single();
     
   return { isClassTeacher: !!data?.is_class_teacher };
+}
+
+// Fetch subjects assigned to a teacher for a specific class
+export async function getTeacherSubjectsForClass(classId: string) {
+  const adminClient = createAdminClient();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'Unauthorized' };
+
+  const { data, error } = await adminClient
+    .from('teacher_assignments')
+    .select('subjects(id, name)')
+    .eq('teacher_id', user.id)
+    .eq('class_id', classId);
+    
+  if (error) return { error: error.message };
+  
+  // Extract subjects from the join
+  const subjects = (data || []).map((d: any) => d.subjects).filter(Boolean);
+  return { data: subjects };
 }
 
 // Fetch students for a specific class
@@ -381,7 +392,15 @@ export async function getStudentFinalResult() {
     .limit(1)
     .single();
 
-  if (error && error.code !== 'PGRST116') {
+  // Handle missing table gracefully (PGRST204 = table not found in PostgREST, 42P01 = table not found in Postgres)
+  if (error) {
+    const isTableMissing = error.code === 'PGRST204' || error.message?.includes('not found');
+    const isNoData = error.code === 'PGRST116';
+
+    if (isTableMissing || isNoData) {
+      return { data: null };
+    }
+
     console.error('getStudentFinalResult error:', error.message);
     return { error: error.message };
   }
