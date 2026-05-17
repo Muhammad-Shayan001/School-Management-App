@@ -42,6 +42,8 @@ export const CLASS_NAMES = [
   'Class 8',
   'Class 9',
   'Class 10',
+  'Class 11',
+  'Class 12',
 ] as const;
 
 // Days of the week for timetable

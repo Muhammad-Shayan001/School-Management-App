@@ -140,7 +140,7 @@ export default function TeacherIDCard({ teacher }: { teacher: TeacherData }) {
           <div className="flex flex-col items-center gap-1">
             <p className="text-[10px] font-black tracking-[0.2em] uppercase text-text-primary">Staff Session 2025-2026</p>
             <div className="flex items-center gap-2 opacity-40 grayscale transition-all">
-               <img src="/images/Skolic app icon.svg" className="h-4 w-4" alt="Skolic" />
+               <img src="/images/Skolic app icon.png" className="h-4 w-4" alt="Skolic" />
                <span className="text-[8px] font-black uppercase tracking-widest">Powered by Skolic</span>
             </div>
           </div>

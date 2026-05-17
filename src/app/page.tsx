@@ -1,4 +1,4 @@
-﻿import { Metadata } from 'next';
+import { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/app/_lib/actions/auth';
@@ -13,8 +13,8 @@ import {
 import { IMAGES } from '@/app/_lib/utils/images';
 
 export const metadata: Metadata = {
-  title: 'SchoolMS | Smart School Management System',
-  description: 'The ultimate SaaS platform for modern schools. Manage attendance, results, timetables, and communication effortlessly.',
+  title: 'Skolic — Smart School Management System',
+  description: 'The ultimate SaaS platform for modern schools. Manage attendance, results, timetables, and communication effortlessly with Skolic.',
 };
 
 export default async function HomePage() {
@@ -26,16 +26,11 @@ export default async function HomePage() {
 
   return (
     <div className="bg-bg-primary min-h-screen flex flex-col font-sans selection:bg-accent selection:text-white">
-      {/* ΓöÇΓöÇΓöÇ Premium Navbar ΓöÇΓöÇΓöÇ */}
+      {/* Premium Navbar */}
       <nav className="fixed top-0 left-0 right-0 z-50 nav-blur h-[var(--navbar-height)] flex items-center">
         <div className="max-w-7xl mx-auto w-full px-6 flex items-center justify-between">
           <div className="flex items-center gap-3 group cursor-pointer">
-            <div className="h-10 w-10 rounded-xl gradient-bg flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-              <BookOpen className="h-6 w-6 text-white" />
-            </div>
-            <span className="text-xl font-black text-text-primary tracking-tighter">
-              School<span className="text-accent">MS</span>
-            </span>
+            <img src="/images/Skolic logo.png" alt="Skolic" className="h-10 w-auto object-contain transition-transform duration-300 group-hover:scale-105" />
           </div>
           
           <div className="hidden md:flex items-center gap-8">
@@ -56,7 +51,7 @@ export default async function HomePage() {
         </div>
       </nav>
 
-      {/* ΓöÇΓöÇΓöÇ Hero Section ΓöÇΓöÇΓöÇ */}
+      {/* Hero Section */}
       <section className="relative pt-32 pb-20 overflow-hidden">
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div className="reveal space-y-8">
@@ -121,7 +116,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ΓöÇΓöÇΓöÇ Stats Section ΓöÇΓöÇΓöÇ */}
+      {/* Stats Section */}
       <section className="py-12 bg-white border-y border-border">
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8">
           {[
@@ -139,7 +134,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ΓöÇΓöÇΓöÇ Features Section ΓöÇΓöÇΓöÇ */}
+      {/* Features Section */}
       <section id="features" className="py-24 bg-bg-primary">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center space-y-4 mb-20 reveal">
@@ -180,14 +175,14 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ΓöÇΓöÇΓöÇ About Section ΓöÇΓöÇΓöÇ */}
+      {/* About Section */}
       <section id="about" className="py-24 bg-white overflow-hidden">
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           <div className="relative reveal">
              <div className="absolute top-10 -left-10 w-full h-full bg-accent/5 rounded-[2rem] -rotate-3" />
              <img 
                src={IMAGES.SCHOOL_MGMT} 
-               alt="About SchoolMS" 
+               alt="About Skolic" 
                className="relative rounded-[2rem] shadow-2xl z-10 w-full h-auto"
              />
              <div className="absolute -bottom-6 -right-6 glass-card p-6 shadow-xl z-20 bg-white/90">
@@ -201,7 +196,7 @@ export default async function HomePage() {
               Leading the Way in <br /> <span className="text-gradient">Educational Technology</span>
             </h3>
             <p className="text-text-secondary leading-relaxed font-medium">
-              SchoolMS is a comprehensive solution designed to bridge the gap between administrative needs and academic excellence. We empower educators to focus on what matters mostΓÇöteachingΓÇöby automating complex management tasks.
+              Skolic is a comprehensive solution designed to bridge the gap between administrative needs and academic excellence. We empower educators to focus on what matters most—teaching—by automating complex management tasks.
             </p>
             <ul className="space-y-4 pt-4">
               {[
@@ -225,11 +220,11 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ΓöÇΓöÇΓöÇ Why Choose Us ΓöÇΓöÇΓöÇ */}
+      {/* Why Choose Us */}
       <section className="py-24 bg-bg-tertiary">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16 space-y-4">
-             <h3 className="text-3xl md:text-4xl font-black text-text-primary">Why Schools Choose <span className="text-accent">SchoolMS</span></h3>
+             <h3 className="text-3xl md:text-4xl font-black text-text-primary">Why Schools Choose <span className="text-accent">Skolic</span></h3>
              <p className="text-text-secondary font-medium">Premium features that set us apart from generic platforms.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -250,7 +245,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ΓöÇΓöÇΓöÇ Screenshots Preview ΓöÇΓöÇΓöÇ */}
+      {/* Screenshots Preview */}
       <section className="py-24 bg-white">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
@@ -279,7 +274,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ΓöÇΓöÇΓöÇ Role Specific Section ΓöÇΓöÇΓöÇ */}
+      {/* Role Specific Section */}
       <section className="py-24 bg-white">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16 reveal">
@@ -311,7 +306,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ΓöÇΓöÇΓöÇ Testimonials ΓöÇΓöÇΓöÇ */}
+      {/* Testimonials */}
       <section className="py-24 bg-bg-primary">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
@@ -343,7 +338,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ΓöÇΓöÇΓöÇ Contact Us Section ΓöÇΓöÇΓöÇ */}
+      {/* Contact Us Section */}
       <section id="contact" className="py-24 bg-white relative">
         <div className="max-w-7xl mx-auto px-6 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
@@ -360,7 +355,7 @@ export default async function HomePage() {
                   </div>
                   <div>
                     <p className="text-xs font-black text-text-tertiary uppercase">Email Us</p>
-                    <p className="font-bold text-text-primary">support@schoolms.com</p>
+                    <p className="font-bold text-text-primary">support@skolic.com</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4 group">
@@ -425,16 +420,13 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ΓöÇΓöÇΓöÇ Footer ΓöÇΓöÇΓöÇ */}
+      {/* Footer */}
       <footer className="bg-text-primary pt-20 pb-10">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
             <div className="space-y-6">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-accent flex items-center justify-center">
-                  <BookOpen className="h-6 w-6 text-white" />
-                </div>
-                <span className="text-2xl font-black text-white tracking-tighter">SchoolMS</span>
+                <img src="/images/Skolic logo.png" alt="Skolic" className="h-10 w-auto object-contain brightness-0 invert" />
               </div>
               <p className="text-text-tertiary text-sm leading-relaxed">
                 The ultimate school management software designed to simplify administration and enhance learning outcomes.
@@ -472,7 +464,7 @@ export default async function HomePage() {
           </div>
           <div className="pt-10 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-6">
             <p className="text-xs text-text-tertiary font-bold">
-              ┬⌐ {new Date().getFullYear()} SchoolMS Platform. All rights reserved.
+              © {new Date().getFullYear()} Skolic Platform. All rights reserved.
             </p>
             <div className="flex gap-8">
               <a href="#" className="text-xs text-text-tertiary hover:text-white transition-colors">Privacy Policy</a>
@@ -495,7 +487,7 @@ export default async function HomePage() {
   );
 }
 
-// --- Helper Component ---
+// Helper Component
 function Button({ children, href }: { children: React.ReactNode, href: string }) {
   return (
     <Link href={href} className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl gradient-bg text-white font-bold shadow-xl shadow-accent/20 hover:shadow-accent/40 hover:-translate-y-1 transition-all duration-300">

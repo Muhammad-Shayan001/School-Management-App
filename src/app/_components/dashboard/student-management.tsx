@@ -107,7 +107,7 @@ export function StudentManagement({ students, classes, school }: StudentManageme
             onChange={(e) => setClassFilter(e.target.value)}
             options={[
               { label: 'All Classes', value: 'all' },
-              ...classes.map(c => ({ label: `${c.name} - ${c.section}`, value: c.id }))
+              ...classes.map(c => ({ label: `${c.name}${c.section && c.section.toUpperCase() !== 'A' ? ` - ${c.section}` : ''}`, value: c.id }))
             ]}
             className="h-14 min-w-[200px] rounded-[1.5rem] font-black uppercase text-[10px] tracking-widest border-transparent bg-bg-tertiary/50"
           />

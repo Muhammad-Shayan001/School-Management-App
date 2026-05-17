@@ -123,16 +123,16 @@ export function Sidebar({ navItems, role, school: propSchool }: SidebarProps) {
           >
             <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-accent to-accent-hover flex items-center justify-center flex-shrink-0 shadow-xl shadow-accent/20 overflow-hidden border border-white/30 transform group-hover:scale-105 transition-transform duration-500">
               {role === 'super_admin' ? (
-                <img 
-                  src="/images/Skolic app icon.svg" 
-                  alt="Skolic Icon" 
-                  className="h-10 w-10 object-contain brightness-110" 
+                <img
+                  src="/images/Skolic app icon.svg"
+                  alt="Skolic Icon"
+                  className="h-10 w-10 object-contain brightness-110"
                 />
               ) : school?.logo_url && !logoError ? (
-                <img 
-                  src={school.logo_url} 
-                  alt="" 
-                  className="h-full w-full object-cover" 
+                <img
+                  src={school.logo_url}
+                  alt=""
+                  className="h-full w-full object-cover"
                   onError={() => setLogoError(true)}
                 />
               ) : (
@@ -140,9 +140,9 @@ export function Sidebar({ navItems, role, school: propSchool }: SidebarProps) {
               )}
             </div>
             {role === 'super_admin' ? (
-              <img 
-                src="/images/Skolic logo.svg" 
-                alt="Skolic" 
+              <img
+                src="/images/Skolic logo.svg"
+                alt="Skolic"
                 className={cn(
                   "h-10 w-auto object-contain brightness-105",
                   sidebarCollapsed && "lg:hidden"
@@ -235,7 +235,7 @@ export function Sidebar({ navItems, role, school: propSchool }: SidebarProps) {
                   <Icon className={cn("h-5 w-5", isActive ? "text-white" : "text-text-tertiary group-hover:text-accent")} />
                 </div>
                 <span className={cn(
-                  'leading-none whitespace-nowrap transition-all duration-500', 
+                  'leading-none whitespace-nowrap transition-all duration-500',
                   sidebarCollapsed && 'lg:hidden lg:opacity-0 lg:scale-0'
                 )}>
                   {item.label}
@@ -288,7 +288,7 @@ export function Sidebar({ navItems, role, school: propSchool }: SidebarProps) {
                 >
                   <LogOut className="h-5 w-5 flex-shrink-0 transition-transform group-hover:-translate-x-1" />
                   <span className={cn(sidebarCollapsed && 'hidden')}>Sign Out</span>
-                  
+
                   {/* Subtle hover effect background */}
                   <div className="absolute inset-0 bg-danger/0 group-hover:bg-danger/5 transition-colors duration-500 -z-10" />
                 </button>

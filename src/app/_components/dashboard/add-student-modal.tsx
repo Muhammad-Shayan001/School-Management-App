@@ -217,7 +217,7 @@ export function AddStudentModal({ isOpen, onClose, classes, onSuccess }: AddStud
                         onChange={(e) => setFormData(prev => ({ ...prev, class_id: e.target.value }))}
                         options={[
                           { label: 'Choose Classroom', value: '' },
-                          ...classes.map(c => ({ label: `${c.name} - ${c.section}`, value: c.id }))
+                          ...classes.map(c => ({ label: `${c.name}${c.section && c.section.toUpperCase() !== 'A' ? ` - ${c.section}` : ''}`, value: c.id }))
                         ]}
                         className="h-14 bg-bg-tertiary/30"
                       />

@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     'Skolic is a modern, full-featured school management system with role-based dashboards, real-time communication, and academic management.',
   keywords: ['school management', 'education', 'dashboard', 'admin panel', 'Skolic'],
   icons: {
-    icon: '/images/Skolic app icon.svg',
+    icon: '/images/Skolic app icon.png',
   },
 };
 

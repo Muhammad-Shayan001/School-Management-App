@@ -97,7 +97,7 @@ export default function SyllabusCreator({ classes, subjects, onSuccess, onCancel
             >
               <option value="">Select Class</option>
               {classes.map((c, idx) => (
-                <option key={c?.id || `class-${idx}`} value={c?.id}>{c?.name} {c?.section ? `(${c.section})` : ''}</option>
+                <option key={c?.id || `class-${idx}`} value={c?.id}>{c?.name}{c?.section && c.section.toUpperCase() !== 'A' ? ` (${c.section})` : ''}</option>
               ))}
             </select>
           </div>

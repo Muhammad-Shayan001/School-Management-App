@@ -74,7 +74,7 @@ export default function ClassTeacherResultsClient() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="card-standard p-6 bg-white">
           <p className="text-xs text-text-tertiary font-black uppercase tracking-wider mb-1">Your Assigned Class</p>
-          <p className="text-2xl font-black text-text-primary">{profile.teacher?.classes?.name} {profile.teacher?.classes?.section ? `- ${profile.teacher.classes.section}` : ''}</p>
+          <p className="text-2xl font-black text-text-primary">{profile.teacher?.classes?.name}{profile.teacher?.classes?.section && profile.teacher.classes.section.toUpperCase() !== 'A' ? ` - ${profile.teacher.classes.section}` : ''}</p>
         </Card>
         
         <Card className="card-standard p-6 bg-white">
@@ -110,7 +110,7 @@ export default function ClassTeacherResultsClient() {
             <p className="text-xs text-text-tertiary font-medium">All marks submitted by subject teachers.</p>
           </div>
           <span className="px-3 py-1 bg-accent/10 text-accent text-xs font-black rounded-full border border-accent/20">
-            {profile.teacher?.classes?.name} {profile.teacher?.classes?.section ? `- ${profile.teacher.classes.section}` : ''}
+            {profile.teacher?.classes?.name}{profile.teacher?.classes?.section && profile.teacher.classes.section.toUpperCase() !== 'A' ? ` - ${profile.teacher.classes.section}` : ''}
           </span>
         </div>
 

@@ -82,7 +82,7 @@ export function FeeManagementClient() {
             onChange={(e) => setFilterClass(e.target.value)}
             options={[
               { value: '', label: 'All Classes' },
-              ...classes.map(c => ({ value: c.id, label: `${c.name} ${c.section ? `- ${c.section}` : ''}` }))
+              ...classes.map(c => ({ value: c.id, label: `${c.name}${c.section && c.section.toUpperCase() !== 'A' ? ` - ${c.section}` : ''}` }))
             ]}
           />
         </div>
@@ -128,7 +128,7 @@ export function FeeManagementClient() {
                 <div className="space-y-2 pt-2 border-t border-border/50 text-sm">
                   <div className="flex justify-between text-xs">
                     <span className="text-text-tertiary">Class:</span>
-                    <span className="font-medium text-text-primary">{student.classes?.name} {student.classes?.section ? `- ${student.classes.section}` : ''}</span>
+                    <span className="font-medium text-text-primary">{student.classes?.name}{student.classes?.section && student.classes.section.toUpperCase() !== 'A' ? ` - ${student.classes.section}` : ''}</span>
                   </div>
                 </div>
 

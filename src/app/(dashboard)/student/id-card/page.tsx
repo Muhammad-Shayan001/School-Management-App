@@ -134,7 +134,7 @@ export default function StudentIdCardPage() {
               <div style={{ textAlign: 'center', marginBottom: '20px' }}>
                 <p style={{ fontSize: '20px', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em' }}>{profile?.full_name}</p>
                 <p style={{ fontSize: '11px', color: '#059669', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: '4px' }}>
-                  {profile?.student?.classes?.name} {profile?.student?.classes?.section ? `— Section ${profile.student.classes.section}` : ''}
+                  {profile?.student?.classes?.name}{profile?.student?.classes?.section && profile.student.classes.section.toUpperCase() !== 'A' ? ` — Section ${profile.student.classes.section}` : ''}
                 </p>
               </div>
 

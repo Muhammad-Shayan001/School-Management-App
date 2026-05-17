@@ -35,7 +35,7 @@ export function CredentialSuccessModal({ isOpen, onClose, credentials }: Credent
     const text = `*School Management Login Credentials*\n\n` +
       `*Email:* ${credentials.email}\n` +
       `*Password:* ${credentials.password}\n` +
-      `*Portal:* https://school-app.edu/login\n\n` +
+      `*Portal:* https://skolic-schools-management-system.netlify.app/login\n\n` +
       `Please log in and change your password immediately.`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
   };
@@ -59,7 +59,7 @@ export function CredentialSuccessModal({ isOpen, onClose, credentials }: Credent
            </div>
            <div className="space-y-2">
               <h3 className="text-2xl font-black text-text-primary tracking-tight uppercase">Account Security Ready</h3>
-              <p className="text-sm font-bold text-text-tertiary">Login credentials have been securely generated for the new user.</p>
+               <p className="text-sm font-bold text-text-tertiary">Login credentials have been securely generated for the new user.</p>
            </div>
         </div>
 
@@ -84,7 +84,7 @@ export function CredentialSuccessModal({ isOpen, onClose, credentials }: Credent
               <div className="pt-4 border-t border-border/40">
                  <p className="text-[10px] font-black text-text-tertiary uppercase tracking-widest mb-2">Login Portal</p>
                  <div className="flex items-center gap-2 text-xs font-black text-text-secondary">
-                    <span>https://school-app.edu/login</span>
+                    <span>https://skolic-schools-management-system.netlify.app/login</span>
                     <ExternalLink className="h-3 w-3" />
                  </div>
               </div>

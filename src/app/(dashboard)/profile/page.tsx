@@ -226,7 +226,7 @@ export default async function ProfilePage() {
                         profile.assignments.map((a: any) => (
                           <div key={a.id} className="p-4 rounded-xl border border-border/30 bg-bg-tertiary/20 flex flex-col gap-1">
                             <span className="text-sm font-black text-text-primary">{a.subjects?.name}</span>
-                            <span className="text-xs font-medium text-text-secondary">Class: {a.classes?.name} {a.classes?.section ? `- ${a.classes.section}` : ''}</span>
+                            <span className="text-xs font-medium text-text-secondary">Class: {a.classes?.name}{a.classes?.section && a.classes.section.toUpperCase() !== 'A' ? ` - ${a.classes.section}` : ''}</span>
                           </div>
                         ))
                       ) : (
@@ -245,7 +245,7 @@ export default async function ProfilePage() {
                     <GridInfo label="Full Student Name" value={profile.full_name} icon={User} />
                     <GridInfo label="B-Form / CNIC" value={profile.student?.cnic} icon={IdCard} />
                     <GridInfo label="Campus Roll Number" value={profile.student?.roll_number} icon={Hash} />
-                    <GridInfo label="Academic Class" value={profile.student?.classes ? `${profile.student.classes.name} - ${profile.student.section || 'A'}` : undefined} icon={BookOpen} />
+                    <GridInfo label="Academic Class" value={profile.student?.classes ? `${profile.student.classes.name}${profile.student.section && profile.student.section.toUpperCase() !== 'A' ? ` - ${profile.student.section}` : ''}` : undefined} icon={BookOpen} />
                     <GridInfo label="Date of Birth" value={profile.student?.dob} icon={Calendar} />
                     <GridInfo label="Official Gender" value={profile.student?.gender} icon={User} className="capitalize" />
                     <GridInfo label="Student Email" value={profile.student?.student_email} icon={Mail} />
