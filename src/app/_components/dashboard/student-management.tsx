@@ -5,7 +5,7 @@ import {
   Search, Filter, MoreVertical, Eye, Download, 
   Printer, UserPlus, CheckCircle2, XCircle, 
   ChevronRight, Calendar, Mail, Phone, MapPin,
-  GraduationCap, CreditCard, ClipboardList, Activity, User, BookOpen, Info
+  GraduationCap, CreditCard, ClipboardList, Activity, User, BookOpen, Info, Trash
 } from 'lucide-react';
 import { Badge } from '@/app/_components/ui/badge';
 import { Input } from '@/app/_components/ui/input';
@@ -24,7 +24,7 @@ interface StudentManagementProps {
   school?: any;
 }
 
-import { updateFeeStatus } from '@/app/_lib/actions/users';
+import { updateFeeStatus, deleteStudent } from '@/app/_lib/actions/users';
 import { toast } from 'sonner';
 
 export function StudentManagement({ students, classes, school }: StudentManagementProps) {
@@ -35,6 +35,29 @@ export function StudentManagement({ students, classes, school }: StudentManageme
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [showCredentials, setShowCredentials] = useState<any>(null);
   const [isUpdatingFee, setIsUpdatingFee] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
+
+  const handleRemoveStudent = async (studentUserId: string, name: string) => {
+    if (!confirm(`Are you absolutely sure you want to delete ${name || 'this student'}? This will permanently remove their profile, attendance, results, fees, and account. This action cannot be undone.`)) {
+      return;
+    }
+    
+    setIsDeleting(studentUserId);
+    const result = await deleteStudent(studentUserId);
+    
+    if (result.success) {
+      toast.success(`${name || 'Student'} deleted successfully`, {
+        description: 'Account and academic records have been purged.',
+        style: { borderRadius: '1.5rem', fontWeight: 'bold' }
+      });
+      if (selectedStudent?.user_id === studentUserId) {
+        setIsProfileOpen(false);
+      }
+    } else {
+      toast.error(result.error || 'Failed to delete student');
+    }
+    setIsDeleting(null);
+  };
 
   const handleFeeToggle = async (studentId: string, currentStatus: string) => {
     setIsUpdatingFee(studentId);
@@ -174,17 +197,23 @@ export function StudentManagement({ students, classes, school }: StudentManageme
                      </div>
                   </td>
                   <td className="px-10 py-5 text-right">
-                    <div className="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-all duration-500 translate-x-4 group-hover:translate-x-0">
-                       <button 
-                         onClick={() => openProfile(student)}
-                         className="h-11 w-11 rounded-2xl bg-accent/10 text-accent flex items-center justify-center hover:bg-accent hover:text-white transition-all duration-300 shadow-sm active:scale-90"
+                     <div className="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-all duration-500 translate-x-4 group-hover:translate-x-0">
+                        <button 
+                          onClick={() => openProfile(student)}
+                          className="h-11 w-11 rounded-2xl bg-accent/10 text-accent flex items-center justify-center hover:bg-accent hover:text-white transition-all duration-300 shadow-sm active:scale-90"
+                          title="View Intelligence Profile"
+                         >
+                          <Eye className="h-5 w-5" />
+                        </button>
+                        <button 
+                          onClick={() => handleRemoveStudent(student.user_id, student.profiles?.full_name)}
+                          disabled={isDeleting === student.user_id}
+                          className="h-11 w-11 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-600 hover:text-white transition-all duration-300 shadow-sm active:scale-90 disabled:opacity-50"
+                          title="Delete Student Profile"
                         >
-                         <Eye className="h-5 w-5" />
-                       </button>
-                       <button className="h-11 w-11 rounded-2xl bg-bg-tertiary text-text-tertiary flex items-center justify-center hover:bg-text-primary hover:text-white transition-all duration-300 active:scale-90">
-                         <Download className="h-5 w-5" />
-                       </button>
-                    </div>
+                          <Trash className="h-5 w-5" />
+                        </button>
+                     </div>
                   </td>
                 </tr>
               ))}
@@ -267,18 +296,23 @@ export function StudentManagement({ students, classes, school }: StudentManageme
                    </div>
                 </div>
 
-                <div className="md:ml-auto flex flex-col sm:flex-row gap-3 relative z-10 w-full md:w-auto">
-                   <Button 
-                     variant="outline" 
-                     onClick={() => generateAdmissionForm(selectedStudent, school)}
-                     className="rounded-2xl h-12 md:h-14 px-6 md:px-8 gap-3 font-black text-[10px] md:text-[11px] uppercase tracking-[0.2em] bg-white hover:shadow-xl transition-all border-border/50"
-                   >
-                      <Download className="h-4 w-4 md:h-5 md:w-5 text-accent" /> Admission Form
-                   </Button>
-                   <Button variant="outline" className="rounded-2xl h-12 md:h-14 px-6 md:px-8 gap-3 font-black text-[10px] md:text-[11px] uppercase tracking-[0.2em] bg-white hover:shadow-xl transition-all border-border/50">
-                      <Printer className="h-4 w-4 md:h-5 md:w-5" /> Export ID
-                   </Button>
-                </div>
+                <div className="md:ml-auto flex flex-wrap gap-3 relative z-10 w-full md:w-auto justify-center md:justify-end">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => generateAdmissionForm(selectedStudent, school)}
+                      className="rounded-2xl h-12 md:h-14 px-6 md:px-8 gap-3 font-black text-[10px] md:text-[11px] uppercase tracking-[0.2em] bg-white hover:shadow-xl transition-all border-border/50"
+                    >
+                       <Download className="h-4 w-4 md:h-5 md:w-5 text-accent" /> Admission Form
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      onClick={() => handleRemoveStudent(selectedStudent.user_id, selectedStudent.profiles?.full_name)}
+                      disabled={isDeleting === selectedStudent.user_id}
+                      className="rounded-2xl h-12 md:h-14 px-6 md:px-8 gap-3 font-black text-[10px] md:text-[11px] uppercase tracking-[0.2em] bg-red-50 text-red-600 hover:bg-red-600 hover:text-white transition-all border-red-200"
+                    >
+                       <Trash className="h-4 w-4 md:h-5 md:w-5" /> Delete Student
+                    </Button>
+                 </div>
              </div>
 
              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-10">

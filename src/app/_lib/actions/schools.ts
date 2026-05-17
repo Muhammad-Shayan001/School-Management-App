@@ -491,3 +491,91 @@ export async function getSchoolInfo() {
   if (error) return { data: null, error: error.message };
   return { data };
 }
+
+export async function deleteSchool(schoolId: string) {
+  const adminClient = createAdminClient();
+  const { createClient } = await import('@/app/_lib/supabase/server');
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { error: 'Unauthorized' };
+
+  // Check if caller is super_admin
+  const { data: caller } = await adminClient
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
+  if (!caller || caller.role !== 'super_admin') {
+    return { error: 'Unauthorized: Only super admins can delete schools.' };
+  }
+
+  try {
+    // 1. Fetch all profiles associated with the school
+    const { data: schoolProfiles } = await adminClient
+      .from('profiles')
+      .select('id')
+      .eq('school_id', schoolId);
+
+    const userIds = schoolProfiles ? schoolProfiles.map(p => p.id) : [];
+
+    // 2. Delete all records from dependent tables sequentially to prevent foreign key errors
+    await adminClient.from('attendance').delete().eq('school_id', schoolId);
+    await adminClient.from('results').delete().eq('school_id', schoolId);
+    await adminClient.from('assignments').delete().eq('school_id', schoolId);
+    await adminClient.from('exam_schedules').delete().eq('school_id', schoolId);
+    await adminClient.from('announcements').delete().eq('school_id', schoolId);
+
+    const { data: syllabiData } = await adminClient.from('syllabi').select('id').eq('school_id', schoolId);
+    const syllabusIds = syllabiData?.map(s => s.id) || [];
+    if (syllabusIds.length > 0) {
+      await adminClient.from('syllabus_chapters').delete().in('syllabus_id', syllabusIds);
+    }
+    await adminClient.from('syllabi').delete().eq('school_id', schoolId);
+    await adminClient.from('teacher_assignments').delete().eq('school_id', schoolId);
+    
+    if (userIds.length > 0) {
+      await adminClient.from('teacher_profiles').delete().in('user_id', userIds);
+      await adminClient.from('student_profiles').delete().in('user_id', userIds);
+      await adminClient.from('admin_campuses').delete().in('admin_id', userIds);
+    }
+    
+    await adminClient.from('classes').delete().eq('school_id', schoolId);
+    await adminClient.from('subjects').delete().eq('school_id', schoolId);
+    await adminClient.from('campuses').delete().eq('school_id', schoolId);
+
+    // Delete profiles
+    if (userIds.length > 0) {
+      await adminClient.from('profiles').delete().eq('school_id', schoolId);
+    }
+
+    // 3. Delete the school itself
+    const { error: schoolErr } = await adminClient
+      .from('schools')
+      .delete()
+      .eq('id', schoolId);
+
+    if (schoolErr) {
+      throw new Error(schoolErr.message);
+    }
+
+    // 4. Delete Auth users
+    if (userIds.length > 0) {
+      for (const uid of userIds) {
+        try {
+          await adminClient.auth.admin.deleteUser(uid);
+        } catch (e) {
+          console.error(`Failed to delete auth user ${uid}:`, e);
+        }
+      }
+    }
+
+    revalidatePath('/super-admin/schools');
+    return { success: true };
+  } catch (err: any) {
+    console.error('Error deleting school:', err);
+    return { error: 'Failed to delete school: ' + err.message };
+  }
+}
+

@@ -1,14 +1,15 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getSchools, createSchool } from '@/app/_lib/actions/schools';
+import { getSchools, createSchool, deleteSchool } from '@/app/_lib/actions/schools';
 import { Button } from '@/app/_components/ui/button';
 import { Input } from '@/app/_components/ui/input';
 import { Modal } from '@/app/_components/ui/modal';
 import { Badge } from '@/app/_components/ui/badge';
 import { formatDate } from '@/app/_lib/utils/format';
 import { PageSpinner } from '@/app/_components/ui/spinner';
-import { School, Plus, MapPin, Phone, Mail, Lock, User } from 'lucide-react';
+import { School, Plus, MapPin, Phone, Mail, Lock, User, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface SchoolWithAdmin {
   id: string;
@@ -26,6 +27,29 @@ export default function SchoolsPage() {
   const [showModal, setShowModal] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
+
+  async function handleDeleteSchool(schoolId: string, name: string) {
+    if (!confirm(`WARNING: Are you absolutely sure you want to delete "${name}"? This will permanently purge the school, its campuses, all classes, subjects, student profiles, teacher profiles, assignments, exam schedules, results, attendance logs, and all user accounts associated with this school. THIS ACTION CANNOT BE UNDONE.`)) {
+      return;
+    }
+
+    setIsDeleting(schoolId);
+    const result = await deleteSchool(schoolId);
+    
+    if (result.success) {
+      toast.success(`${name} has been permanently deleted`, {
+        description: 'All associated data and accounts have been purged.',
+        style: { borderRadius: '1.5rem', fontWeight: 'bold' }
+      });
+      // Refetch
+      const { data } = await getSchools();
+      setSchools((data as SchoolWithAdmin[]) || []);
+    } else {
+      toast.error(result.error || 'Failed to delete school');
+    }
+    setIsDeleting(null);
+  }
 
   useEffect(() => {
     async function fetchSchools() {
@@ -151,9 +175,25 @@ export default function SchoolsPage() {
                     {school.principal_name || 'No Principal Assigned'}
                   </p>
                 </div>
-                <Button variant="outline" size="sm" className="h-8 rounded-xl text-[10px] font-black uppercase tracking-widest border-border/50">
-                  Manage
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-8 rounded-xl text-[10px] font-black uppercase tracking-widest border-border/50"
+                  >
+                    Manage
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    disabled={isDeleting === school.id}
+                    className="h-8 w-8 p-0 rounded-xl border-red-200 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white transition-all disabled:opacity-50"
+                    onClick={() => handleDeleteSchool(school.id, school.name)}
+                    title="Delete School"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
               </div>
             </div>
           ))}

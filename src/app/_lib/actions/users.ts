@@ -290,15 +290,16 @@ async function generateStudentId() {
   const { data } = await adminClient
     .from('student_profiles')
     .select('student_id')
-    .like('student_id', `${prefix}%`)
-    .order('student_id', { ascending: false })
-    .limit(1);
+    .like('student_id', `${prefix}%`);
 
   let nextNumber = 1;
-  if (data && data.length > 0 && data[0].student_id) {
-    const lastId = data[0].student_id;
-    const lastNumber = parseInt(lastId.split('-')[2]);
-    nextNumber = lastNumber + 1;
+  if (data && data.length > 0) {
+    const numbers = data.map(d => {
+      const parts = d.student_id.split('-');
+      const num = parseInt(parts[parts.length - 1]);
+      return isNaN(num) ? 0 : num;
+    });
+    nextNumber = Math.max(...numbers) + 1;
   }
 
   return `${prefix}${nextNumber.toString().padStart(3, '0')}`;
@@ -315,19 +316,21 @@ async function generateTeacherId() {
   const { data } = await adminClient
     .from('teacher_profiles')
     .select('teacher_id')
-    .like('teacher_id', `${prefix}%`)
-    .order('teacher_id', { ascending: false })
-    .limit(1);
+    .like('teacher_id', `${prefix}%`);
 
   let nextNumber = 1;
-  if (data && data.length > 0 && data[0].teacher_id) {
-    const lastId = data[0].teacher_id;
-    const lastNumber = parseInt(lastId.split('-')[2]);
-    nextNumber = lastNumber + 1;
+  if (data && data.length > 0) {
+    const numbers = data.map(d => {
+      const parts = d.teacher_id.split('-');
+      const num = parseInt(parts[parts.length - 1]);
+      return isNaN(num) ? 0 : num;
+    });
+    nextNumber = Math.max(...numbers) + 1;
   }
 
   return `${prefix}${nextNumber.toString().padStart(3, '0')}`;
 }
+
 
 export async function createOrUpdateStudentProfile(formData: FormData) {
   const adminClient = createAdminClient();
@@ -434,7 +437,11 @@ export async function createManualStudent(formData: any) {
     phone: formData.phone
   });
 
-  if (profileError) return { error: 'Failed to create profile: ' + profileError.message };
+  if (profileError) {
+    console.error('Error inserting student profile, rolling back auth account:', profileError);
+    await adminClient.auth.admin.deleteUser(studentUserId);
+    return { error: 'Failed to create profile: ' + profileError.message };
+  }
 
   // 3. Create Student Profile record
   const { error: studentErr } = await adminClient
@@ -488,7 +495,12 @@ export async function createManualStudent(formData: any) {
       session_year: formData.session_year || new Date().getFullYear().toString()
     });
 
-  if (studentErr) return { error: 'Failed to save student details: ' + studentErr.message };
+  if (studentErr) {
+    console.error('Error inserting student_profiles, rolling back auth account and profile:', studentErr);
+    await adminClient.from('profiles').delete().eq('id', studentUserId);
+    await adminClient.auth.admin.deleteUser(studentUserId);
+    return { error: 'Failed to save student details: ' + studentErr.message };
+  }
 
   revalidatePath('/admin/students');
   return { 
@@ -841,4 +853,112 @@ export async function createManualAdmin(formData: any) {
     }
   };
 }
+
+export async function deleteStudent(studentUserId: string) {
+  const adminClient = createAdminClient();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { error: 'Unauthorized' };
+
+  // Get caller profile to check permission
+  const { data: caller } = await adminClient
+    .from('profiles')
+    .select('role, school_id')
+    .eq('id', user.id)
+    .single();
+
+  if (!caller || !['super_admin', 'admin'].includes(caller.role)) {
+    return { error: 'Unauthorized: Only admins can delete students.' };
+  }
+
+  // 1. Delete student_profiles
+  const { error: studentErr } = await adminClient
+    .from('student_profiles')
+    .delete()
+    .eq('user_id', studentUserId);
+
+  if (studentErr) {
+    console.error('Error deleting student profile:', studentErr);
+    return { error: 'Failed to delete student profile details: ' + studentErr.message };
+  }
+
+  // 2. Delete profiles
+  const { error: profileErr } = await adminClient
+    .from('profiles')
+    .delete()
+    .eq('id', studentUserId);
+
+  if (profileErr) {
+    console.error('Error deleting profile:', profileErr);
+    return { error: 'Failed to delete user profile: ' + profileErr.message };
+  }
+
+  // 3. Delete auth account
+  const { error: authErr } = await adminClient.auth.admin.deleteUser(studentUserId);
+  if (authErr) {
+    console.error('Error deleting auth account:', authErr);
+    return { error: 'Failed to delete authentication account: ' + authErr.message };
+  }
+
+  revalidatePath('/admin/students');
+  return { success: true };
+}
+
+export async function deleteTeacher(teacherUserId: string) {
+  const adminClient = createAdminClient();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { error: 'Unauthorized' };
+
+  const { data: caller } = await adminClient
+    .from('profiles')
+    .select('role, school_id')
+    .eq('id', user.id)
+    .single();
+
+  if (!caller || !['super_admin', 'admin'].includes(caller.role)) {
+    return { error: 'Unauthorized: Only admins can delete teachers.' };
+  }
+
+  // 1. Delete teacher_assignments
+  await adminClient
+    .from('teacher_assignments')
+    .delete()
+    .eq('teacher_id', teacherUserId);
+
+  // 2. Delete teacher_profiles
+  const { error: teacherErr } = await adminClient
+    .from('teacher_profiles')
+    .delete()
+    .eq('user_id', teacherUserId);
+
+  if (teacherErr) {
+    console.error('Error deleting teacher profile:', teacherErr);
+    return { error: 'Failed to delete teacher profile details: ' + teacherErr.message };
+  }
+
+  // 3. Delete profiles
+  const { error: profileErr } = await adminClient
+    .from('profiles')
+    .delete()
+    .eq('id', teacherUserId);
+
+  if (profileErr) {
+    console.error('Error deleting profile:', profileErr);
+    return { error: 'Failed to delete user profile: ' + profileErr.message };
+  }
+
+  // 4. Delete auth account
+  const { error: authErr } = await adminClient.auth.admin.deleteUser(teacherUserId);
+  if (authErr) {
+    console.error('Error deleting auth account:', authErr);
+    return { error: 'Failed to delete authentication account: ' + authErr.message };
+  }
+
+  revalidatePath('/admin/teachers');
+  return { success: true };
+}
+
 

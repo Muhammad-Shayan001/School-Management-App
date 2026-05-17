@@ -92,7 +92,7 @@ export async function getSubjects() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { data: [], error: 'Unauthorized' };
 
-  const { data: profile } = await supabase.from('profiles').select('school_id').eq('id', user.id).single();
+  const { data: profile } = await adminClient.from('profiles').select('school_id').eq('id', user.id).single();
   
   const { data, error } = await adminClient
     .from('subjects')
@@ -154,7 +154,7 @@ export async function getAdminSyllabi(filters?: { classId?: string; subjectId?: 
 
   if (!user) return { data: [], error: 'Unauthorized' };
 
-  const { data: profile } = await supabase.from('profiles').select('school_id').eq('id', user.id).single();
+  const { data: profile } = await adminClient.from('profiles').select('school_id').eq('id', user.id).single();
 
   let query = adminClient
     .from('syllabi')
@@ -230,7 +230,7 @@ export async function createSyllabus(payload: {
 
   if (!user) return { error: 'Unauthorized' };
 
-  const { data: profile } = await supabase.from('profiles').select('role, school_id').eq('id', user.id).single();
+  const { data: profile } = await adminClient.from('profiles').select('role, school_id').eq('id', user.id).single();
   if (!profile) return { error: 'Profile not found' };
 
   // SECURITY CHECK: If teacher, verify they are assigned to this class and subject

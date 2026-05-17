@@ -9,9 +9,42 @@ import { markAttendance } from './attendance';
  */
 export async function markAttendanceByUid(uid: string) {
   const adminClient = createAdminClient();
+  let resolvedUid = uid.trim();
 
   try {
-    // Fetch profile and role-specific class info
+    // 1. Handle prefixed QR codes
+    if (resolvedUid.startsWith('PRINCIPAL_')) {
+      resolvedUid = resolvedUid.replace('PRINCIPAL_', '');
+    }
+
+    // 2. Handle Student ID format (e.g. STD-2026-001)
+    if (resolvedUid.startsWith('STD-')) {
+      const { data: sp } = await adminClient
+        .from('student_profiles')
+        .select('user_id')
+        .eq('student_id', resolvedUid)
+        .maybeSingle();
+      if (sp?.user_id) {
+        resolvedUid = sp.user_id;
+      } else {
+        return { success: false, message: `Student ID ${resolvedUid} not found` };
+      }
+    } 
+    // 3. Handle Teacher ID format (e.g. TCH-2026-001)
+    else if (resolvedUid.startsWith('TCH-')) {
+      const { data: tp } = await adminClient
+        .from('teacher_profiles')
+        .select('user_id')
+        .eq('teacher_id', resolvedUid)
+        .maybeSingle();
+      if (tp?.user_id) {
+        resolvedUid = tp.user_id;
+      } else {
+        return { success: false, message: `Teacher ID ${resolvedUid} not found` };
+      }
+    }
+
+    // 4. Fetch profile and role-specific class info using resolved UUID
     const { data: profile, error } = await adminClient
       .from('profiles')
       .select(`
@@ -21,8 +54,8 @@ export async function markAttendanceByUid(uid: string) {
         student_profiles(class_id),
         teacher_profiles(user_id)
       `)
-      .eq('id', uid)
-      .single();
+      .eq('id', resolvedUid)
+      .maybeSingle();
 
     if (error || !profile) return { success: false, message: 'User not found in system' };
     

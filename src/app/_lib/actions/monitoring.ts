@@ -30,7 +30,7 @@ export const getAdminAnalytics = unstable_cache(
       adminClient.from('attendance').select('*', { count: 'exact', head: true }).eq('school_id', schoolId).eq('date', today).eq('status', 'present'),
       adminClient.from('attendance').select('*', { count: 'exact', head: true }).eq('school_id', schoolId).eq('date', today).eq('status', 'absent'),
       adminClient.from('assignments').select('*', { count: 'exact', head: true }).eq('school_id', schoolId).gt('deadline', new Date().toISOString()),
-      adminClient.from('exam_timetable').select('*', { count: 'exact', head: true }).eq('school_id', schoolId),
+      adminClient.from('exam_schedules').select('*', { count: 'exact', head: true }).eq('school_id', schoolId),
       adminClient.from('announcements').select('*', { count: 'exact', head: true }).eq('school_id', schoolId)
     ]);
 
