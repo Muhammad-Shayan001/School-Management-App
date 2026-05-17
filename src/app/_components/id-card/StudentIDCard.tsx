@@ -69,7 +69,7 @@ export default function StudentIDCard({ student }: { student: StudentData }) {
           <div className="relative z-10 flex flex-col items-center gap-2">
             <div className="h-16 w-16 bg-white rounded-2xl p-2 shadow-2xl flex items-center justify-center border-2 border-white/50 overflow-hidden transform -rotate-3">
               <img 
-                src={student.schoolLogo || "/images/Skolic app icon.svg"} 
+                src={student.schoolLogo || "/images/Skolic app icon.png"} 
                 alt="Logo" 
                 className="h-full w-full object-contain" 
               />

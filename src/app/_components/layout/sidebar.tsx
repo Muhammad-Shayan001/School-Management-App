@@ -117,14 +117,14 @@ export function Sidebar({ navItems, role, school: propSchool }: SidebarProps) {
           <Link
             href="/"
             className={cn(
-              'flex items-center gap-3',
+              'flex items-center gap-2',
               sidebarCollapsed && 'lg:justify-center'
             )}
           >
-            <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-accent to-accent-hover flex items-center justify-center flex-shrink-0 shadow-xl shadow-accent/20 overflow-hidden border border-white/30 transform group-hover:scale-105 transition-transform duration-500">
+            <div className="h-11 w-11 flex items-center justify-center flex-shrink-0 overflow-hidden transform group-hover:scale-105 transition-transform duration-500">
               {role === 'super_admin' ? (
                 <img
-                  src="/images/Skolic app icon.svg"
+                  src="/images/Skolic app icon.png"
                   alt="Skolic Icon"
                   className="h-10 w-10 object-contain brightness-110"
                 />
@@ -136,12 +136,12 @@ export function Sidebar({ navItems, role, school: propSchool }: SidebarProps) {
                   onError={() => setLogoError(true)}
                 />
               ) : (
-                <BookOpen className="h-7 w-7 text-white" />
+                <BookOpen className="h-6 w-6 text-text-primary" />
               )}
             </div>
             {role === 'super_admin' ? (
               <img
-                src="/images/Skolic logo.svg"
+                src="/images/Skolic logo.png"
                 alt="Skolic"
                 className={cn(
                   "h-10 w-auto object-contain brightness-105",

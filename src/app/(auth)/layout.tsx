@@ -12,8 +12,8 @@ export default function AuthLayout({
   return (
     <div className="auth-background min-h-screen flex flex-col items-center justify-center p-4 relative">
       {/* Logo */}
-      <div className="relative z-10 flex flex-col items-center gap-6 mb-12 animate-fade-in group cursor-default">
-        <div className="h-24 w-24 rounded-[2rem] bg-gradient-to-br from-accent to-accent-hover flex items-center justify-center shadow-3xl shadow-accent/40 overflow-hidden border-2 border-white/30 transform group-hover:scale-110 transition-all duration-700">
+      <div className="relative z-10 flex flex-col items-center gap-3 mb-12 animate-fade-in group cursor-default">
+        <div className="h-14 w-14 flex items-center justify-center overflow-hidden transform group-hover:scale-110 transition-all duration-700">
           <img src="/images/Skolic app icon.png" alt="Skolic" className="h-14 w-14 object-contain brightness-110 drop-shadow-lg" />
         </div>
         <img src="/images/Skolic logo.png" alt="Skolic" className="h-10 w-auto object-contain brightness-110" />

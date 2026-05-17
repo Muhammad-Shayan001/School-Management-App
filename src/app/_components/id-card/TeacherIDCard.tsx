@@ -62,7 +62,7 @@ export default function TeacherIDCard({ teacher }: { teacher: TeacherData }) {
           <div className="absolute top-0 left-0 w-32 h-32 bg-white/10 rounded-full -ml-16 -mt-16" />
           <div className="relative z-10 flex flex-col items-center gap-3">
             <div className="h-16 w-16 bg-white rounded-2xl p-2 shadow-2xl flex items-center justify-center border-2 border-white/50 overflow-hidden transform rotate-3">
-              <img src="/images/Skolic app icon.svg" alt="Logo" className="h-full w-full object-contain" />
+              <img src="/images/Skolic app icon.png" alt="Logo" className="h-full w-full object-contain" />
             </div>
             <div>
               <h1 className="text-2xl font-black tracking-tighter leading-tight">{teacher.schoolName}</h1>
