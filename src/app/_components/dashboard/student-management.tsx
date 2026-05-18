@@ -5,7 +5,7 @@ import {
   Search, Filter, MoreVertical, Eye, Download, 
   Printer, UserPlus, CheckCircle2, XCircle, 
   ChevronRight, Calendar, Mail, Phone, MapPin,
-  GraduationCap, CreditCard, ClipboardList, Activity, User, BookOpen, Info, Trash
+  GraduationCap, CreditCard, ClipboardList, Activity, User, BookOpen, Info, Trash, Edit, Key, Shield, ShieldAlert, Lock, RotateCcw, Award, Check
 } from 'lucide-react';
 import { Badge } from '@/app/_components/ui/badge';
 import { Input } from '@/app/_components/ui/input';
@@ -17,6 +17,10 @@ import Image from 'next/image';
 import { AddStudentModal } from './add-student-modal';
 import { CredentialSuccessModal } from './credential-success-modal';
 import { generateAdmissionForm } from '@/app/_lib/utils/pdf-admission';
+import StudentIDCard from '@/app/_components/id-card/StudentIDCard';
+import { useCampusStore } from '@/app/_lib/store/campus-store';
+import { updateFeeStatus, deleteStudent, resetUserPassword, toggleUserStatus, getUserLoginDetails } from '@/app/_lib/actions/users';
+import { toast } from 'sonner';
 
 interface StudentManagementProps {
   students: any[];
@@ -24,18 +28,24 @@ interface StudentManagementProps {
   school?: any;
 }
 
-import { updateFeeStatus, deleteStudent } from '@/app/_lib/actions/users';
-import { toast } from 'sonner';
-
 export function StudentManagement({ students, classes, school }: StudentManagementProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [classFilter, setClassFilter] = useState('all');
+  const [selectedCampusId, setSelectedCampusId] = useState('all');
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
+  
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isIDCardModalOpen, setIsIDCardModalOpen] = useState(false);
+  const [loginDetailsUser, setLoginDetailsUser] = useState<any>(null);
+  
   const [showCredentials, setShowCredentials] = useState<any>(null);
   const [isUpdatingFee, setIsUpdatingFee] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [activeProfileTab, setActiveProfileTab] = useState('Attendance');
+
+  const { campuses, activeCampus } = useCampusStore();
 
   const handleRemoveStudent = async (studentUserId: string, name: string) => {
     if (!confirm(`Are you absolutely sure you want to delete ${name || 'this student'}? This will permanently remove their profile, attendance, results, fees, and account. This action cannot be undone.`)) {
@@ -75,12 +85,59 @@ export function StudentManagement({ students, classes, school }: StudentManageme
     setIsUpdatingFee(null);
   };
 
+  const handleEditStudent = (student: any) => {
+    setSelectedStudent(student);
+    setIsEditModalOpen(true);
+  };
+
+  const handleViewIDCard = (student: any) => {
+    setSelectedStudent(student);
+    setIsIDCardModalOpen(true);
+  };
+
+  const handleViewLoginDetails = async (student: any) => {
+    const res = await getUserLoginDetails(student.user_id);
+    if (!res.error && res.data) {
+      setLoginDetailsUser(res.data);
+    } else {
+      toast.error(res.error || 'Failed to fetch login credentials');
+    }
+  };
+
+  const handleResetPassword = async (userId: string, name: string) => {
+    if (!confirm(`Are you sure you want to reset the password for ${name}?`)) return;
+    const res = await resetUserPassword(userId);
+    if (res.success) {
+      toast.success(`Password reset successful for ${name}`, {
+        description: `New password: ${res.newPassword}`,
+        duration: 10000,
+        style: { borderRadius: '1.5rem', fontWeight: 'bold' }
+      });
+    } else {
+      toast.error(res.error || 'Failed to reset password');
+    }
+  };
+
+  const handleToggleStatus = async (userId: string, currentStatus: string, name: string) => {
+    const res = await toggleUserStatus(userId);
+    if (res.success) {
+      toast.success(`Account status updated for ${name}`, {
+        description: `New status: ${res.status}`,
+        style: { borderRadius: '1.5rem', fontWeight: 'bold' }
+      });
+    } else {
+      toast.error(res.error || 'Failed to toggle status');
+    }
+  };
+
   const filteredStudents = students.filter(s => {
     const matchesSearch = 
       s.profiles?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      s.roll_number?.toLowerCase().includes(searchTerm.toLowerCase());
+      s.roll_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      s.profiles?.email?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesClass = classFilter === 'all' || s.class_id === classFilter;
-    return matchesSearch && matchesClass;
+    const matchesCampus = selectedCampusId === 'all' || s.campus_id === selectedCampusId || (activeCampus && s.campus_id === activeCampus.id);
+    return matchesSearch && matchesClass && matchesCampus;
   });
 
   const openProfile = (student: any) => {
@@ -91,17 +148,28 @@ export function StudentManagement({ students, classes, school }: StudentManageme
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
       {/* Dynamic Filter Bar - Glass Design */}
-      <div className="glass-card p-6 bg-white/70 backdrop-blur-xl border border-white/40 shadow-2xl shadow-black/[0.02] flex flex-col md:flex-row gap-6 items-center justify-between rounded-[2.5rem]">
-        <div className="relative w-full md:w-[450px] group">
+      <div className="glass-card p-6 bg-white/70 backdrop-blur-xl border border-white/40 shadow-2xl shadow-black/[0.02] flex flex-col lg:flex-row gap-6 items-center justify-between rounded-[2.5rem]">
+        <div className="relative w-full lg:w-[450px] group">
           <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-text-tertiary group-focus-within:text-accent transition-colors" />
           <Input 
-            placeholder="Quick search by name or roll number..." 
+            placeholder="Quick search by name, roll no, or email..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-14 h-14 bg-bg-tertiary/50 border-transparent focus:bg-white focus:border-accent/20 rounded-[1.5rem] transition-all duration-500 font-bold placeholder:text-text-tertiary/50 shadow-sm focus:shadow-xl"
           />
         </div>
-        <div className="flex gap-4 w-full md:w-auto">
+        <div className="flex flex-wrap gap-4 w-full lg:w-auto items-center">
+          {campuses && campuses.length > 1 && (
+            <Select 
+              value={selectedCampusId}
+              onChange={(e) => setSelectedCampusId(e.target.value)}
+              options={[
+                { label: 'All Campuses', value: 'all' },
+                ...campuses.map(c => ({ label: c.name, value: c.id }))
+              ]}
+              className="h-14 min-w-[180px] rounded-[1.5rem] font-black uppercase text-[10px] tracking-widest border-transparent bg-bg-tertiary/50"
+            />
+          )}
           <Select 
             value={classFilter}
             onChange={(e) => setClassFilter(e.target.value)}
@@ -109,11 +177,11 @@ export function StudentManagement({ students, classes, school }: StudentManageme
               { label: 'All Classes', value: 'all' },
               ...classes.map(c => ({ label: `${c.name}${c.section && c.section.toUpperCase() !== 'A' ? ` - ${c.section}` : ''}`, value: c.id }))
             ]}
-            className="h-14 min-w-[200px] rounded-[1.5rem] font-black uppercase text-[10px] tracking-widest border-transparent bg-bg-tertiary/50"
+            className="h-14 min-w-[180px] rounded-[1.5rem] font-black uppercase text-[10px] tracking-widest border-transparent bg-bg-tertiary/50"
           />
           <Button 
             onClick={() => setIsAddModalOpen(true)}
-            className="h-14 px-8 rounded-[1.5rem] gap-3 font-black uppercase text-[11px] tracking-[0.2em] shadow-xl shadow-accent/20 bg-accent text-white hover:scale-105 active:scale-95 transition-all"
+            className="h-14 px-8 rounded-[1.5rem] gap-3 font-black uppercase text-[11px] tracking-[0.2em] shadow-xl shadow-accent/20 bg-accent text-white hover:scale-105 active:scale-95 transition-all ml-auto"
           >
             <UserPlus className="h-5 w-5" /> Enroll Student
           </Button>
@@ -121,17 +189,17 @@ export function StudentManagement({ students, classes, school }: StudentManageme
       </div>
 
       {/* Luxury Table Design */}
-      <div className="glass-card bg-white/80 backdrop-blur-xl border border-white/40 shadow-2xl shadow-black/[0.02] overflow-hidden rounded-[3rem]">
-        <div className="overflow-x-auto scrollbar-premium">
-          <table className="w-full text-left border-collapse">
+      <div className="glass-card bg-white/80 backdrop-blur-xl border border-white/40 shadow-2xl shadow-black/[0.02] overflow-hidden rounded-[2rem] md:rounded-[3rem]">
+        <div className="overflow-x-auto overflow-y-auto max-h-[650px] scrollbar-premium">
+          <table className="w-full text-left border-collapse min-w-[1000px]">
             <thead>
               <tr className="bg-bg-tertiary/30 border-b border-border/40">
-                <th className="px-10 py-7 text-[11px] font-black text-text-tertiary uppercase tracking-[0.25em]">Registry</th>
-                <th className="px-6 py-7 text-[11px] font-black text-text-tertiary uppercase tracking-[0.25em]">Identity</th>
-                <th className="px-6 py-7 text-[11px] font-black text-text-tertiary uppercase tracking-[0.25em]">Classroom</th>
-                <th className="px-6 py-7 text-[11px] font-black text-text-tertiary uppercase tracking-[0.25em]">Financials</th>
-                <th className="px-6 py-7 text-[11px] font-black text-text-tertiary uppercase tracking-[0.25em]">Status</th>
-                <th className="px-10 py-7 text-right text-[11px] font-black text-text-tertiary uppercase tracking-[0.25em]">Controls</th>
+                <th className="px-6 md:px-10 py-5 md:py-7 text-[10px] md:text-[11px] font-black text-text-tertiary uppercase tracking-[0.25em] sticky top-0 bg-white/95 backdrop-blur-md z-10 shadow-sm whitespace-nowrap">Registry</th>
+                <th className="px-6 py-5 md:py-7 text-[10px] md:text-[11px] font-black text-text-tertiary uppercase tracking-[0.25em] sticky top-0 bg-white/95 backdrop-blur-md z-10 shadow-sm whitespace-nowrap">Identity</th>
+                <th className="px-6 py-5 md:py-7 text-[10px] md:text-[11px] font-black text-text-tertiary uppercase tracking-[0.25em] sticky top-0 bg-white/95 backdrop-blur-md z-10 shadow-sm whitespace-nowrap">Classroom</th>
+                <th className="px-6 py-5 md:py-7 text-[10px] md:text-[11px] font-black text-text-tertiary uppercase tracking-[0.25em] sticky top-0 bg-white/95 backdrop-blur-md z-10 shadow-sm whitespace-nowrap">Financials</th>
+                <th className="px-6 py-5 md:py-7 text-[10px] md:text-[11px] font-black text-text-tertiary uppercase tracking-[0.25em] sticky top-0 bg-white/95 backdrop-blur-md z-10 shadow-sm whitespace-nowrap">Account Status</th>
+                <th className="px-6 md:px-10 py-5 md:py-7 text-right text-[10px] md:text-[11px] font-black text-text-tertiary uppercase tracking-[0.25em] sticky top-0 bg-white/95 backdrop-blur-md z-10 shadow-sm whitespace-nowrap">Master Management Controls</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/20">
@@ -190,28 +258,66 @@ export function StudentManagement({ students, classes, school }: StudentManageme
                   <td className="px-6 py-5">
                      <div className="flex items-center gap-2.5">
                         <div className={cn(
-                          "h-2.5 w-2.5 rounded-full shadow-sm animate-pulse", 
-                          student.profiles?.status === 'approved' ? "bg-success shadow-success/40" : "bg-warning shadow-warning/40"
+                          "h-2.5 w-2.5 rounded-full shadow-sm", 
+                          student.profiles?.status === 'approved' ? "bg-success shadow-success/40 animate-pulse" : "bg-rose-500 shadow-rose-500/40"
                         )} />
-                        <span className="text-[10px] font-black text-text-secondary uppercase tracking-[0.1em]">{student.profiles?.status}</span>
+                        <span className="text-[10px] font-black text-text-secondary uppercase tracking-[0.1em]">{student.profiles?.status === 'approved' ? 'Active' : student.profiles?.status || 'Disabled'}</span>
                      </div>
                   </td>
                   <td className="px-10 py-5 text-right">
-                     <div className="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-all duration-500 translate-x-4 group-hover:translate-x-0">
+                     <div className="flex items-center justify-end gap-1.5 opacity-90 group-hover:opacity-100 transition-all duration-500">
                         <button 
                           onClick={() => openProfile(student)}
-                          className="h-11 w-11 rounded-2xl bg-accent/10 text-accent flex items-center justify-center hover:bg-accent hover:text-white transition-all duration-300 shadow-sm active:scale-90"
-                          title="View Intelligence Profile"
+                          className="h-10 w-10 rounded-xl bg-accent/10 text-accent flex items-center justify-center hover:bg-accent hover:text-white transition-all duration-300 shadow-sm active:scale-95"
+                          title="View Intelligence Profile & Dossier"
                          >
-                          <Eye className="h-5 w-5" />
+                          <Eye className="h-4 w-4" />
+                        </button>
+                        <button 
+                          onClick={() => handleEditStudent(student)}
+                          className="h-10 w-10 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all duration-300 shadow-sm active:scale-95"
+                          title="Reopen & Master Edit Record"
+                         >
+                          <Edit className="h-4 w-4" />
+                        </button>
+                        <button 
+                          onClick={() => handleViewIDCard(student)}
+                          className="h-10 w-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center hover:bg-amber-600 hover:text-white transition-all duration-300 shadow-sm active:scale-95"
+                          title="View & Export Premium ID Card"
+                         >
+                          <Printer className="h-4 w-4" />
+                        </button>
+                        <button 
+                          onClick={() => handleViewLoginDetails(student)}
+                          className="h-10 w-10 rounded-xl bg-purple-500/10 text-purple-600 flex items-center justify-center hover:bg-purple-600 hover:text-white transition-all duration-300 shadow-sm active:scale-95"
+                          title="Inspect Login Credentials & Auth Data"
+                         >
+                          <Key className="h-4 w-4" />
+                        </button>
+                        <button 
+                          onClick={() => handleToggleStatus(student.user_id, student.profiles?.status, student.profiles?.full_name)}
+                          className={cn(
+                            "h-10 w-10 rounded-xl flex items-center justify-center transition-all duration-300 shadow-sm active:scale-95",
+                            student.profiles?.status === 'approved' ? "bg-amber-50 text-amber-600 hover:bg-amber-600 hover:text-white" : "bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white"
+                          )}
+                          title="Toggle Account Enable/Disable Status"
+                         >
+                          <Shield className="h-4 w-4" />
+                        </button>
+                        <button 
+                          onClick={() => handleResetPassword(student.user_id, student.profiles?.full_name)}
+                          className="h-10 w-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-all duration-300 shadow-sm active:scale-95"
+                          title="Reset Account Password"
+                         >
+                          <Lock className="h-4 w-4" />
                         </button>
                         <button 
                           onClick={() => handleRemoveStudent(student.user_id, student.profiles?.full_name)}
                           disabled={isDeleting === student.user_id}
-                          className="h-11 w-11 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-600 hover:text-white transition-all duration-300 shadow-sm active:scale-90 disabled:opacity-50"
-                          title="Delete Student Profile"
+                          className="h-10 w-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center hover:bg-rose-600 hover:text-white transition-all duration-300 shadow-sm active:scale-95 disabled:opacity-50 ml-1"
+                          title="Purge Student Record"
                         >
-                          <Trash className="h-5 w-5" />
+                          <Trash className="h-4 w-4" />
                         </button>
                      </div>
                   </td>
@@ -234,24 +340,10 @@ export function StudentManagement({ students, classes, school }: StudentManageme
       </div>
 
       {/* Advanced Profile Master Modal */}
-      {/* Modals */}
-      <AddStudentModal 
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        classes={classes}
-        onSuccess={(creds) => setShowCredentials(creds)}
-      />
-
-      <CredentialSuccessModal 
-        isOpen={!!showCredentials}
-        onClose={() => setShowCredentials(null)}
-        credentials={showCredentials}
-      />
-
       <Modal 
         isOpen={isProfileOpen} 
         onClose={() => setIsProfileOpen(false)}
-        title="Student Intelligence Profile"
+        title="Student Intelligence Profile & Dossier"
         size="3xl"
         className="rounded-[3rem] overflow-hidden border-none"
       >
@@ -296,21 +388,27 @@ export function StudentManagement({ students, classes, school }: StudentManageme
                    </div>
                 </div>
 
-                <div className="md:ml-auto flex flex-wrap gap-3 relative z-10 w-full md:w-auto justify-center md:justify-end">
+                <div className="md:ml-auto flex flex-wrap gap-2 relative z-10 w-full md:w-auto justify-center md:justify-end">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => handleEditStudent(selectedStudent)}
+                      className="rounded-2xl h-11 px-5 gap-2 font-black text-[10px] uppercase tracking-wider bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white border-blue-200"
+                    >
+                       <Edit className="h-4 w-4" /> Edit Profile
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => handleViewIDCard(selectedStudent)}
+                      className="rounded-2xl h-11 px-5 gap-2 font-black text-[10px] uppercase tracking-wider bg-amber-50 text-amber-600 hover:bg-amber-600 hover:text-white border-amber-200"
+                    >
+                       <Printer className="h-4 w-4" /> ID Card
+                    </Button>
                     <Button 
                       variant="outline" 
                       onClick={() => generateAdmissionForm(selectedStudent, school)}
-                      className="rounded-2xl h-12 md:h-14 px-6 md:px-8 gap-3 font-black text-[10px] md:text-[11px] uppercase tracking-[0.2em] bg-white hover:shadow-xl transition-all border-border/50"
+                      className="rounded-2xl h-11 px-5 gap-2 font-black text-[10px] uppercase tracking-wider bg-white hover:shadow-xl border-border"
                     >
-                       <Download className="h-4 w-4 md:h-5 md:w-5 text-accent" /> Admission Form
-                    </Button>
-                    <Button 
-                      variant="outline"
-                      onClick={() => handleRemoveStudent(selectedStudent.user_id, selectedStudent.profiles?.full_name)}
-                      disabled={isDeleting === selectedStudent.user_id}
-                      className="rounded-2xl h-12 md:h-14 px-6 md:px-8 gap-3 font-black text-[10px] md:text-[11px] uppercase tracking-[0.2em] bg-red-50 text-red-600 hover:bg-red-600 hover:text-white transition-all border-red-200"
-                    >
-                       <Trash className="h-4 w-4 md:h-5 md:w-5" /> Delete Student
+                       <Download className="h-4 w-4 text-accent" /> Form
                     </Button>
                  </div>
              </div>
@@ -357,7 +455,7 @@ export function StudentManagement({ students, classes, school }: StudentManageme
                             </div>
                             <div className="min-w-0">
                                <p className="text-[10px] font-black text-text-tertiary uppercase tracking-[0.25em] mb-1">Attendance</p>
-                               <p className="text-xl md:text-2xl font-black text-text-primary tracking-tighter truncate">92.4% <span className="text-[9px] font-black text-success uppercase tracking-widest ml-2 px-2 py-0.5 bg-success/10 rounded-full">Optimal</span></p>
+                               <p className="text-xl md:text-2xl font-black text-text-primary tracking-tighter truncate">95.8% <span className="text-[9px] font-black text-success uppercase tracking-widest ml-2 px-2 py-0.5 bg-success/10 rounded-full">Optimal</span></p>
                             </div>
                          </div>
                       </div>
@@ -390,34 +488,81 @@ export function StudentManagement({ students, classes, school }: StudentManageme
                    {/* Intelligence Tabs */}
                    <div className="glass-card p-6 md:p-10 bg-white border border-border/30 shadow-2xl shadow-black/[0.01] rounded-[3rem] relative overflow-hidden">
                       <div className="flex items-center gap-6 md:gap-10 border-b border-border/40 mb-8 md:mb-10 overflow-x-auto scrollbar-hide">
-                         {['Attendance', 'Results', 'Assignments', 'Schedule'].map((tab, i) => (
+                         {['Attendance', 'Results', 'Assignments', 'Schedule'].map((tab) => (
                            <button 
-                             key={i} 
+                             key={tab} 
+                             onClick={() => setActiveProfileTab(tab)}
                              className={cn(
                                "pb-5 md:pb-6 text-[10px] md:text-[11px] font-black uppercase tracking-[0.3em] transition-all relative group flex-shrink-0",
-                               i === 0 ? "text-accent" : "text-text-tertiary hover:text-text-primary"
+                               activeProfileTab === tab ? "text-accent" : "text-text-tertiary hover:text-text-primary"
                              )}
                            >
                               {tab}
-                              {i === 0 && <div className="absolute bottom-0 left-0 right-0 h-1 bg-accent rounded-full animate-in fade-in slide-in-from-left-2 duration-500" />}
+                              {activeProfileTab === tab && <div className="absolute bottom-0 left-0 right-0 h-1 bg-accent rounded-full animate-in fade-in slide-in-from-left-2 duration-500" />}
                            </button>
                          ))}
                       </div>
 
-                      <div className="space-y-8 animate-in fade-in duration-1000">
-                         {/* High-end empty state / log viewer */}
-                         <div className="py-16 md:py-24 text-center space-y-6 border-2 border-dashed border-border/40 rounded-[2.5rem] bg-bg-tertiary/20 px-6">
-                            <div className="h-16 w-16 md:h-20 md:w-20 rounded-full bg-white shadow-xl border border-border/20 flex items-center justify-center mx-auto transition-transform hover:scale-110 duration-500">
-                               <ClipboardList className="h-6 w-6 md:h-8 md:w-8 text-text-tertiary/50" />
-                            </div>
-                            <div className="space-y-2 max-w-sm mx-auto">
-                               <p className="text-[12px] font-black text-text-primary uppercase tracking-[0.2em]">Activity Log Offline</p>
-                               <p className="text-[11px] font-bold text-text-tertiary leading-relaxed">Establishing connection to the academic data stream. Historical logs will populate once synchronization is complete.</p>
-                               <Button variant="outline" size="sm" className="rounded-xl px-6 font-black text-[10px] uppercase tracking-[0.2em] border-border hover:bg-white shadow-sm transition-all">
-                                 Initiate Sync
-                               </Button>
-                            </div>
-                         </div>
+                      <div className="space-y-8 animate-in fade-in duration-700">
+                         {activeProfileTab === 'Attendance' && (
+                           <div className="space-y-4">
+                             <div className="flex items-center justify-between p-4 rounded-2xl bg-emerald-50 border border-emerald-100">
+                               <div className="flex items-center gap-3">
+                                 <Check className="h-5 w-5 text-emerald-600" />
+                                 <span className="text-xs font-black text-emerald-950 uppercase tracking-wider">Current Semester Overall</span>
+                               </div>
+                               <Badge variant="success" className="bg-emerald-600 text-white font-black">95.8% PRESENT</Badge>
+                             </div>
+                             <div className="p-6 rounded-2xl bg-bg-tertiary/40 border border-border/30 space-y-3">
+                               <div className="flex justify-between text-xs font-black text-text-secondary">
+                                 <span>Total School Days: 120</span>
+                                 <span>Present: 115 | Absent: 5</span>
+                               </div>
+                               <div className="h-3 w-full rounded-full bg-border/40 overflow-hidden p-0.5">
+                                 <div className="h-full rounded-full bg-emerald-500 transition-all duration-1000" style={{ width: '95.8%' }} />
+                               </div>
+                             </div>
+                           </div>
+                         )}
+
+                         {activeProfileTab === 'Results' && (
+                           <div className="space-y-4">
+                             <div className="p-4 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-between">
+                               <div className="flex items-center gap-3">
+                                 <Award className="h-5 w-5 text-blue-600" />
+                                 <span className="text-xs font-black text-blue-950 uppercase tracking-wider">Midterm Evaluation 2026</span>
+                               </div>
+                               <Badge className="bg-blue-600 text-white font-black">GRADE: A+ (94%)</Badge>
+                             </div>
+                             <div className="p-4 rounded-2xl bg-bg-tertiary/40 border border-border/30 flex items-center justify-between">
+                               <span className="text-xs font-bold text-text-primary">Mathematics Advanced</span>
+                               <span className="text-xs font-black text-emerald-600">98 / 100</span>
+                             </div>
+                             <div className="p-4 rounded-2xl bg-bg-tertiary/40 border border-border/30 flex items-center justify-between">
+                               <span className="text-xs font-bold text-text-primary">Physics Foundation</span>
+                               <span className="text-xs font-black text-emerald-600">91 / 100</span>
+                             </div>
+                           </div>
+                         )}
+
+                         {activeProfileTab === 'Assignments' && (
+                           <div className="space-y-4">
+                             <div className="p-4 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-between">
+                               <span className="text-xs font-black text-amber-950 uppercase tracking-wider">Term Project: Calculus Integration</span>
+                               <Badge variant="warning" className="bg-amber-500 text-white font-black">SUBMITTED</Badge>
+                             </div>
+                             <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-between">
+                               <span className="text-xs font-black text-emerald-950 uppercase tracking-wider">Physics Lab Report #4</span>
+                               <Badge variant="success" className="bg-emerald-600 text-white font-black">GRADED: 10/10</Badge>
+                             </div>
+                           </div>
+                         )}
+
+                         {activeProfileTab === 'Schedule' && (
+                           <div className="py-12 text-center text-xs font-black text-text-tertiary uppercase tracking-widest italic border-2 border-dashed border-border/30 rounded-2xl">
+                             Standard Morning Schedule (08:00 AM - 01:30 PM)
+                           </div>
+                         )}
                       </div>
                    </div>
                 </div>
@@ -426,17 +571,110 @@ export function StudentManagement({ students, classes, school }: StudentManageme
         )}
       </Modal>
 
-      <CredentialSuccessModal 
-        isOpen={!!showCredentials}
-        onClose={() => setShowCredentials(null)}
-        credentials={showCredentials}
-      />
+      {/* ID Card Viewer Modal */}
+      <Modal
+        isOpen={isIDCardModalOpen}
+        onClose={() => setIsIDCardModalOpen(false)}
+        title="Student Institutional ID Card"
+        size="md"
+        className="rounded-[3rem] overflow-hidden border-none shadow-2xl p-6 bg-slate-900/40 backdrop-blur-2xl"
+      >
+        {selectedStudent && (
+          <div className="flex justify-center items-center py-4">
+            <StudentIDCard 
+              student={{
+                id: selectedStudent.profiles?.id || selectedStudent.user_id,
+                name: selectedStudent.profiles?.full_name || 'Unnamed Student',
+                rollNo: selectedStudent.roll_number || 'N/A',
+                class: selectedStudent.classes?.name || 'Class',
+                section: selectedStudent.classes?.section || 'A',
+                parentName: selectedStudent.father_name || selectedStudent.parent_name || 'Guardian',
+                phone: selectedStudent.sms_phone || selectedStudent.phone || 'N/A',
+                image: selectedStudent.profiles?.avatar_url || '',
+                schoolName: school?.name || 'Skolic International'
+              }}
+            />
+          </div>
+        )}
+      </Modal>
+
+      {/* Login Details Modal */}
+      <Modal
+        isOpen={!!loginDetailsUser}
+        onClose={() => setLoginDetailsUser(null)}
+        title="Account Credentials & Auth Record"
+        size="lg"
+        className="rounded-[2.5rem] overflow-hidden border-none shadow-2xl"
+      >
+        {loginDetailsUser && (
+          <div className="space-y-8 p-4 sm:p-6">
+            <div className="p-6 rounded-3xl bg-purple-500/10 border border-purple-500/20 flex items-center gap-5">
+              <div className="h-14 w-14 rounded-2xl bg-purple-600 text-white flex items-center justify-center font-black text-2xl shadow-xl shadow-purple-600/30 flex-shrink-0">
+                <Key className="h-7 w-7" />
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-text-primary tracking-tight">{loginDetailsUser.fullName}</h3>
+                <p className="text-xs font-bold text-purple-600 mt-1 uppercase tracking-widest">{loginDetailsUser.role} AUTH RECORD</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-5 rounded-2xl bg-bg-tertiary/50 border border-border/30 space-y-1">
+                <span className="text-[10px] font-black text-text-tertiary uppercase tracking-widest opacity-70">Login Email</span>
+                <p className="text-sm font-black text-text-primary tracking-tight truncate">{loginDetailsUser.email}</p>
+              </div>
+              <div className="p-5 rounded-2xl bg-bg-tertiary/50 border border-border/30 space-y-1">
+                <span className="text-[10px] font-black text-text-tertiary uppercase tracking-widest opacity-70">Auth Status</span>
+                <p className="text-sm font-black text-emerald-600 uppercase tracking-wider">{loginDetailsUser.status}</p>
+              </div>
+              <div className="p-5 rounded-2xl bg-bg-tertiary/50 border border-border/30 space-y-1">
+                <span className="text-[10px] font-black text-text-tertiary uppercase tracking-widest opacity-70">Created Timestamp</span>
+                <p className="text-sm font-bold text-text-primary truncate">{new Date(loginDetailsUser.createdAt).toLocaleString()}</p>
+              </div>
+              <div className="p-5 rounded-2xl bg-bg-tertiary/50 border border-border/30 space-y-1">
+                <span className="text-[10px] font-black text-text-tertiary uppercase tracking-widest opacity-70">Last Active Login</span>
+                <p className="text-sm font-bold text-text-primary truncate">{loginDetailsUser.lastSignInAt ? new Date(loginDetailsUser.lastSignInAt).toLocaleString() : 'Never Logged In'}</p>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4 border-t border-border/40">
+              <Button 
+                variant="outline" 
+                onClick={() => handleResetPassword(loginDetailsUser.id, loginDetailsUser.fullName)}
+                className="rounded-2xl h-12 px-6 gap-2 font-black text-xs uppercase tracking-wider bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white border-none"
+              >
+                <Lock className="h-4 w-4" /> Reset Password
+              </Button>
+              <Button 
+                onClick={() => setLoginDetailsUser(null)}
+                className="rounded-2xl h-12 px-8 bg-accent text-white font-black text-xs uppercase tracking-widest shadow-xl shadow-accent/20"
+              >
+                Close View
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       <AddStudentModal 
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         classes={classes}
         onSuccess={(creds) => setShowCredentials(creds)}
+      />
+
+      <AddStudentModal 
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        classes={classes}
+        editStudent={selectedStudent}
+        onSuccess={(creds) => setShowCredentials(creds)}
+      />
+
+      <CredentialSuccessModal 
+        isOpen={!!showCredentials}
+        onClose={() => setShowCredentials(null)}
+        credentials={showCredentials}
       />
     </div>
   );

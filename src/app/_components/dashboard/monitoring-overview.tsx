@@ -186,8 +186,8 @@ export function MonitoringOverview({ stats, recentActivity }: MonitoringOverview
                         </p>
                         <div className="flex items-center gap-2">
                            <Clock className="h-3 w-3 text-text-tertiary" />
-                           <p className="text-[9px] font-black text-text-tertiary uppercase tracking-widest">
-                              {new Date(item.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                           <p className="text-[9px] font-black text-text-tertiary uppercase tracking-widest" suppressHydrationWarning>
+                              {new Date(item.time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                            </p>
                             <Badge variant="default" className="text-[8px] px-2 py-0 h-4 bg-bg-tertiary border-none">
                               {item.type}

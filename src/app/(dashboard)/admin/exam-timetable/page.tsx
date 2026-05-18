@@ -77,7 +77,7 @@ export default function AdminExamManagement() {
              >
                <option value="all">All Classes</option>
                {classes.map(c => (
-                 <option key={c.id} value={c.id}>{c.name} — {c.section}</option>
+                 <option key={c.id} value={c.id}>{c.name}{c.section && c.section.toUpperCase() !== 'A' ? ` — ${c.section}` : ''}</option>
                ))}
              </select>
           </div>
@@ -91,16 +91,16 @@ export default function AdminExamManagement() {
             <Badge className="bg-emerald-100 text-emerald-700 border-none font-black">{filteredExams.length} Exams Listed</Badge>
          </div>
 
-         <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
+         <div className="overflow-x-auto overflow-y-auto max-h-[600px] scrollbar-premium">
+            <table className="w-full text-sm text-left border-collapse">
                <thead className="bg-bg-tertiary/50 text-[10px] font-black uppercase tracking-widest text-text-tertiary border-b border-border/50">
                   <tr>
-                     <th className="px-8 py-5">Exam Details</th>
-                     <th className="px-8 py-5">Class & Section</th>
-                     <th className="px-8 py-5">Date & Time</th>
-                     <th className="px-8 py-5">Invigilator</th>
-                     <th className="px-8 py-5">Room</th>
-                     <th className="px-8 py-5 text-right">Status</th>
+                     <th className="px-8 py-5 sticky top-0 bg-bg-tertiary/90 backdrop-blur-md z-10 whitespace-nowrap shadow-sm">Exam Details</th>
+                     <th className="px-8 py-5 sticky top-0 bg-bg-tertiary/90 backdrop-blur-md z-10 whitespace-nowrap shadow-sm">Class & Section</th>
+                     <th className="px-8 py-5 sticky top-0 bg-bg-tertiary/90 backdrop-blur-md z-10 whitespace-nowrap shadow-sm">Date & Time</th>
+                     <th className="px-8 py-5 sticky top-0 bg-bg-tertiary/90 backdrop-blur-md z-10 whitespace-nowrap shadow-sm">Invigilator</th>
+                     <th className="px-8 py-5 sticky top-0 bg-bg-tertiary/90 backdrop-blur-md z-10 whitespace-nowrap shadow-sm">Room</th>
+                     <th className="px-8 py-5 text-right sticky top-0 bg-bg-tertiary/90 backdrop-blur-md z-10 whitespace-nowrap shadow-sm">Status</th>
                   </tr>
                </thead>
                <tbody className="divide-y divide-border/30">

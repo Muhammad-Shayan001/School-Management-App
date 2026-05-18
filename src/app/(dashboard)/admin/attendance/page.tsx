@@ -10,9 +10,9 @@ import { Card } from '@/app/_components/ui/card';
 import { Button } from '@/app/_components/ui/button';
 import { PageSpinner } from '@/app/_components/ui/spinner';
 import { Select } from '@/app/_components/ui/select';
-import { 
-  Calendar as CalendarIcon, UserCheck, UserX, Scan, ListChecks, 
-  Search, BarChart3, Clock, GraduationCap, Users, ShieldCheck, 
+import {
+  Calendar as CalendarIcon, UserCheck, UserX, Scan, ListChecks,
+  Search, BarChart3, Clock, GraduationCap, Users, ShieldCheck,
   XCircle, CheckCircle2, History, Filter, Plus, Trash2, CalendarX,
   Palmtree, Users2, Layers
 } from 'lucide-react';
@@ -41,12 +41,12 @@ export default function AdminAttendancePage() {
   const fetchData = async () => {
     setIsLoading(true);
     if (activeMainTab === 'daily') {
-      const { data } = await getSchoolAttendance(date, { 
+      const { data } = await getSchoolAttendance(date, {
         status: statusFilter === 'all' ? undefined : (statusFilter === 'present' ? 'present' : statusFilter),
         classId: classFilter === 'all' ? undefined : classFilter
       });
       setAttendance(data || []);
-      
+
       if (classes.length === 0) {
         const { data: clsData } = await getClasses();
         setClasses(clsData || []);
@@ -98,9 +98,9 @@ export default function AdminAttendancePage() {
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
         <div className="space-y-1">
           <div className="flex items-center gap-2 mb-1">
-             <div className="px-3 py-1 rounded-full bg-accent/10 border border-accent/20 text-accent text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-               <ShieldCheck className="h-3 w-3" /> Principal's Control
-             </div>
+            <div className="px-3 py-1 rounded-full bg-accent/10 border border-accent/20 text-accent text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+              <ShieldCheck className="h-3 w-3" /> Principal's Control
+            </div>
           </div>
           <h1 className="text-4xl font-black text-text-primary tracking-tighter">School Attendance</h1>
         </div>
@@ -168,51 +168,51 @@ export default function AdminAttendancePage() {
             <div className="xl:col-span-3 space-y-6">
               <Card className="p-0 border-none shadow-xl overflow-hidden bg-white min-h-[600px] flex flex-col">
                 <div className="p-6 border-b border-border/50 bg-bg-secondary/20 flex flex-col md:flex-row gap-4 items-center justify-between">
-                   <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-xl border border-border">
-                     <CalendarIcon className="h-4 w-4 text-accent" />
-                     <input 
-                       type="date" 
-                       value={date} 
-                       onChange={(e) => setDate(e.target.value)}
-                       className="bg-transparent border-none text-sm font-black text-text-primary outline-none"
-                     />
-                   </div>
-                    <div className="flex gap-2 overflow-x-auto pb-1">
-                     <div className="w-48 shrink-0">
-                       <Select
-                         value={classFilter}
-                         onChange={(e) => setClassFilter(e.target.value)}
-                         options={[
-                           { label: 'All Classes', value: 'all' },
-                           ...classes.map(c => ({ label: `${c.name} - ${c.section}`, value: c.id }))
-                         ]}
-                         className="h-10 text-[10px] font-black uppercase tracking-widest bg-white"
-                       />
-                     </div>
-                     {(['all', 'pending', 'present', 'rejected'] as const).map((s) => (
-                       <button
-                         key={s}
-                         onClick={() => setStatusFilter(s)}
-                         className={cn(
-                           "px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all h-10 whitespace-nowrap",
-                           statusFilter === s ? "bg-accent text-white" : "bg-white text-text-tertiary border"
-                         )}
-                       >
-                         {s === 'present' ? 'Verified' : s}
-                       </button>
-                     ))}
-                   </div>
+                  <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-xl border border-border">
+                    <CalendarIcon className="h-4 w-4 text-accent" />
+                    <input
+                      type="date"
+                      value={date}
+                      onChange={(e) => setDate(e.target.value)}
+                      className="bg-transparent border-none text-sm font-black text-text-primary outline-none"
+                    />
+                  </div>
+                  <div className="flex gap-2 overflow-x-auto pb-1">
+                    <div className="w-48 shrink-0">
+                      <Select
+                        value={classFilter}
+                        onChange={(e) => setClassFilter(e.target.value)}
+                        options={[
+                          { label: 'All Classes', value: 'all' },
+                          ...classes.map(c => ({ label: `${c.name}${c.section && c.section.toUpperCase() !== 'A' ? ` - ${c.section}` : ''}`, value: c.id }))
+                        ]}
+                        className="h-10 text-[10px] font-black uppercase tracking-widest bg-white"
+                      />
+                    </div>
+                    {(['all', 'pending', 'present', 'rejected'] as const).map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => setStatusFilter(s)}
+                        className={cn(
+                          "px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all h-10 whitespace-nowrap",
+                          statusFilter === s ? "bg-accent text-white" : "bg-white text-text-tertiary border"
+                        )}
+                      >
+                        {s === 'present' ? 'Verified' : s}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
-                <div className="flex-1 overflow-x-auto">
-                  <table className="w-full text-sm text-left">
+                <div className="flex-1 overflow-x-auto overflow-y-auto max-h-[600px] scrollbar-premium">
+                  <table className="w-full text-sm text-left border-collapse">
                     <thead className="bg-bg-tertiary/50 text-[10px] font-black uppercase tracking-widest text-text-tertiary border-b border-border/50">
                       <tr>
-                        <th className="px-8 py-5">User Profile</th>
-                        <th className="px-8 py-5">Role</th>
-                        <th className="px-8 py-5">Scan Time</th>
-                        <th className="px-8 py-5">Status</th>
-                        <th className="px-8 py-5 text-right">Actions</th>
+                        <th className="px-8 py-5 sticky top-0 bg-bg-tertiary/90 backdrop-blur-md z-10 whitespace-nowrap shadow-sm">User Profile</th>
+                        <th className="px-8 py-5 sticky top-0 bg-bg-tertiary/90 backdrop-blur-md z-10 whitespace-nowrap shadow-sm">Role</th>
+                        <th className="px-8 py-5 sticky top-0 bg-bg-tertiary/90 backdrop-blur-md z-10 whitespace-nowrap shadow-sm">Scan Time</th>
+                        <th className="px-8 py-5 sticky top-0 bg-bg-tertiary/90 backdrop-blur-md z-10 whitespace-nowrap shadow-sm">Status</th>
+                        <th className="px-8 py-5 text-right sticky top-0 bg-bg-tertiary/90 backdrop-blur-md z-10 whitespace-nowrap shadow-sm">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border/30">
@@ -223,24 +223,24 @@ export default function AdminAttendancePage() {
                           <td className="px-8 py-4 font-black text-text-primary">{record.profiles?.full_name}</td>
                           <td className="px-8 py-4 font-bold text-xs uppercase text-text-tertiary">{record.role}</td>
                           <td className="px-8 py-4 font-bold text-xs text-text-tertiary">
-                             {new Date(record.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            {new Date(record.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </td>
                           <td className="px-8 py-4">
                             <Badge className={cn(
                               "px-3 py-1 font-black text-[10px] uppercase tracking-widest border-none",
                               record.status === 'present' ? "bg-emerald-500 text-white" :
-                              record.status === 'rejected' ? "bg-red-500 text-white" : "bg-amber-500 text-white"
+                                record.status === 'rejected' ? "bg-red-500 text-white" : "bg-amber-500 text-white"
                             )}>
                               {record.status === 'present' ? 'Verified' : record.status}
                             </Badge>
                           </td>
                           <td className="px-8 py-4 text-right">
-                             {record.status === 'pending' && (
-                               <div className="flex gap-2 justify-end">
-                                 <Button size="sm" onClick={() => handleAction(record.id, 'approve')}>Verify</Button>
-                                 <Button size="sm" variant="outline" className="text-red-500" onClick={() => handleAction(record.id, 'reject')}>Reject</Button>
-                               </div>
-                             )}
+                            {record.status === 'pending' && (
+                              <div className="flex gap-2 justify-end">
+                                <Button size="sm" onClick={() => handleAction(record.id, 'approve')}>Verify</Button>
+                                <Button size="sm" variant="outline" className="text-red-500" onClick={() => handleAction(record.id, 'reject')}>Reject</Button>
+                              </div>
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -256,14 +256,14 @@ export default function AdminAttendancePage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <Card className="p-8 border-none shadow-xl bg-white space-y-6 lg:col-span-1">
             <div className="flex items-center gap-3 mb-4">
-               <Palmtree className="h-6 w-6 text-emerald-500" />
-               <h2 className="text-xl font-black text-text-primary tracking-tight">Add Off-Day</h2>
+              <Palmtree className="h-6 w-6 text-emerald-500" />
+              <h2 className="text-xl font-black text-text-primary tracking-tight">Add Off-Day</h2>
             </div>
-            
+
             <form onSubmit={handleAddHoliday} className="space-y-4">
               <div>
                 <label className="text-[10px] font-black uppercase text-text-tertiary tracking-widest mb-1 block">Off-Day Date</label>
-                <input 
+                <input
                   type="date"
                   required
                   value={newHoliday.date}
@@ -271,10 +271,10 @@ export default function AdminAttendancePage() {
                   className="w-full px-4 py-3 bg-bg-tertiary border border-border rounded-xl text-sm font-bold focus:border-accent outline-none"
                 />
               </div>
-              
+
               <div>
                 <label className="text-[10px] font-black uppercase text-text-tertiary tracking-widest mb-1 block">Occasion Name</label>
-                <input 
+                <input
                   type="text"
                   required
                   placeholder="e.g. Winter Break, Sports Day"
@@ -287,19 +287,19 @@ export default function AdminAttendancePage() {
               <div>
                 <label className="text-[10px] font-black uppercase text-text-tertiary tracking-widest mb-1 block">Applicable For</label>
                 <div className="grid grid-cols-3 gap-2">
-                   {(['everyone', 'students', 'teachers'] as const).map((t) => (
-                     <button
-                       key={t}
-                       type="button"
-                       onClick={() => setNewHoliday({ ...newHoliday, type: t })}
-                       className={cn(
-                         "py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border",
-                         newHoliday.type === t ? "bg-accent text-white border-accent" : "bg-white text-text-tertiary border-border hover:border-accent"
-                       )}
-                     >
-                       {t}
-                     </button>
-                   ))}
+                  {(['everyone', 'students', 'teachers'] as const).map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setNewHoliday({ ...newHoliday, type: t })}
+                      className={cn(
+                        "py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border",
+                        newHoliday.type === t ? "bg-accent text-white border-accent" : "bg-white text-text-tertiary border-border hover:border-accent"
+                      )}
+                    >
+                      {t}
+                    </button>
+                  ))}
                 </div>
               </div>
 
@@ -318,18 +318,18 @@ export default function AdminAttendancePage() {
 
           <Card className="p-0 border-none shadow-xl bg-white lg:col-span-2 overflow-hidden flex flex-col">
             <div className="p-6 border-b border-border/50 bg-bg-secondary/20 flex items-center justify-between">
-               <h2 className="text-xl font-black text-text-primary tracking-tight">Holiday Calendar</h2>
-               <Badge className="bg-emerald-100 text-emerald-700 font-black">{holidays.length} Scheduled</Badge>
+              <h2 className="text-xl font-black text-text-primary tracking-tight">Holiday Calendar</h2>
+              <Badge className="bg-emerald-100 text-emerald-700 font-black">{holidays.length} Scheduled</Badge>
             </div>
-            
-            <div className="flex-1 overflow-x-auto">
-              <table className="w-full text-sm text-left">
+
+            <div className="flex-1 overflow-x-auto overflow-y-auto max-h-[600px] scrollbar-premium">
+              <table className="w-full text-sm text-left border-collapse">
                 <thead className="bg-bg-tertiary/50 text-[10px] font-black uppercase tracking-widest text-text-tertiary border-b border-border/50">
                   <tr>
-                    <th className="px-8 py-5">Date</th>
-                    <th className="px-8 py-5">Occasion</th>
-                    <th className="px-8 py-5">Target</th>
-                    <th className="px-8 py-5 text-right">Actions</th>
+                    <th className="px-8 py-5 sticky top-0 bg-bg-tertiary/90 backdrop-blur-md z-10 whitespace-nowrap shadow-sm">Date</th>
+                    <th className="px-8 py-5 sticky top-0 bg-bg-tertiary/90 backdrop-blur-md z-10 whitespace-nowrap shadow-sm">Occasion</th>
+                    <th className="px-8 py-5 sticky top-0 bg-bg-tertiary/90 backdrop-blur-md z-10 whitespace-nowrap shadow-sm">Target</th>
+                    <th className="px-8 py-5 text-right sticky top-0 bg-bg-tertiary/90 backdrop-blur-md z-10 whitespace-nowrap shadow-sm">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/30">
@@ -345,7 +345,7 @@ export default function AdminAttendancePage() {
                         </Badge>
                       </td>
                       <td className="px-8 py-4 text-right">
-                        <button 
+                        <button
                           onClick={() => handleDeleteHoliday(holiday.id)}
                           className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
                         >

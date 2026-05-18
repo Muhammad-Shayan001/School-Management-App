@@ -961,4 +961,325 @@ export async function deleteTeacher(teacherUserId: string) {
   return { success: true };
 }
 
+/**
+ * Reset a user's password to a new value or auto-generated secure string.
+ */
+export async function resetUserPassword(userId: string, newPassword?: string) {
+  const adminClient = createAdminClient();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { error: 'Unauthorized' };
+
+  const { data: caller } = await adminClient
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
+  if (!caller || !['super_admin', 'admin'].includes(caller.role)) {
+    return { error: 'Unauthorized: Only admins can reset passwords.' };
+  }
+
+  const passwordToSet = newPassword || Math.random().toString(36).slice(-8) + 'Sc@1';
+
+  const { data, error } = await adminClient.auth.admin.updateUserById(userId, {
+    password: passwordToSet
+  });
+
+  if (error) return { error: error.message };
+
+  return { success: true, newPassword: passwordToSet };
+}
+
+/**
+ * Toggle user account enabled/disabled status.
+ */
+export async function toggleUserStatus(userId: string) {
+  const adminClient = createAdminClient();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { error: 'Unauthorized' };
+
+  const { data: caller } = await adminClient
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
+  if (!caller || !['super_admin', 'admin'].includes(caller.role)) {
+    return { error: 'Unauthorized: Only admins can toggle account status.' };
+  }
+
+  const { data: targetProfile } = await adminClient
+    .from('profiles')
+    .select('status, role')
+    .eq('id', userId)
+    .single();
+
+  if (!targetProfile) return { error: 'User profile not found' };
+
+  const newStatus = targetProfile.status === 'disabled' ? 'approved' : 'disabled';
+
+  const { error: updateErr } = await adminClient
+    .from('profiles')
+    .update({ status: newStatus, updated_at: new Date().toISOString() })
+    .eq('id', userId);
+
+  if (updateErr) return { error: updateErr.message };
+
+  await adminClient.auth.admin.updateUserById(userId, {
+    user_metadata: { status: newStatus }
+  });
+
+  revalidatePath('/admin/students');
+  revalidatePath('/admin/teachers');
+
+  return { success: true, status: newStatus };
+}
+
+/**
+ * Fetch detailed login & auth details for admin review.
+ */
+export async function getUserLoginDetails(userId: string) {
+  const adminClient = createAdminClient();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { data: null, error: 'Unauthorized' };
+
+  const { data: caller } = await adminClient
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
+  if (!caller || !['super_admin', 'admin'].includes(caller.role)) {
+    return { data: null, error: 'Unauthorized: Only admins can view login details.' };
+  }
+
+  const { data: authUser, error: authErr } = await adminClient.auth.admin.getUserById(userId);
+
+  if (authErr || !authUser.user) return { data: null, error: 'Auth user not found' };
+
+  const { data: profile } = await adminClient
+    .from('profiles')
+    .select('full_name, role, status')
+    .eq('id', userId)
+    .single();
+
+  return {
+    data: {
+      id: authUser.user.id,
+      email: authUser.user.email,
+      fullName: profile?.full_name || authUser.user.user_metadata?.full_name,
+      role: profile?.role || authUser.user.user_metadata?.role,
+      status: profile?.status || authUser.user.user_metadata?.status,
+      lastSignInAt: authUser.user.last_sign_in_at,
+      createdAt: authUser.user.created_at
+    },
+    error: null
+  };
+}
+
+/**
+ * Comprehensive update for a manual student profile (all fields).
+ */
+export async function updateManualStudentData(userId: string, formData: any) {
+  const adminClient = createAdminClient();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { error: 'Unauthorized' };
+
+  const { data: caller } = await adminClient
+    .from('profiles')
+    .select('role, school_id')
+    .eq('id', user.id)
+    .single();
+
+  if (!caller || !['super_admin', 'admin'].includes(caller.role)) {
+    return { error: 'Unauthorized: Only admins can update student records.' };
+  }
+
+  // 1. Update profiles table
+  const { error: profileErr } = await adminClient
+    .from('profiles')
+    .update({
+      full_name: formData.full_name,
+      email: formData.email,
+      phone: formData.phone,
+      avatar_url: formData.avatar_url,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', userId);
+
+  if (profileErr) return { error: 'Failed to update profile: ' + profileErr.message };
+
+  // 2. Update auth email & password if changed
+  const updateAuth: any = {};
+  if (formData.email) updateAuth.email = formData.email;
+  if (formData.password) updateAuth.password = formData.password;
+  if (formData.full_name) updateAuth.user_metadata = { full_name: formData.full_name };
+
+  if (Object.keys(updateAuth).length > 0) {
+    await adminClient.auth.admin.updateUserById(userId, updateAuth);
+  }
+
+  // 3. Update student_profiles
+  const { error: studentErr } = await adminClient
+    .from('student_profiles')
+    .update({
+      campus_id: formData.campus_id || null,
+      roll_number: formData.roll_number,
+      cnic: formData.cnic,
+      class_id: formData.class_id || null,
+      section: formData.section,
+      dob: formData.dob || null,
+      gender: formData.gender,
+      phone: formData.phone,
+      registration_no: formData.registration_no,
+      admission_date: formData.admission_date || null,
+      fee_discount: parseFloat(formData.fee_discount || '0'),
+      sms_phone: formData.sms_phone,
+      birth_form_id: formData.birth_form_id,
+      is_orphan: formData.is_orphan === 'true',
+      student_cast: formData.student_cast,
+      is_osc: formData.is_osc === 'true',
+      id_mark: formData.id_mark,
+      previous_school: formData.previous_school,
+      religion: formData.religion,
+      blood_group: formData.blood_group,
+      family_id: formData.family_id,
+      disease: formData.disease,
+      additional_note: formData.additional_note,
+      total_siblings: parseInt(formData.total_siblings || '0'),
+      address: formData.address,
+      father_name: formData.father_name,
+      father_cnic: formData.father_cnic,
+      father_occupation: formData.father_occupation,
+      father_education: formData.father_education,
+      father_phone: formData.father_phone,
+      father_profession: formData.father_profession,
+      father_income: formData.father_income,
+      mother_name: formData.mother_name,
+      mother_cnic: formData.mother_cnic,
+      mother_occupation: formData.mother_occupation,
+      mother_education: formData.mother_education,
+      mother_phone: formData.mother_phone,
+      mother_profession: formData.mother_profession,
+      mother_income: formData.mother_income,
+      shift: formData.shift,
+      group: formData.group,
+      session_year: formData.session_year || new Date().getFullYear().toString()
+    })
+    .eq('user_id', userId);
+
+  if (studentErr) return { error: 'Failed to update student details: ' + studentErr.message };
+
+  revalidatePath('/admin/students');
+  return { success: true };
+}
+
+/**
+ * Comprehensive update for a manual teacher profile (all fields).
+ */
+export async function updateManualTeacherData(userId: string, formData: any) {
+  const adminClient = createAdminClient();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { error: 'Unauthorized' };
+
+  const { data: caller } = await adminClient
+    .from('profiles')
+    .select('role, school_id')
+    .eq('id', user.id)
+    .single();
+
+  if (!caller || !['super_admin', 'admin'].includes(caller.role)) {
+    return { error: 'Unauthorized: Only admins can update teacher records.' };
+  }
+
+  // 1. Update profiles table
+  const { error: profileErr } = await adminClient
+    .from('profiles')
+    .update({
+      full_name: formData.full_name,
+      email: formData.email,
+      phone: formData.phone,
+      avatar_url: formData.avatar_url,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', userId);
+
+  if (profileErr) return { error: 'Failed to update profile: ' + profileErr.message };
+
+  // 2. Update auth email & password if changed
+  const updateAuth: any = {};
+  if (formData.email) updateAuth.email = formData.email;
+  if (formData.password) updateAuth.password = formData.password;
+  if (formData.full_name) updateAuth.user_metadata = { full_name: formData.full_name };
+
+  if (Object.keys(updateAuth).length > 0) {
+    await adminClient.auth.admin.updateUserById(userId, updateAuth);
+  }
+
+  // 3. Update teacher_profiles
+  const { error: teacherErr } = await adminClient
+    .from('teacher_profiles')
+    .update({
+      campus_id: formData.campus_id || null,
+      teacher_id: formData.teacher_id,
+      is_class_teacher: formData.is_class_teacher === 'true',
+      class_id: formData.class_id || null,
+      qualification: formData.qualification,
+      experience: formData.experience,
+      cnic: formData.cnic,
+      address: formData.address,
+      gender: formData.gender,
+      dob: formData.dob || null,
+      city: formData.city,
+      country: formData.country
+    })
+    .eq('user_id', userId);
+
+  if (teacherErr) return { error: 'Failed to update teacher details: ' + teacherErr.message };
+
+  // 4. Update assignments if provided
+  if (formData.assignments && Array.isArray(formData.assignments)) {
+    // Clear old assignments
+    await adminClient.from('teacher_assignments').delete().eq('teacher_id', userId);
+
+    const assignmentsToInsert = [];
+    for (const a of formData.assignments) {
+      if (!a.class_id) continue;
+      let finalSubjectId = a.subject_id;
+      if (a.subject_id === 'other' && a.custom_subject) {
+        const { data: newSubj } = await adminClient
+          .from('subjects')
+          .insert({ name: a.custom_subject, school_id: caller.school_id })
+          .select()
+          .single();
+        if (newSubj) finalSubjectId = newSubj.id;
+      }
+      if (finalSubjectId) {
+        assignmentsToInsert.push({
+          teacher_id: userId,
+          class_id: a.class_id,
+          subject_id: finalSubjectId,
+          school_id: caller.school_id
+        });
+      }
+    }
+    if (assignmentsToInsert.length > 0) {
+      await adminClient.from('teacher_assignments').insert(assignmentsToInsert);
+    }
+  }
+
+  revalidatePath('/admin/teachers');
+  return { success: true };
+}
+
 

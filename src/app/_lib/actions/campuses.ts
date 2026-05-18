@@ -42,9 +42,68 @@ export async function getAdminCampuses() {
 }
 
 /**
+ * Helper to process FormData or plain objects and upload logo file if present.
+ */
+async function processCampusFormData(formDataRaw: any) {
+  const adminClient = createAdminClient();
+  let name, campus_code, address, phone, email, principal_name, description, banner_url, campus_type, campus_timing, theme_color, is_active;
+  let logo_url = null;
+  let logoFile: File | null = null;
+
+  if (typeof formDataRaw?.get === 'function') {
+    name = formDataRaw.get('name') as string;
+    campus_code = formDataRaw.get('campus_code') as string;
+    address = formDataRaw.get('address') as string;
+    phone = formDataRaw.get('phone') as string;
+    email = formDataRaw.get('email') as string;
+    principal_name = formDataRaw.get('principal_name') as string;
+    description = formDataRaw.get('description') as string;
+    banner_url = formDataRaw.get('banner_url') as string;
+    logo_url = formDataRaw.get('logo_url') as string || null;
+    campus_type = formDataRaw.get('campus_type') as string;
+    campus_timing = formDataRaw.get('campus_timing') as string;
+    theme_color = formDataRaw.get('theme_color') as string || '#6366f1';
+    is_active = formDataRaw.get('is_active') !== 'false';
+    logoFile = formDataRaw.get('logo_file') as File | null;
+  } else {
+    name = formDataRaw.name;
+    campus_code = formDataRaw.campus_code;
+    address = formDataRaw.address;
+    phone = formDataRaw.phone;
+    email = formDataRaw.email;
+    principal_name = formDataRaw.principal_name;
+    description = formDataRaw.description;
+    banner_url = formDataRaw.banner_url;
+    logo_url = formDataRaw.logo_url || null;
+    campus_type = formDataRaw.campus_type;
+    campus_timing = formDataRaw.campus_timing;
+    theme_color = formDataRaw.theme_color || '#6366f1';
+    is_active = formDataRaw.is_active !== false;
+  }
+
+  if (logoFile && logoFile.size > 0) {
+    const fileExt = logoFile.name.split('.').pop();
+    const fileName = `campus-${Math.random().toString(36).substring(2, 10)}.${fileExt}`;
+    const filePath = `school-logos/${fileName}`;
+
+    const { error: uploadError } = await adminClient
+      .storage
+      .from('profiles')
+      .upload(filePath, logoFile, { contentType: logoFile.type, upsert: true });
+
+    if (!uploadError) {
+      const { data: publicUrlData } = adminClient.storage.from('profiles').getPublicUrl(filePath);
+      logo_url = publicUrlData.publicUrl;
+    }
+  }
+
+  return { name, campus_code, address, phone, email, principal_name, description, banner_url, logo_url, campus_type, campus_timing, theme_color, is_active };
+}
+
+/**
  * Create a new campus under the admin's institution.
  */
-export async function createCampus(formData: any) {
+export async function createCampus(formDataRaw: any) {
   console.log('[createCampus] Server action started');
   const adminClient = createAdminClient();
   const supabase = await createClient();
@@ -72,8 +131,7 @@ export async function createCampus(formData: any) {
     return { error: 'Unauthorized: Only admins can create campuses.' };
   }
 
-  const name = formData.name;
-  let campus_code = formData.campus_code;
+  const { name, campus_code, address, phone, email, principal_name, description, banner_url, logo_url, campus_type, campus_timing, theme_color } = await processCampusFormData(formDataRaw);
   
   if (!name) return { error: 'Campus name is required.' };
 
@@ -89,17 +147,17 @@ export async function createCampus(formData: any) {
     .insert({
       name,
       code: uniqueCode, // This must be unique globally
-      address: formData.address || null,
-      phone: formData.phone || null,
-      email: formData.email || null,
-      principal_name: formData.principal_name || null,
-      logo_url: formData.logo_url || null,
-      banner_url: formData.banner_url || null,
-      description: formData.description || null,
+      address: address || null,
+      phone: phone || null,
+      email: email || null,
+      principal_name: principal_name || null,
+      logo_url: logo_url || null,
+      banner_url: banner_url || null,
+      description: description || null,
       campus_code: campus_code || baseSlug.toUpperCase(), // This is the display code
-      campus_type: formData.campus_type || 'branch',
-      campus_timing: formData.campus_timing || null,
-      theme_color: formData.theme_color || '#6366f1',
+      campus_type: campus_type || 'branch',
+      campus_timing: campus_timing || null,
+      theme_color: theme_color || '#6366f1',
       is_active: true,
       parent_school_id: profile.school_id || null,
       admin_id: user.id,
@@ -148,7 +206,7 @@ export async function createCampus(formData: any) {
 /**
  * Update an existing campus.
  */
-export async function updateCampus(campusId: string, formData: any) {
+export async function updateCampus(campusId: string, formDataRaw: any) {
   const adminClient = createAdminClient();
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -173,22 +231,24 @@ export async function updateCampus(campusId: string, formData: any) {
     return { error: 'Unauthorized: You do not have access to this campus.' };
   }
 
+  const { name, campus_code, address, phone, email, principal_name, description, banner_url, logo_url, campus_type, campus_timing, theme_color, is_active } = await processCampusFormData(formDataRaw);
+
   const { error } = await adminClient
     .from('schools')
     .update({
-      name: formData.name,
-      address: formData.address || null,
-      phone: formData.phone || null,
-      email: formData.email || null,
-      principal_name: formData.principal_name || null,
-      logo_url: formData.logo_url || null,
-      banner_url: formData.banner_url || null,
-      description: formData.description || null,
-      campus_code: formData.campus_code || null,
-      campus_type: formData.campus_type || null,
-      campus_timing: formData.campus_timing || null,
-      theme_color: formData.theme_color || '#6366f1',
-      is_active: formData.is_active !== false,
+      name,
+      address: address || null,
+      phone: phone || null,
+      email: email || null,
+      principal_name: principal_name || null,
+      logo_url: logo_url || null,
+      banner_url: banner_url || null,
+      description: description || null,
+      campus_code: campus_code || null,
+      campus_type: campus_type || null,
+      campus_timing: campus_timing || null,
+      theme_color: theme_color || '#6366f1',
+      is_active,
     })
     .eq('id', campusId);
 

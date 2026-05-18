@@ -1,5 +1,6 @@
 import { getFullProfile } from "@/app/_lib/actions/profile";
 import { getTeacherAssignments as getTeacherSubjectAssignments } from "@/app/_lib/actions/results";
+import { getClasses, getSubjects } from "@/app/_lib/actions/timetable";
 import { createAssignment } from "@/app/_lib/actions/assignments";
 import { Button } from "@/app/_components/ui/button";
 import { Badge } from "@/app/_components/ui/badge";
@@ -18,6 +19,35 @@ export default async function CreateAssignmentPage() {
 
   const assignmentsResponse = await getTeacherSubjectAssignments();
   const teacherAssignments = assignmentsResponse.data || [];
+
+  const [classesRes, subjectsRes] = await Promise.all([
+    getClasses(),
+    getSubjects()
+  ]);
+  const allClasses = classesRes.data || [];
+  const allSubjects = subjectsRes.data || [];
+
+  let availableClasses: any[] = [];
+  if (teacherAssignments.length > 0) {
+    const classMap = new Map();
+    teacherAssignments.forEach(ta => {
+      if (ta.classes && ta.classes.id) classMap.set(ta.classes.id, ta.classes);
+    });
+    availableClasses = Array.from(classMap.values());
+  } else {
+    availableClasses = allClasses;
+  }
+
+  let availableSubjects: any[] = [];
+  if (teacherAssignments.length > 0) {
+    const subjectMap = new Map();
+    teacherAssignments.forEach(ta => {
+      if (ta.subjects && ta.subjects.id) subjectMap.set(ta.subjects.id, ta.subjects);
+    });
+    availableSubjects = Array.from(subjectMap.values());
+  } else {
+    availableSubjects = allSubjects;
+  }
 
   return (
     <div className="flex-1 space-y-8 p-4 md:p-8 pt-6 max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -99,15 +129,11 @@ export default async function CreateAssignmentPage() {
                                     className="w-full bg-bg-tertiary/40 border border-border/40 rounded-2xl py-4 pl-12 pr-4 text-sm font-bold text-text-primary focus:outline-none focus:border-accent/40 focus:bg-white transition-all shadow-sm appearance-none cursor-pointer"
                                 >
                                     <option value="">Select Class</option>
-                                    {Array.from(new Set(teacherAssignments.map(ta => ta.classes?.id))).map((classId) => {
-                                        const cls = teacherAssignments.find(ta => ta.classes?.id === classId)?.classes;
-                                        if (!cls) return null;
-                                        return (
-                                            <option key={classId} value={classId}>
-                                                {cls.name} {cls.section ? `(${cls.section})` : ''}
-                                            </option>
-                                        );
-                                    })}
+                                    {availableClasses.map((cls) => (
+                                        <option key={cls.id} value={cls.id}>
+                                            {cls.name}{cls.section && cls.section.toUpperCase() !== 'A' ? ` - ${cls.section}` : ''}
+                                        </option>
+                                    ))}
                                 </select>
                             </div>
                         </div>
@@ -126,15 +152,11 @@ export default async function CreateAssignmentPage() {
                                     className="w-full bg-bg-tertiary/40 border border-border/40 rounded-2xl py-4 pl-12 pr-4 text-sm font-bold text-text-primary focus:outline-none focus:border-accent/40 focus:bg-white transition-all shadow-sm appearance-none cursor-pointer"
                                 >
                                     <option value="">Select Subject</option>
-                                    {Array.from(new Set(teacherAssignments.map(ta => ta.subjects?.id))).map((subjectId) => {
-                                        const subject = teacherAssignments.find(ta => ta.subjects?.id === subjectId)?.subjects;
-                                        if (!subject) return null;
-                                        return (
-                                            <option key={subjectId} value={subjectId}>
-                                                {subject.name}
-                                            </option>
-                                        );
-                                    })}
+                                    {availableSubjects.map((sub) => (
+                                        <option key={sub.id} value={sub.id}>
+                                            {sub.name}
+                                        </option>
+                                    ))}
                                 </select>
                             </div>
                         </div>

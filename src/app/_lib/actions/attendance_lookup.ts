@@ -29,7 +29,7 @@ export async function markAttendanceByUid(uid: string) {
       } else {
         return { success: false, message: `Student ID ${resolvedUid} not found` };
       }
-    } 
+    }
     // 3. Handle Teacher ID format (e.g. TCH-2026-001)
     else if (resolvedUid.startsWith('TCH-')) {
       const { data: tp } = await adminClient
@@ -58,9 +58,9 @@ export async function markAttendanceByUid(uid: string) {
       .maybeSingle();
 
     if (error || !profile) return { success: false, message: 'User not found in system' };
-    
+
     if (profile.role !== 'student' && profile.role !== 'teacher') {
-         return { success: false, message: `Role ${profile.role} cannot mark attendance` };
+      return { success: false, message: `Role ${profile.role} cannot mark attendance` };
     }
 
     // Extract class_id for students to allow class teacher filtering
@@ -69,7 +69,7 @@ export async function markAttendanceByUid(uid: string) {
     const result = await markAttendance({
       userId: profile.id,
       role: profile.role as any,
-      status: 'present', // QR scans are now AUTO-VERIFIED
+      status: 'pending', // User requested: QR scans should be pending approval
       method: 'qr',
       classId: classId
     });
@@ -78,11 +78,11 @@ export async function markAttendanceByUid(uid: string) {
       return { success: false, message: result.error };
     }
 
-    return { 
-      success: true, 
-      message: `Attendance verified for ${profile.full_name}.` 
+    return {
+      success: true,
+      message: `Attendance request sent for ${profile.full_name}. Pending approval.`
     };
-  } catch (error) {
-    return { success: false, message: 'Internal server error' };
+  } catch (error: any) {
+    return { success: false, message: error?.message || 'Internal server error' };
   }
 }

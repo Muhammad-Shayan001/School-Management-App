@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   User, Mail, Phone, MapPin, Calendar, 
   CreditCard, GraduationCap, Users, 
@@ -12,7 +12,7 @@ import { Button } from '@/app/_components/ui/button';
 import { Select } from '@/app/_components/ui/select';
 import { Badge } from '@/app/_components/ui/badge';
 import { cn } from '@/app/_lib/utils/cn';
-import { createManualStudent } from '@/app/_lib/actions/users';
+import { createManualStudent, updateManualStudentData } from '@/app/_lib/actions/users';
 import { toast } from 'sonner';
 
 interface AddStudentModalProps {
@@ -20,9 +20,10 @@ interface AddStudentModalProps {
   onClose: () => void;
   classes: any[];
   onSuccess: (credentials: any) => void;
+  editStudent?: any | null;
 }
 
-export function AddStudentModal({ isOpen, onClose, classes, onSuccess }: AddStudentModalProps) {
+export function AddStudentModal({ isOpen, onClose, classes, onSuccess, editStudent }: AddStudentModalProps) {
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -39,6 +40,7 @@ export function AddStudentModal({ isOpen, onClose, classes, onSuccess }: AddStud
     fee_discount: '0',
     sms_phone: '',
     avatar_url: '',
+    password: '',
 
     // Section 2: Other Information
     dob: '',
@@ -83,6 +85,66 @@ export function AddStudentModal({ isOpen, onClose, classes, onSuccess }: AddStud
     session_year: new Date().getFullYear().toString(),
   });
 
+  useEffect(() => {
+    if (isOpen && editStudent) {
+      setFormData({
+        full_name: editStudent.profiles?.full_name || '',
+        email: editStudent.profiles?.email || '',
+        phone: editStudent.phone || editStudent.profiles?.phone || '',
+        registration_no: editStudent.registration_no || '',
+        admission_date: editStudent.admission_date || new Date().toISOString().split('T')[0],
+        class_id: editStudent.class_id || '',
+        roll_number: editStudent.roll_number || '',
+        fee_discount: editStudent.fee_discount?.toString() || '0',
+        sms_phone: editStudent.sms_phone || '',
+        avatar_url: editStudent.profiles?.avatar_url || '',
+        password: '',
+        dob: editStudent.dob || '',
+        birth_form_id: editStudent.birth_form_id || '',
+        is_orphan: editStudent.is_orphan ? 'true' : 'false',
+        gender: editStudent.gender || 'male',
+        student_cast: editStudent.student_cast || '',
+        is_osc: editStudent.is_osc ? 'true' : 'false',
+        id_mark: editStudent.id_mark || '',
+        previous_school: editStudent.previous_school || '',
+        religion: editStudent.religion || 'Islam',
+        blood_group: editStudent.blood_group || '',
+        family_id: editStudent.family_id || '',
+        disease: editStudent.disease || '',
+        additional_note: editStudent.additional_note || '',
+        total_siblings: editStudent.total_siblings?.toString() || '0',
+        address: editStudent.address || '',
+        cnic: editStudent.cnic || '',
+        father_name: editStudent.father_name || '',
+        father_cnic: editStudent.father_cnic || '',
+        father_occupation: editStudent.father_occupation || '',
+        father_education: editStudent.father_education || '',
+        father_phone: editStudent.father_phone || '',
+        father_profession: editStudent.father_profession || '',
+        father_income: editStudent.father_income || '',
+        mother_name: editStudent.mother_name || '',
+        mother_cnic: editStudent.mother_cnic || '',
+        mother_occupation: editStudent.mother_occupation || '',
+        mother_education: editStudent.mother_education || '',
+        mother_phone: editStudent.mother_phone || '',
+        mother_profession: editStudent.mother_profession || '',
+        mother_income: editStudent.mother_income || '',
+        section: editStudent.section || '',
+        shift: editStudent.shift || 'morning',
+        group: editStudent.group || 'General',
+        session_year: editStudent.session_year || new Date().getFullYear().toString(),
+      });
+      setPreviewImage(editStudent.profiles?.avatar_url || null);
+      setStep(1);
+    } else if (isOpen && !editStudent) {
+      setFormData({
+        full_name: '', email: '', phone: '', registration_no: '', admission_date: new Date().toISOString().split('T')[0], class_id: '', roll_number: '', fee_discount: '0', sms_phone: '', avatar_url: '', password: '', dob: '', birth_form_id: '', is_orphan: 'false', gender: 'male', student_cast: '', is_osc: 'false', id_mark: '', previous_school: '', religion: 'Islam', blood_group: '', family_id: '', disease: '', additional_note: '', total_siblings: '0', address: '', cnic: '', father_name: '', father_cnic: '', father_occupation: '', father_education: '', father_phone: '', father_profession: '', father_income: '', mother_name: '', mother_cnic: '', mother_occupation: '', mother_education: '', mother_phone: '', mother_profession: '', mother_income: '', section: '', shift: 'morning', group: 'General', session_year: new Date().getFullYear().toString()
+      });
+      setPreviewImage(null);
+      setStep(1);
+    }
+  }, [isOpen, editStudent]);
+
   const handleChange = (e: any) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -108,16 +170,26 @@ export function AddStudentModal({ isOpen, onClose, classes, onSuccess }: AddStud
 
     setLoading(true);
     try {
-      const result = await createManualStudent(formData);
-      if (result.success) {
-        toast.success('Student account created successfully!');
-        onSuccess(result.credentials);
-        onClose();
-        // Reset form
-        setStep(1);
-        setPreviewImage(null);
+      if (editStudent) {
+        const result = await updateManualStudentData(editStudent.user_id, formData);
+        if (result.success) {
+          toast.success('Student record updated successfully!');
+          onSuccess({ updated: true, email: formData.email });
+          onClose();
+        } else {
+          toast.error(result.error || 'Failed to update student record');
+        }
       } else {
-        toast.error(result.error || 'Failed to create student');
+        const result = await createManualStudent(formData);
+        if (result.success) {
+          toast.success('Student account created successfully!');
+          onSuccess(result.credentials);
+          onClose();
+          setStep(1);
+          setPreviewImage(null);
+        } else {
+          toast.error(result.error || 'Failed to create student');
+        }
       }
     } catch (err) {
       toast.error('An unexpected error occurred');
@@ -130,23 +202,23 @@ export function AddStudentModal({ isOpen, onClose, classes, onSuccess }: AddStud
     <Modal 
       isOpen={isOpen} 
       onClose={onClose} 
-      title="Advanced Student Admission"
+      title={editStudent ? "Edit Student Profile & Master Record" : "Advanced Student Admission"}
       size="3xl"
       className="rounded-[3rem] p-0 overflow-hidden border-none shadow-2xl"
     >
       <div className="flex flex-col h-[85vh] bg-bg-primary overflow-hidden">
         {/* Modern Header with Stepper */}
-        <div className="bg-white border-b border-border/40 p-8 md:p-10 flex-shrink-0">
-           <div className="flex flex-col md:flex-row justify-between items-center gap-8">
-              <div className="flex items-center gap-10">
+        <div className="bg-white border-b border-border/40 p-4 md:p-10 flex-shrink-0">
+           <div className="flex flex-col md:flex-row justify-between items-center gap-4 md:gap-8">
+              <div className="flex items-center gap-2 sm:gap-4 md:gap-10 w-full overflow-x-auto scrollbar-hide py-2 px-1 justify-between md:justify-start">
                  {[1, 2, 3, 4].map((s) => (
-                   <div key={s} className="flex items-center gap-3">
+                   <div key={s} className="flex items-center gap-2 md:gap-3 flex-shrink-0">
                       <div className={cn(
-                        "h-10 w-10 rounded-xl flex items-center justify-center font-black transition-all duration-500",
+                        "h-8 w-8 md:h-10 md:w-10 rounded-xl flex items-center justify-center font-black transition-all duration-500",
                         step === s ? "bg-accent text-white shadow-lg shadow-accent/20 scale-110" : 
                         step > s ? "bg-emerald-500 text-white" : "bg-bg-tertiary text-text-tertiary border border-border/40"
                       )}>
-                        {step > s ? <Check className="h-5 w-5" /> : s}
+                        {step > s ? <Check className="h-4 w-4 md:h-5 md:w-5" /> : s}
                       </div>
                       <span className={cn(
                         "text-[9px] font-black uppercase tracking-[0.2em] hidden lg:block",
@@ -157,18 +229,18 @@ export function AddStudentModal({ isOpen, onClose, classes, onSuccess }: AddStud
                    </div>
                  ))}
               </div>
-              <div className="flex items-center gap-4">
+              <div className="hidden md:flex items-center gap-4">
                  <Badge variant="default" className="font-black text-[9px] tracking-widest uppercase py-1.5 px-4 bg-bg-tertiary/50 border-border/40">Admission Portal</Badge>
               </div>
            </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-8 md:p-12 scrollbar-premium">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-8 md:p-12 scrollbar-premium">
           <div className="max-w-5xl mx-auto">
             {/* Step 1: Student Information */}
             {step === 1 && (
               <div className="space-y-12 animate-in fade-in slide-in-from-right-8 duration-700">
-                <div className="flex flex-col lg:flex-row gap-12 items-start">
+                <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 items-start">
                    {/* Profile Picture Slot */}
                    <div className="relative group mx-auto lg:mx-0">
                       <div className={cn(
@@ -200,8 +272,8 @@ export function AddStudentModal({ isOpen, onClose, classes, onSuccess }: AddStud
                       )}
                    </div>
 
-                   <div className="flex-1 w-full grid grid-cols-1 md:grid-cols-2 gap-8">
-                      <div className="col-span-2">
+                   <div className="flex-1 w-full grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 md:gap-8">
+                      <div className="col-span-1 md:col-span-2">
                         <Input 
                           name="full_name"
                           value={formData.full_name}
@@ -237,6 +309,15 @@ export function AddStudentModal({ isOpen, onClose, classes, onSuccess }: AddStud
                         label="Official Email *"
                         placeholder="e.g. shayan@school.edu"
                         className="h-14 bg-bg-tertiary/30"
+                      />
+                      <Input 
+                        name="password"
+                        value={formData.password}
+                        onChange={handleChange}
+                        type="text"
+                        label="Account Password"
+                        placeholder="Auto-generated if left blank"
+                        className="h-14 bg-bg-tertiary/30 font-mono"
                       />
                       <Input 
                         name="registration_no"
@@ -528,29 +609,29 @@ export function AddStudentModal({ isOpen, onClose, classes, onSuccess }: AddStud
         </div>
 
         {/* Action Footer */}
-        <div className="bg-white border-t border-border/40 p-8 flex justify-between items-center flex-shrink-0">
+        <div className="bg-white border-t border-border/40 p-4 md:p-8 flex flex-col-reverse sm:flex-row justify-between items-center flex-shrink-0 gap-3">
            <Button 
              variant="outline" 
              onClick={() => step > 1 ? setStep(step - 1) : onClose()} 
-             className="h-14 px-10 rounded-2xl font-black uppercase text-[10px] tracking-widest bg-bg-tertiary/50"
+             className="w-full sm:w-auto h-12 md:h-14 px-6 md:px-10 rounded-2xl font-black uppercase text-[10px] tracking-widest bg-bg-tertiary/50 whitespace-nowrap"
            >
-             {step === 1 ? 'Cancel' : 'Previous Section'}
+             {step === 1 ? 'Cancel' : 'Previous'}
            </Button>
            
            {step < 4 ? (
              <Button 
                 onClick={() => setStep(step + 1)} 
-                className="bg-accent text-white hover:bg-accent/90 h-14 px-12 rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] shadow-xl shadow-accent/20"
+                className="w-full sm:w-auto bg-accent text-white hover:bg-accent/90 h-12 md:h-14 px-8 md:px-12 rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] shadow-xl shadow-accent/20 whitespace-nowrap"
               >
-                Next Section
+                Next Step
               </Button>
             ) : (
               <Button 
                 onClick={handleSubmit} 
                 disabled={loading}
-                className="h-14 px-16 rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] shadow-2xl shadow-accent/20 bg-accent hover:bg-accent-hover active:scale-95 transition-all text-white"
+                className="w-full sm:w-auto h-12 md:h-14 px-6 md:px-16 rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] shadow-2xl shadow-accent/20 bg-accent hover:bg-accent-hover active:scale-95 transition-all text-white whitespace-nowrap"
              >
-               {loading ? 'Processing Enrollment...' : 'Finalize Admission'}
+               {loading ? 'Processing...' : editStudent ? 'Save Changes' : 'Finalize'}
              </Button>
            )}
         </div>

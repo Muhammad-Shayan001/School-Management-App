@@ -52,15 +52,15 @@ export default function StudentTimetableClient() {
             <p className="text-text-secondary font-medium">No timetable entries found for your class.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead className="bg-background-secondary text-text-secondary font-medium border-b border-border-subtle">
+          <div className="overflow-x-auto overflow-y-auto max-h-[600px] scrollbar-premium">
+            <table className="w-full text-sm text-left border-collapse">
+              <thead className="bg-bg-tertiary/30 text-[10px] font-black uppercase tracking-widest text-text-tertiary border-b border-border/50">
                 <tr>
-                  <th className="px-6 py-4">Day</th>
-                  <th className="px-6 py-4">Period</th>
-                  <th className="px-6 py-4">Time</th>
-                  <th className="px-6 py-4">Subject</th>
-                  <th className="px-6 py-4">Teacher</th>
+                  <th className="px-6 py-4 sticky top-0 bg-bg-tertiary/90 backdrop-blur-md z-10 whitespace-nowrap shadow-sm">Day</th>
+                  <th className="px-6 py-4 sticky top-0 bg-bg-tertiary/90 backdrop-blur-md z-10 whitespace-nowrap shadow-sm">Period</th>
+                  <th className="px-6 py-4 sticky top-0 bg-bg-tertiary/90 backdrop-blur-md z-10 whitespace-nowrap shadow-sm">Time</th>
+                  <th className="px-6 py-4 sticky top-0 bg-bg-tertiary/90 backdrop-blur-md z-10 whitespace-nowrap shadow-sm">Subject</th>
+                  <th className="px-6 py-4 sticky top-0 bg-bg-tertiary/90 backdrop-blur-md z-10 whitespace-nowrap shadow-sm">Teacher</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border-subtle">

@@ -30,7 +30,8 @@ import {
   MoreVertical,
   Loader2,
   Clock,
-  ArrowRight
+  ArrowRight,
+  Upload
 } from 'lucide-react';
 import { cn } from '@/app/_lib/utils/cn';
 import { useRouter } from 'next/navigation';
@@ -231,6 +232,9 @@ export default function CampusesPage() {
     banner_url: ''
   });
 
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -273,6 +277,8 @@ export default function CampusesPage() {
       logo_url: '',
       banner_url: ''
     });
+    setLogoFile(null);
+    setLogoPreview(null);
     setIsModalOpen(true);
   }
 
@@ -292,6 +298,8 @@ export default function CampusesPage() {
       logo_url: campus.logo_url || '',
       banner_url: campus.banner_url || ''
     });
+    setLogoFile(null);
+    setLogoPreview(campus.logo_url || null);
     setIsModalOpen(true);
   }
 
@@ -302,14 +310,22 @@ export default function CampusesPage() {
     
     const loadingToast = toast.loading(editingCampus ? 'Updating campus...' : 'Creating new campus...');
 
+    const submitData = new FormData();
+    Object.entries(formData).forEach(([key, value]) => {
+      submitData.append(key, value);
+    });
+    if (logoFile) {
+      submitData.append('logo_file', logoFile);
+    }
+
     try {
       let result;
       if (editingCampus) {
         console.log('Updating campus:', editingCampus.id);
-        result = await updateCampus(editingCampus.id, formData);
+        result = await updateCampus(editingCampus.id, submitData);
       } else {
         console.log('Creating new campus');
-        result = await createCampus(formData);
+        result = await createCampus(submitData);
       }
       
       console.log('Action result:', result);
@@ -586,13 +602,54 @@ export default function CampusesPage() {
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-text-tertiary uppercase tracking-widest ml-1">Logo URL</label>
-                    <input
-                      value={formData.logo_url}
-                      onChange={(e) => setFormData({...formData, logo_url: e.target.value})}
-                      className="w-full bg-bg-tertiary/50 border border-border/30 rounded-2xl py-3 px-4 text-sm font-bold text-text-primary focus:outline-none focus:border-accent/40 focus:bg-white transition-all"
-                    />
+                  <div className="space-y-2 md:col-span-2">
+                    <label className="text-[10px] font-black text-text-tertiary uppercase tracking-widest ml-1">Campus Logo</label>
+                    <div className="flex items-center gap-4 bg-bg-tertiary/20 p-4 rounded-2xl border border-border/40">
+                      {logoPreview || formData.logo_url ? (
+                        <div className="h-16 w-16 rounded-2xl border border-border/40 overflow-hidden relative group shrink-0 shadow-md bg-white">
+                          <img src={logoPreview || formData.logo_url} alt="Logo" className="h-full w-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => { setLogoPreview(null); setLogoFile(null); setFormData({...formData, logo_url: ''}); }}
+                            className="absolute inset-0 bg-black/60 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-[10px] font-bold uppercase tracking-wider"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="h-16 w-16 rounded-2xl border-2 border-dashed border-border/60 flex items-center justify-center text-text-tertiary shrink-0 bg-bg-tertiary/30">
+                          <Building2 className="h-6 w-6 opacity-40" />
+                        </div>
+                      )}
+                      <div className="flex-1 space-y-2.5">
+                        <label className="flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl border border-border/40 bg-white hover:bg-bg-tertiary/60 cursor-pointer text-xs font-black uppercase tracking-wider text-accent transition-all shadow-sm">
+                          <Upload className="h-4 w-4" />
+                          <span>Upload Image File</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                setLogoFile(file);
+                                setLogoPreview(URL.createObjectURL(file));
+                              }
+                            }}
+                          />
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[9px] font-black text-text-tertiary uppercase tracking-wider shrink-0">OR Enter URL:</span>
+                          <input
+                            type="url"
+                            value={formData.logo_url}
+                            onChange={(e) => setFormData({...formData, logo_url: e.target.value})}
+                            placeholder="https://example.com/logo.png"
+                            className="flex-1 bg-bg-tertiary/50 border border-border/30 rounded-xl py-1.5 px-3 text-xs font-bold text-text-primary focus:outline-none focus:border-accent/40 focus:bg-white transition-all"
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

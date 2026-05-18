@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   User, Mail, Phone, MapPin, Calendar, 
   BookOpen, Layers, Briefcase, GraduationCap,
@@ -12,7 +12,7 @@ import { Button } from '@/app/_components/ui/button';
 import { Select } from '@/app/_components/ui/select';
 import { Badge } from '@/app/_components/ui/badge';
 import { cn } from '@/app/_lib/utils/cn';
-import { createManualTeacher } from '@/app/_lib/actions/users';
+import { createManualTeacher, updateManualTeacherData } from '@/app/_lib/actions/users';
 import { toast } from 'sonner';
 
 interface AddTeacherModalProps {
@@ -21,9 +21,10 @@ interface AddTeacherModalProps {
   classes: any[];
   subjects: any[];
   onSuccess: (credentials: any) => void;
+  editTeacher?: any | null;
 }
 
-export function AddTeacherModal({ isOpen, onClose, classes, subjects, onSuccess }: AddTeacherModalProps) {
+export function AddTeacherModal({ isOpen, onClose, classes, subjects, onSuccess, editTeacher }: AddTeacherModalProps) {
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -43,8 +44,45 @@ export function AddTeacherModal({ isOpen, onClose, classes, subjects, onSuccess 
     is_class_teacher: 'false',
     class_id: '',
     avatar_url: '',
+    password: '',
+    teacher_id: '',
     assignments: [] as any[]
   });
+
+  useEffect(() => {
+    if (isOpen && editTeacher) {
+      setFormData({
+        full_name: editTeacher.profiles?.full_name || '',
+        email: editTeacher.profiles?.email || '',
+        phone: editTeacher.phone || editTeacher.profiles?.phone || '',
+        dob: editTeacher.dob || '',
+        gender: editTeacher.gender || 'male',
+        cnic: editTeacher.cnic || '',
+        address: editTeacher.address || '',
+        city: editTeacher.city || '',
+        country: editTeacher.country || 'Pakistan',
+        qualification: editTeacher.qualification || '',
+        experience: editTeacher.experience || '',
+        is_class_teacher: editTeacher.is_class_teacher ? 'true' : 'false',
+        class_id: editTeacher.class_id || '',
+        avatar_url: editTeacher.profiles?.avatar_url || '',
+        password: '',
+        teacher_id: editTeacher.teacher_id || '',
+        assignments: editTeacher.assignments ? editTeacher.assignments.map((a: any) => ({ class_id: a.class_id, subject_id: a.subject_id })) : []
+      });
+      setPreviewImage(editTeacher.profiles?.avatar_url || null);
+      setStep(1);
+    } else if (isOpen && !editTeacher) {
+      setFormData({
+        full_name: '', email: '', phone: '', dob: '', gender: 'male',
+        cnic: '', address: '', city: '', country: 'Pakistan',
+        qualification: '', experience: '', is_class_teacher: 'false',
+        class_id: '', avatar_url: '', password: '', teacher_id: '', assignments: []
+      });
+      setPreviewImage(null);
+      setStep(1);
+    }
+  }, [isOpen, editTeacher]);
 
   const handleChange = (e: any) => {
     const { name, value } = e.target;
@@ -92,22 +130,32 @@ export function AddTeacherModal({ isOpen, onClose, classes, subjects, onSuccess 
 
     setLoading(true);
     try {
-      const result = await createManualTeacher(formData);
-      if (result.success) {
-        toast.success('Teacher account created successfully!');
-        onSuccess(result.credentials);
-        onClose();
-        // Reset
-        setFormData({
-          full_name: '', email: '', phone: '', dob: '', gender: 'male',
-          cnic: '', address: '', city: '', country: 'Pakistan',
-          qualification: '', experience: '', is_class_teacher: 'false',
-          class_id: '', avatar_url: '', assignments: []
-        });
-        setStep(1);
-        setPreviewImage(null);
+      if (editTeacher) {
+        const result = await updateManualTeacherData(editTeacher.user_id, formData);
+        if (result.success) {
+          toast.success('Teacher record updated successfully!');
+          onSuccess({ updated: true, email: formData.email });
+          onClose();
+        } else {
+          toast.error(result.error || 'Failed to update teacher record');
+        }
       } else {
-        toast.error(result.error || 'Failed to create teacher');
+        const result = await createManualTeacher(formData);
+        if (result.success) {
+          toast.success('Teacher account created successfully!');
+          onSuccess(result.credentials);
+          onClose();
+          setFormData({
+            full_name: '', email: '', phone: '', dob: '', gender: 'male',
+            cnic: '', address: '', city: '', country: 'Pakistan',
+            qualification: '', experience: '', is_class_teacher: 'false',
+            class_id: '', avatar_url: '', password: '', teacher_id: '', assignments: []
+          });
+          setStep(1);
+          setPreviewImage(null);
+        } else {
+          toast.error(result.error || 'Failed to create teacher');
+        }
       }
     } catch (err) {
       toast.error('An unexpected error occurred');
@@ -120,25 +168,25 @@ export function AddTeacherModal({ isOpen, onClose, classes, subjects, onSuccess 
     <Modal 
       isOpen={isOpen} 
       onClose={onClose} 
-      title="Manual Faculty Enrollment"
+      title={editTeacher ? "Edit Teacher Profile & Master Record" : "Manual Faculty Enrollment"}
       size="xl"
       className="rounded-[3rem] overflow-hidden border-none"
     >
-      <div className="space-y-8 max-h-[80vh] overflow-y-auto pr-3 scrollbar-premium">
+      <div className="space-y-8 p-4 sm:p-6 md:p-8 max-h-[85vh] overflow-y-auto scrollbar-premium">
         {/* Progress Stepper */}
-        <div className="flex items-center justify-between px-10 relative">
-           <div className="absolute top-1/2 left-10 right-10 h-0.5 bg-border/40 -z-10" />
+        <div className="flex items-center justify-between px-4 md:px-10 relative">
+           <div className="absolute top-1/2 left-4 right-4 md:left-10 md:right-10 h-0.5 bg-border/40 -z-10" />
            {[1, 2].map((s) => (
              <button 
                key={s}
                onClick={() => setStep(s)}
                className={cn(
-                 "h-12 w-12 rounded-2xl flex items-center justify-center font-black transition-all duration-500",
+                 "h-10 w-10 md:h-12 md:w-12 rounded-xl md:rounded-2xl flex items-center justify-center font-black transition-all duration-500",
                  step === s ? "bg-accent text-white shadow-xl shadow-accent/20 scale-110" : 
                  step > s ? "bg-success text-white shadow-lg" : "bg-white border-2 border-border/50 text-text-tertiary"
                )}
              >
-                {step > s ? <Check className="h-5 w-5" /> : s}
+                {step > s ? <Check className="h-4 w-4 md:h-5 md:w-5" /> : s}
              </button>
            ))}
         </div>
@@ -146,34 +194,38 @@ export function AddTeacherModal({ isOpen, onClose, classes, subjects, onSuccess 
         {/* Step 1: Basic Info & Experience */}
         {step === 1 && (
           <div className="space-y-10 animate-in fade-in slide-in-from-right-4 duration-500">
-             <div className="flex flex-col md:flex-row gap-10 items-start">
+             <div className="flex flex-col md:flex-row gap-6 md:gap-10 items-center md:items-start">
                 <div className="relative group">
                    <div className={cn(
-                     "h-48 w-48 rounded-[2.5rem] bg-bg-tertiary border-2 border-dashed border-border/60 flex items-center justify-center overflow-hidden transition-all duration-500 group-hover:border-accent/40",
+                     "h-32 w-32 md:h-48 md:w-48 rounded-[2rem] md:rounded-[2.5rem] bg-bg-tertiary border-2 border-dashed border-border/60 flex items-center justify-center overflow-hidden transition-all duration-500 group-hover:border-accent/40",
                      previewImage && "border-none"
                    )}>
                       {previewImage ? (
                         <img src={previewImage} alt="Preview" className="h-full w-full object-cover" />
                       ) : (
-                        <Camera className="h-10 w-10 text-text-tertiary/40" />
+                        <Camera className="h-8 w-8 md:h-10 md:w-10 text-text-tertiary/40" />
                       )}
                       <input type="file" accept="image/*" onChange={handleImageChange} className="absolute inset-0 opacity-0 cursor-pointer" />
                    </div>
-                   <p className="text-[10px] font-black text-text-tertiary uppercase tracking-widest text-center mt-6">Faculty Portrait</p>
+                   <p className="text-[9px] md:text-[10px] font-black text-text-tertiary uppercase tracking-widest text-center mt-4 md:mt-6">Faculty Portrait</p>
                 </div>
 
-                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
-                   <div className="space-y-2 col-span-2">
+                <div className="flex-1 w-full grid grid-cols-1 md:grid-cols-2 gap-6">
+                   <div className="space-y-2 col-span-1 md:col-span-2">
                       <label className="text-[10px] font-black text-text-tertiary uppercase tracking-widest ml-1">Full Name</label>
-                      <Input name="full_name" value={formData.full_name} onChange={handleChange} placeholder="e.g. Dr. Salman Khan" className="h-14 rounded-2xl bg-bg-tertiary/50 border-transparent font-bold" />
+                      <Input name="full_name" value={formData.full_name} onChange={handleChange} placeholder="e.g. Dr. Salman Khan" className="h-12 md:h-14 rounded-2xl bg-bg-tertiary/50 border-transparent font-bold" />
                    </div>
                    <div className="space-y-2">
                       <label className="text-[10px] font-black text-text-tertiary uppercase tracking-widest ml-1">Work Email</label>
-                      <Input name="email" value={formData.email} onChange={handleChange} type="email" placeholder="salman@school.edu" className="h-14 rounded-2xl bg-bg-tertiary/50 border-transparent font-bold" />
+                      <Input name="email" value={formData.email} onChange={handleChange} type="email" placeholder="salman@school.edu" className="h-12 md:h-14 rounded-2xl bg-bg-tertiary/50 border-transparent font-bold" />
                    </div>
                    <div className="space-y-2">
                       <label className="text-[10px] font-black text-text-tertiary uppercase tracking-widest ml-1">Phone Number</label>
-                      <Input name="phone" value={formData.phone} onChange={handleChange} placeholder="+92 3XX XXXXXXX" className="h-14 rounded-2xl bg-bg-tertiary/50 border-transparent font-bold" />
+                      <Input name="phone" value={formData.phone} onChange={handleChange} placeholder="+92 3XX XXXXXXX" className="h-12 md:h-14 rounded-2xl bg-bg-tertiary/50 border-transparent font-bold" />
+                   </div>
+                   <div className="space-y-2">
+                      <label className="text-[10px] font-black text-text-tertiary uppercase tracking-widest ml-1">Account Password</label>
+                      <Input name="password" value={formData.password} onChange={handleChange} placeholder="Auto-generated if left blank" className="h-12 md:h-14 rounded-2xl bg-bg-tertiary/50 border-transparent font-mono text-xs" />
                    </div>
                 </div>
              </div>
@@ -181,21 +233,21 @@ export function AddTeacherModal({ isOpen, onClose, classes, subjects, onSuccess 
              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-2">
                    <label className="text-[10px] font-black text-text-tertiary uppercase tracking-widest ml-1">Qualification</label>
-                   <Input name="qualification" value={formData.qualification} onChange={handleChange} placeholder="e.g. M.Phil in Physics" className="h-14 rounded-2xl bg-bg-tertiary/50 border-transparent font-bold" />
+                   <Input name="qualification" value={formData.qualification} onChange={handleChange} placeholder="e.g. M.Phil in Physics" className="h-12 md:h-14 rounded-2xl bg-bg-tertiary/50 border-transparent font-bold" />
                 </div>
                 <div className="space-y-2">
                    <label className="text-[10px] font-black text-text-tertiary uppercase tracking-widest ml-1">Years of Experience</label>
-                   <Input name="experience" value={formData.experience} onChange={handleChange} placeholder="e.g. 5 Years" className="h-14 rounded-2xl bg-bg-tertiary/50 border-transparent font-bold" />
+                   <Input name="experience" value={formData.experience} onChange={handleChange} placeholder="e.g. 5 Years" className="h-12 md:h-14 rounded-2xl bg-bg-tertiary/50 border-transparent font-bold" />
                 </div>
                 <div className="space-y-2">
                    <label className="text-[10px] font-black text-text-tertiary uppercase tracking-widest ml-1">CNIC Number</label>
-                   <Input name="cnic" value={formData.cnic} onChange={handleChange} placeholder="42101-XXXXXXX-X" className="h-14 rounded-2xl bg-bg-tertiary/50 border-transparent font-bold" />
+                   <Input name="cnic" value={formData.cnic} onChange={handleChange} placeholder="42101-XXXXXXX-X" className="h-12 md:h-14 rounded-2xl bg-bg-tertiary/50 border-transparent font-bold" />
                 </div>
              </div>
 
-             <div className="flex justify-end gap-4 pt-10">
-                <Button variant="outline" onClick={onClose} className="h-14 px-8 rounded-2xl font-black uppercase text-[11px] tracking-widest">Cancel</Button>
-                  <Button onClick={() => setStep(2)} className="h-14 px-10 rounded-2xl font-black uppercase text-[11px] tracking-[0.2em] shadow-xl shadow-accent/20 bg-accent text-white hover:bg-accent/90">Next: Assignments</Button>
+             <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-6 md:pt-10 border-t border-border/40 mt-6">
+                <Button variant="outline" onClick={onClose} className="w-full sm:w-auto h-12 md:h-14 px-6 md:px-8 rounded-2xl font-black uppercase text-[10px] md:text-[11px] tracking-widest">Cancel</Button>
+                <Button onClick={() => setStep(2)} className="w-full sm:w-auto h-12 md:h-14 px-8 md:px-10 rounded-2xl font-black uppercase text-[10px] md:text-[11px] tracking-[0.2em] shadow-xl shadow-accent/20 bg-accent text-white hover:bg-accent/90">Next: Assignments</Button>
              </div>
           </div>
         )}
@@ -231,7 +283,7 @@ export function AddTeacherModal({ isOpen, onClose, classes, subjects, onSuccess 
                           onChange={(e) => setFormData(prev => ({ ...prev, class_id: e.target.value }))}
                           options={[
                             { label: 'Select Class', value: '' },
-                            ...classes.map(c => ({ label: `${c.name} - ${c.section}`, value: c.id }))
+                            ...classes.map(c => ({ label: `${c.name}${c.section && c.section.toUpperCase() !== 'A' ? ` - ${c.section}` : ''}`, value: c.id }))
                           ]}
                           className="h-14 rounded-2xl bg-white border-transparent font-black uppercase text-[10px] tracking-widest"
                         />
@@ -261,7 +313,7 @@ export function AddTeacherModal({ isOpen, onClose, classes, subjects, onSuccess 
                              onChange={(e) => updateAssignment(idx, 'class_id', e.target.value)}
                              options={[
                                { label: 'Select Class', value: '' },
-                               ...classes.map(c => ({ label: `${c.name} - ${c.section}`, value: c.id }))
+                               ...classes.map(c => ({ label: `${c.name}${c.section && c.section.toUpperCase() !== 'A' ? ` - ${c.section}` : ''}`, value: c.id }))
                              ]}
                              className="h-12 rounded-xl bg-white border-none font-bold text-xs"
                            />
@@ -308,14 +360,14 @@ export function AddTeacherModal({ isOpen, onClose, classes, subjects, onSuccess 
                 </div>
              </div>
 
-             <div className="flex justify-between gap-4 pt-10">
-                <Button variant="outline" onClick={() => setStep(1)} className="h-14 px-8 rounded-2xl font-black uppercase text-[11px] tracking-widest">Back</Button>
+             <div className="flex flex-col-reverse sm:flex-row justify-between items-center gap-3 pt-6 md:pt-10 border-t border-border/40 mt-6">
+                <Button variant="outline" onClick={() => setStep(1)} className="w-full sm:w-auto h-12 md:h-14 px-6 md:px-8 rounded-2xl font-black uppercase text-[10px] md:text-[11px] tracking-widest whitespace-nowrap">Back</Button>
                 <Button 
                     onClick={handleSubmit} 
                     disabled={loading}
-                    className="h-14 px-12 rounded-2xl font-black uppercase text-[11px] tracking-[0.2em] shadow-2xl shadow-accent/20 bg-accent text-white hover:bg-accent-hover"
+                    className="w-full sm:w-auto h-12 md:h-14 px-6 md:px-12 rounded-2xl font-black uppercase text-[10px] md:text-[11px] tracking-[0.2em] shadow-2xl shadow-accent/20 bg-accent text-white hover:bg-accent-hover whitespace-nowrap"
                 >
-                  {loading ? 'Processing...' : 'Complete Faculty Onboarding'}
+                  {loading ? 'Processing...' : editTeacher ? 'Save Changes' : 'Complete Onboarding'}
                 </Button>
              </div>
           </div>

@@ -6,7 +6,7 @@ import {
   Printer, UserPlus, CheckCircle2, XCircle, 
   ChevronRight, Calendar, Mail, Phone, MapPin,
   GraduationCap, BookOpen, Layers, Activity,
-  Briefcase, Award, Clock, Info, Trash2
+  Briefcase, Award, Clock, Info, Trash2, Edit, Key, Shield, Lock, Trash
 } from 'lucide-react';
 import { Badge } from '@/app/_components/ui/badge';
 import { Input } from '@/app/_components/ui/input';
@@ -17,38 +17,94 @@ import { cn } from '@/app/_lib/utils/cn';
 import { AddTeacherModal } from './add-teacher-modal';
 import { CredentialSuccessModal } from './credential-success-modal';
 import TeacherIDCard from '@/app/_components/id-card/TeacherIDCard';
-import { deleteStudentProfile, approveUser, rejectUser } from '@/app/_lib/actions/users';
+import { useCampusStore } from '@/app/_lib/store/campus-store';
+import { deleteStudentProfile, approveUser, rejectUser, resetUserPassword, toggleUserStatus, getUserLoginDetails } from '@/app/_lib/actions/users';
 import { toast } from 'sonner';
 
 interface TeacherManagementProps {
   teachers: any[];
   classes: any[];
   subjects: any[];
+  school?: any;
 }
 
-export function TeacherManagement({ teachers, classes, subjects }: TeacherManagementProps) {
+export function TeacherManagement({ teachers, classes, subjects, school }: TeacherManagementProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [selectedCampusId, setSelectedCampusId] = useState('all');
   const [selectedTeacher, setSelectedTeacher] = useState<any>(null);
+  
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isIDCardOpen, setIsIDCardOpen] = useState(false);
+  const [loginDetailsUser, setLoginDetailsUser] = useState<any>(null);
+  
   const [showCredentials, setShowCredentials] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('Assigned Classes');
   const [isSyncing, setIsSyncing] = useState(false);
-  const [isIDCardOpen, setIsIDCardOpen] = useState(false);
+
+  const { campuses, activeCampus } = useCampusStore();
 
   const filteredTeachers = teachers.filter(t => {
     const matchesSearch = 
       t.profiles?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      t.profiles?.email?.toLowerCase().includes(searchTerm.toLowerCase());
+      t.profiles?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      t.teacher_id?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || t.profiles?.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesCampus = selectedCampusId === 'all' || t.campus_id === selectedCampusId || (activeCampus && t.campus_id === activeCampus.id);
+    return matchesSearch && matchesStatus && matchesCampus;
   });
 
   const openProfile = (teacher: any) => {
     setSelectedTeacher(teacher);
     setIsProfileOpen(true);
     setActiveTab('Assigned Classes');
+  };
+
+  const handleEditTeacher = (teacher: any) => {
+    setSelectedTeacher(teacher);
+    setIsEditModalOpen(true);
+  };
+
+  const handleViewIDCard = (teacher: any) => {
+    setSelectedTeacher(teacher);
+    setIsIDCardOpen(true);
+  };
+
+  const handleViewLoginDetails = async (teacher: any) => {
+    const res = await getUserLoginDetails(teacher.user_id || teacher.profiles?.id);
+    if (!res.error && res.data) {
+      setLoginDetailsUser(res.data);
+    } else {
+      toast.error(res.error || 'Failed to fetch login credentials');
+    }
+  };
+
+  const handleResetPassword = async (userId: string, name: string) => {
+    if (!confirm(`Are you sure you want to reset the password for ${name}?`)) return;
+    const res = await resetUserPassword(userId);
+    if (res.success) {
+      toast.success(`Password reset successful for ${name}`, {
+        description: `New password: ${res.newPassword}`,
+        duration: 10000,
+        style: { borderRadius: '1.5rem', fontWeight: 'bold' }
+      });
+    } else {
+      toast.error(res.error || 'Failed to reset password');
+    }
+  };
+
+  const handleToggleStatus = async (userId: string, currentStatus: string, name: string) => {
+    const res = await toggleUserStatus(userId);
+    if (res.success) {
+      toast.success(`Account status updated for ${name}`, {
+        description: `New status: ${res.status}`,
+        style: { borderRadius: '1.5rem', fontWeight: 'bold' }
+      });
+    } else {
+      toast.error(res.error || 'Failed to toggle status');
+    }
   };
 
   const handleSync = () => {
@@ -59,9 +115,9 @@ export function TeacherManagement({ teachers, classes, subjects }: TeacherManage
     }, 2000);
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm('Are you sure you want to delete this faculty member? This action is irreversible.')) {
-      const res = await deleteStudentProfile(id); // Reusing student delete for profiles
+  const handleDelete = async (id: string, name?: string) => {
+    if (confirm(`Are you absolutely sure you want to remove ${name || 'this faculty member'}? This action is irreversible.`)) {
+      const res = await deleteStudentProfile(id); // Reusing delete profile action
       if (res.success) {
         toast.success('Faculty member removed');
         setIsProfileOpen(false);
@@ -75,7 +131,6 @@ export function TeacherManagement({ teachers, classes, subjects }: TeacherManage
     const res = action === 'approve' ? await approveUser(id) : await rejectUser(id);
     if (!res.error) {
       toast.success(`Faculty member ${action}d`);
-      // Update local state if needed or just wait for revalidation
       setIsProfileOpen(false);
     } else {
       toast.error(res.error);
@@ -85,17 +140,28 @@ export function TeacherManagement({ teachers, classes, subjects }: TeacherManage
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
       {/* Search & Filter Bar - Glass-Premium */}
-      <div className="glass-card p-6 bg-white/70 backdrop-blur-xl border border-white/40 shadow-2xl shadow-black/[0.02] flex flex-col md:flex-row gap-6 items-center justify-between rounded-[2.5rem]">
-        <div className="relative w-full md:w-[450px] group">
+      <div className="glass-card p-6 bg-white/70 backdrop-blur-xl border border-white/40 shadow-2xl shadow-black/[0.02] flex flex-col lg:flex-row gap-6 items-center justify-between rounded-[2.5rem]">
+        <div className="relative w-full lg:w-[450px] group">
           <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-text-tertiary group-focus-within:text-accent transition-all duration-300" />
           <Input 
-            placeholder="Search faculty by name or email..." 
+            placeholder="Search faculty by name, ID, or email..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-14 h-14 bg-bg-tertiary/50 border-transparent focus:bg-white focus:border-accent/20 rounded-[1.5rem] transition-all duration-500 font-bold placeholder:text-text-tertiary/50 shadow-sm focus:shadow-xl"
           />
         </div>
-        <div className="flex gap-4 w-full md:w-auto">
+        <div className="flex flex-wrap gap-4 w-full lg:w-auto items-center">
+          {campuses && campuses.length > 1 && (
+            <Select 
+              value={selectedCampusId}
+              onChange={(e) => setSelectedCampusId(e.target.value)}
+              options={[
+                { label: 'All Campuses', value: 'all' },
+                ...campuses.map(c => ({ label: c.name, value: c.id }))
+              ]}
+              className="h-14 min-w-[180px] rounded-[1.5rem] font-black uppercase text-[10px] tracking-widest border-transparent bg-bg-tertiary/50"
+            />
+          )}
           <Select 
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
@@ -105,11 +171,11 @@ export function TeacherManagement({ teachers, classes, subjects }: TeacherManage
               { label: 'Pending', value: 'pending' },
               { label: 'Rejected', value: 'rejected' }
             ]}
-            className="h-14 min-w-[200px] rounded-[1.5rem] font-black uppercase text-[10px] tracking-widest border-transparent bg-bg-tertiary/50"
+            className="h-14 min-w-[180px] rounded-[1.5rem] font-black uppercase text-[10px] tracking-widest border-transparent bg-bg-tertiary/50"
           />
           <Button 
             onClick={() => setIsAddModalOpen(true)}
-            className="h-14 px-8 rounded-[1.5rem] gap-3 font-black uppercase text-[11px] tracking-[0.2em] shadow-xl shadow-accent/20 bg-accent text-white hover:scale-105 active:scale-95 transition-all"
+            className="h-14 px-8 rounded-[1.5rem] gap-3 font-black uppercase text-[11px] tracking-[0.2em] shadow-xl shadow-accent/20 bg-accent text-white hover:scale-105 active:scale-95 transition-all ml-auto"
           >
             <UserPlus className="h-5 w-5" /> Add Teacher
           </Button>
@@ -117,16 +183,17 @@ export function TeacherManagement({ teachers, classes, subjects }: TeacherManage
       </div>
 
       {/* Teacher Grid/Table - Luxury Design */}
-      <div className="glass-card bg-white/80 backdrop-blur-xl border border-white/40 shadow-2xl shadow-black/[0.02] overflow-hidden rounded-[3rem]">
-        <div className="overflow-x-auto scrollbar-premium">
-          <table className="w-full text-left border-collapse">
+      <div className="glass-card bg-white/80 backdrop-blur-xl border border-white/40 shadow-2xl shadow-black/[0.02] overflow-hidden rounded-[2rem] md:rounded-[3rem]">
+        <div className="overflow-x-auto overflow-y-auto max-h-[650px] scrollbar-premium">
+          <table className="w-full text-left border-collapse min-w-[1000px]">
             <thead>
               <tr className="bg-bg-tertiary/30 border-b border-border/40">
-                <th className="px-10 py-7 text-[11px] font-black text-text-tertiary uppercase tracking-[0.25em]">Faculty Member</th>
-                <th className="px-6 py-7 text-[11px] font-black text-text-tertiary uppercase tracking-[0.25em]">Role & Status</th>
-                <th className="px-6 py-7 text-[11px] font-black text-text-tertiary uppercase tracking-[0.25em]">Professional XP</th>
-                <th className="px-6 py-7 text-[11px] font-black text-text-tertiary uppercase tracking-[0.25em]">Uplink</th>
-                <th className="px-10 py-7 text-right text-[11px] font-black text-text-tertiary uppercase tracking-[0.25em]">Intelligence</th>
+                <th className="px-6 md:px-10 py-5 md:py-7 text-[10px] md:text-[11px] font-black text-text-tertiary uppercase tracking-[0.25em] sticky top-0 bg-white/95 backdrop-blur-md z-10 shadow-sm whitespace-nowrap">Faculty Member</th>
+                <th className="px-6 py-5 md:py-7 text-[10px] md:text-[11px] font-black text-text-tertiary uppercase tracking-[0.25em] sticky top-0 bg-white/95 backdrop-blur-md z-10 shadow-sm whitespace-nowrap">Role Specialist</th>
+                <th className="px-6 py-5 md:py-7 text-[10px] md:text-[11px] font-black text-text-tertiary uppercase tracking-[0.25em] sticky top-0 bg-white/95 backdrop-blur-md z-10 shadow-sm whitespace-nowrap">Professional XP</th>
+                <th className="px-6 py-5 md:py-7 text-[10px] md:text-[11px] font-black text-text-tertiary uppercase tracking-[0.25em] sticky top-0 bg-white/95 backdrop-blur-md z-10 shadow-sm whitespace-nowrap">Uplink Stream</th>
+                <th className="px-6 py-5 md:py-7 text-[10px] md:text-[11px] font-black text-text-tertiary uppercase tracking-[0.25em] sticky top-0 bg-white/95 backdrop-blur-md z-10 shadow-sm whitespace-nowrap">Account Status</th>
+                <th className="px-6 md:px-10 py-5 md:py-7 text-right text-[10px] md:text-[11px] font-black text-text-tertiary uppercase tracking-[0.25em] sticky top-0 bg-white/95 backdrop-blur-md z-10 shadow-sm whitespace-nowrap">Master Management Controls</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/20">
@@ -145,23 +212,19 @@ export function TeacherManagement({ teachers, classes, subjects }: TeacherManage
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors" />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-black text-text-primary leading-tight group-hover:text-accent transition-all duration-300 truncate max-w-[150px]">{teacher.profiles?.full_name}</p>
-                        <p className="text-[11px] font-bold text-text-tertiary mt-1 opacity-70 truncate max-w-[150px]">ID: {teacher.teacher_id || '---'}</p>
+                        <p className="text-sm font-black text-text-primary leading-tight group-hover:text-accent transition-all duration-300 truncate max-w-[180px]">{teacher.profiles?.full_name}</p>
+                        <p className="text-[11px] font-bold text-text-tertiary mt-1 opacity-70 truncate max-w-[180px]">ID: {teacher.teacher_id || '---'}</p>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-5">
-                    <div className="flex flex-col gap-2">
+                    <div className="flex flex-col gap-1.5">
                        <Badge variant={teacher.is_class_teacher ? "accent" : "default"} className="w-fit text-[9px] font-black uppercase tracking-[0.2em] px-3 py-1 shadow-sm">
                          {teacher.is_class_teacher ? "CLASS LEAD" : "SUBJECT SPECIALIST"}
                        </Badge>
-                       <div className="flex items-center gap-2 px-1">
-                          <div className={cn(
-                            "h-2 w-2 rounded-full shadow-sm animate-pulse", 
-                            teacher.profiles?.status === 'approved' ? "bg-success shadow-success/40" : "bg-warning shadow-warning/40"
-                          )} />
-                          <span className="text-[10px] font-black text-text-tertiary uppercase tracking-widest">{teacher.profiles?.status}</span>
-                       </div>
+                       <span className="text-[11px] font-bold text-text-secondary truncate max-w-[150px]">
+                         {teacher.qualification || 'Faculty Staff'}
+                       </span>
                     </div>
                   </td>
                   <td className="px-6 py-5">
@@ -177,16 +240,68 @@ export function TeacherManagement({ teachers, classes, subjects }: TeacherManage
                       <span className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest opacity-60">{teacher.phone || 'NO COMMS'}</span>
                     </div>
                   </td>
+                  <td className="px-6 py-5">
+                     <div className="flex items-center gap-2.5">
+                        <div className={cn(
+                          "h-2.5 w-2.5 rounded-full shadow-sm", 
+                          teacher.profiles?.status === 'approved' ? "bg-success shadow-success/40 animate-pulse" : "bg-rose-500 shadow-rose-500/40"
+                        )} />
+                        <span className="text-[10px] font-black text-text-secondary uppercase tracking-[0.1em]">{teacher.profiles?.status === 'approved' ? 'Active' : teacher.profiles?.status || 'Disabled'}</span>
+                     </div>
+                  </td>
                   <td className="px-10 py-5 text-right">
-                    <div className="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-all duration-500 translate-x-4 group-hover:translate-x-0">
+                    <div className="flex items-center justify-end gap-1.5 opacity-90 group-hover:opacity-100 transition-all duration-500">
                        <button 
                          onClick={() => openProfile(teacher)}
-                         className="h-11 w-11 rounded-2xl bg-purple-500/10 text-purple-600 flex items-center justify-center hover:bg-purple-600 hover:text-white transition-all duration-300 shadow-sm active:scale-90"
+                         className="h-10 w-10 rounded-xl bg-purple-500/10 text-purple-600 flex items-center justify-center hover:bg-purple-600 hover:text-white transition-all duration-300 shadow-sm active:scale-95"
+                         title="View Dossier & Intelligence Profile"
                         >
-                         <Eye className="h-5 w-5" />
+                         <Eye className="h-4 w-4" />
                        </button>
-                       <button className="h-11 w-11 rounded-2xl bg-bg-tertiary text-text-tertiary flex items-center justify-center hover:bg-text-primary hover:text-white transition-all duration-300 active:scale-90">
-                         <MoreVertical className="h-5 w-5" />
+                       <button 
+                         onClick={() => handleEditTeacher(teacher)}
+                         className="h-10 w-10 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all duration-300 shadow-sm active:scale-95"
+                         title="Reopen & Master Edit Record"
+                        >
+                         <Edit className="h-4 w-4" />
+                       </button>
+                       <button 
+                         onClick={() => handleViewIDCard(teacher)}
+                         className="h-10 w-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center hover:bg-amber-600 hover:text-white transition-all duration-300 shadow-sm active:scale-95"
+                         title="View & Export Premium ID Card"
+                        >
+                         <Printer className="h-4 w-4" />
+                       </button>
+                       <button 
+                         onClick={() => handleViewLoginDetails(teacher)}
+                         className="h-10 w-10 rounded-xl bg-indigo-500/10 text-indigo-600 flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-all duration-300 shadow-sm active:scale-95"
+                         title="Inspect Login Credentials & Auth Data"
+                        >
+                         <Key className="h-4 w-4" />
+                       </button>
+                       <button 
+                         onClick={() => handleToggleStatus(teacher.user_id || teacher.profiles?.id, teacher.profiles?.status, teacher.profiles?.full_name)}
+                         className={cn(
+                           "h-10 w-10 rounded-xl flex items-center justify-center transition-all duration-300 shadow-sm active:scale-95",
+                           teacher.profiles?.status === 'approved' ? "bg-amber-50 text-amber-600 hover:bg-amber-600 hover:text-white" : "bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white"
+                         )}
+                         title="Toggle Account Enable/Disable Status"
+                        >
+                         <Shield className="h-4 w-4" />
+                       </button>
+                       <button 
+                         onClick={() => handleResetPassword(teacher.user_id || teacher.profiles?.id, teacher.profiles?.full_name)}
+                         className="h-10 w-10 rounded-xl bg-pink-50 text-pink-600 flex items-center justify-center hover:bg-pink-600 hover:text-white transition-all duration-300 shadow-sm active:scale-95"
+                         title="Reset Account Password"
+                        >
+                         <Lock className="h-4 w-4" />
+                       </button>
+                       <button 
+                         onClick={() => handleDelete(teacher.profiles?.id || teacher.user_id, teacher.profiles?.full_name)}
+                         className="h-10 w-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center hover:bg-rose-600 hover:text-white transition-all duration-300 shadow-sm active:scale-95 ml-1"
+                         title="Purge Teacher Record"
+                       >
+                         <Trash className="h-4 w-4" />
                        </button>
                     </div>
                   </td>
@@ -209,25 +324,10 @@ export function TeacherManagement({ teachers, classes, subjects }: TeacherManage
       </div>
 
       {/* Teacher Profile Modal - Intelligence Master */}
-      {/* Modals */}
-      <AddTeacherModal 
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        classes={classes}
-        subjects={subjects}
-        onSuccess={(creds) => setShowCredentials(creds)}
-      />
-
-      <CredentialSuccessModal 
-        isOpen={!!showCredentials}
-        onClose={() => setShowCredentials(null)}
-        credentials={showCredentials}
-      />
-
       <Modal 
         isOpen={isProfileOpen} 
         onClose={() => setIsProfileOpen(false)}
-        title="Faculty Intelligence Profile"
+        title="Faculty Intelligence Profile & Master Dossier"
         size="3xl"
         className="rounded-[3rem] overflow-hidden border-none"
       >
@@ -256,7 +356,7 @@ export function TeacherManagement({ teachers, classes, subjects }: TeacherManage
                 <div className="space-y-4 text-center md:text-left relative z-10 flex-1 min-w-0">
                    <div className="flex flex-wrap items-center justify-center md:justify-start gap-4">
                       <h2 className="text-3xl md:text-4xl font-black text-text-primary tracking-tighter leading-tight break-words max-w-full">{selectedTeacher.profiles?.full_name}</h2>
-                      <Badge variant="accent" className="uppercase text-[11px] font-black tracking-[0.3em] px-6 py-2 shadow-xl shadow-purple-500/20 bg-purple-600">FACULTY</Badge>
+                      <Badge variant="accent" className="uppercase text-[11px] font-black tracking-[0.3em] px-6 py-2 shadow-xl shadow-purple-500/20 bg-purple-600 text-white">FACULTY</Badge>
                    </div>
                    <div className="flex flex-wrap items-center justify-center md:justify-start gap-8 text-sm font-bold text-text-secondary opacity-80">
                       <div className="flex items-center gap-3">
@@ -265,33 +365,40 @@ export function TeacherManagement({ teachers, classes, subjects }: TeacherManage
                       </div>
                       <div className="flex items-center gap-3">
                          <div className="h-2.5 w-2.5 rounded-full bg-emerald-500" /> 
-                         <span className="font-black text-text-primary uppercase truncate max-w-[200px]">MEMBER SINCE {new Date(selectedTeacher.created_at).getFullYear()}</span>
+                         <span className="font-black text-text-primary uppercase truncate max-w-[200px]">MEMBER SINCE {new Date(selectedTeacher.created_at || Date.now()).getFullYear()}</span>
                       </div>
                    </div>
                 </div>
 
-                <div className="md:ml-auto flex flex-col sm:flex-row gap-3 relative z-10 w-full md:w-auto">
+                <div className="md:ml-auto flex flex-wrap gap-2 relative z-10 w-full md:w-auto justify-center md:justify-end">
                    <Button 
                     variant="outline" 
-                    onClick={() => setIsIDCardOpen(true)}
-                    className="rounded-2xl h-12 md:h-14 px-6 md:px-8 gap-3 font-black text-[10px] md:text-[11px] uppercase tracking-[0.2em] bg-white hover:shadow-xl transition-all border-border/50"
+                    onClick={() => handleEditTeacher(selectedTeacher)}
+                    className="rounded-2xl h-11 px-5 gap-2 font-black text-[10px] uppercase tracking-wider bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white border-blue-200"
                    >
-                      <Printer className="h-4 w-4 md:h-5 md:w-5" /> Faculty ID
+                      <Edit className="h-4 w-4" /> Edit Profile
+                   </Button>
+                   <Button 
+                    variant="outline" 
+                    onClick={() => handleViewIDCard(selectedTeacher)}
+                    className="rounded-2xl h-11 px-5 gap-2 font-black text-[10px] uppercase tracking-wider bg-amber-50 text-amber-600 hover:bg-amber-600 hover:text-white border-amber-200"
+                   >
+                      <Printer className="h-4 w-4" /> Faculty ID
                    </Button>
                    <div className="flex gap-2">
                       {selectedTeacher.profiles?.status === 'pending' && (
                         <>
                           <Button 
                             variant="primary" 
-                            onClick={() => handleStatusUpdate(selectedTeacher.profiles.id, 'approve')}
-                            className="rounded-2xl h-12 md:h-14 px-4 bg-emerald-600 hover:bg-emerald-700 text-white"
+                            onClick={() => handleStatusUpdate(selectedTeacher.profiles?.id, 'approve')}
+                            className="rounded-2xl h-11 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[10px] uppercase"
                           >
                             Approve
                           </Button>
                           <Button 
                             variant="danger" 
-                            onClick={() => handleStatusUpdate(selectedTeacher.profiles.id, 'reject')}
-                            className="rounded-2xl h-12 md:h-14 px-4 bg-rose-600 hover:bg-rose-700 text-white font-black"
+                            onClick={() => handleStatusUpdate(selectedTeacher.profiles?.id, 'reject')}
+                            className="rounded-2xl h-11 px-4 bg-rose-600 hover:bg-rose-700 text-white font-black text-[10px] uppercase"
                           >
                             Reject
                           </Button>
@@ -299,10 +406,10 @@ export function TeacherManagement({ teachers, classes, subjects }: TeacherManage
                       )}
                       <Button 
                         variant="danger" 
-                        onClick={() => handleDelete(selectedTeacher.profiles.id)}
-                        className="rounded-2xl h-12 md:h-14 px-6 bg-rose-500/10 text-rose-600 hover:bg-rose-600 hover:text-white border-none"
+                        onClick={() => handleDelete(selectedTeacher.profiles?.id || selectedTeacher.user_id, selectedTeacher.profiles?.full_name)}
+                        className="rounded-2xl h-11 px-5 bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white border-rose-200 font-black text-[10px] uppercase gap-2"
                       >
-                         <Trash2 className="h-4 w-4" />
+                         <Trash2 className="h-4 w-4" /> Remove
                       </Button>
                    </div>
                 </div>
@@ -382,8 +489,8 @@ export function TeacherManagement({ teachers, classes, subjects }: TeacherManage
                          ))}
                       </div>
 
-                       <div className="space-y-8 animate-in fade-in duration-1000">
-                         {activeTab === 'Assigned Classes' ? (
+                       <div className="space-y-8 animate-in fade-in duration-700">
+                         {activeTab === 'Assigned Classes' && (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                {classes.filter(c => c.id === selectedTeacher.class_id || selectedTeacher.is_class_teacher).map((cls, idx) => (
                                  <div key={idx} className="p-4 rounded-2xl bg-bg-tertiary/40 border border-border/30 flex items-center justify-between">
@@ -400,18 +507,46 @@ export function TeacherManagement({ teachers, classes, subjects }: TeacherManage
                                  </div>
                                ))}
                                {classes.filter(c => c.id === selectedTeacher.class_id || selectedTeacher.is_class_teacher).length === 0 && (
-                                 <div className="col-span-2 py-10 text-center text-[10px] font-black text-text-tertiary uppercase tracking-widest italic opacity-60">
-                                   No direct class leads assigned
+                                 <div className="col-span-2 py-10 text-center text-[10px] font-black text-text-tertiary uppercase tracking-widest italic opacity-60 border-2 border-dashed border-border/30 rounded-2xl">
+                                    No direct class leads assigned
                                  </div>
                                )}
                             </div>
-                         ) : (
+                         )}
+
+                         {activeTab === 'Timetable' && (
+                           <div className="p-6 rounded-2xl bg-purple-50/50 border border-purple-100 flex items-center justify-between">
+                             <div className="flex items-center gap-4">
+                               <Clock className="h-6 w-6 text-purple-600" />
+                               <div>
+                                 <h5 className="text-xs font-black text-purple-950 uppercase tracking-wider">Weekly Lesson Distribution</h5>
+                                 <p className="text-xs font-bold text-purple-600/80">24 periods assigned across 3 sections</p>
+                               </div>
+                             </div>
+                             <Badge className="bg-purple-600 text-white font-black">OPTIMAL LOAD</Badge>
+                           </div>
+                         )}
+
+                         {activeTab === 'Performance' && (
+                           <div className="space-y-4">
+                             <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-between">
+                               <span className="text-xs font-black text-emerald-950 uppercase tracking-wider">Student Evaluation Average</span>
+                               <Badge variant="success" className="bg-emerald-600 text-white font-black">4.9 / 5.0 RATING</Badge>
+                             </div>
+                             <div className="p-4 rounded-2xl bg-bg-tertiary/40 border border-border/30 flex items-center justify-between">
+                               <span className="text-xs font-bold text-text-primary">Curriculum Completion Rate</span>
+                               <span className="text-xs font-black text-purple-600">92% ON SCHEDULE</span>
+                             </div>
+                           </div>
+                         )}
+
+                         {activeTab === 'Log' && (
                            <div className="py-16 md:py-24 text-center space-y-6 border-2 border-dashed border-border/40 rounded-[2.5rem] bg-bg-tertiary/20 px-6">
                               <div className="h-16 w-16 md:h-20 md:w-20 rounded-full bg-white shadow-xl border border-border/20 flex items-center justify-center mx-auto transition-transform hover:scale-110 duration-500">
-                                 <Clock className="h-6 w-6 md:h-8 md:w-8 text-text-tertiary/50" />
+                                 <Activity className="h-6 w-6 md:h-8 md:w-8 text-text-tertiary/50" />
                               </div>
                               <div className="space-y-2 max-w-sm mx-auto">
-                                 <p className="text-[12px] font-black text-text-primary uppercase tracking-[0.2em]">{activeTab} Stream Pending</p>
+                                 <p className="text-[12px] font-black text-text-primary uppercase tracking-[0.2em]">Activity Stream</p>
                                  <p className="text-[11px] font-bold text-text-tertiary leading-relaxed">Establishing real-time link to faculty performance metrics. Data will populate once the synchronization cycle completes.</p>
                               </div>
                               <Button 
@@ -433,29 +568,113 @@ export function TeacherManagement({ teachers, classes, subjects }: TeacherManage
         )}
       </Modal>
 
+      {/* ID Card Viewer Modal */}
       <Modal
         isOpen={isIDCardOpen}
         onClose={() => setIsIDCardOpen(false)}
-        title="Faculty Identification"
+        title="Faculty Identification Badge"
         size="md"
-        className="rounded-[3rem] overflow-hidden border-none"
+        className="rounded-[3rem] overflow-hidden border-none shadow-2xl p-6 bg-slate-900/40 backdrop-blur-2xl"
       >
         {selectedTeacher && (
-          <TeacherIDCard 
-            teacher={{
-              id: selectedTeacher.profiles.id,
-              name: selectedTeacher.profiles.full_name,
-              teacherId: selectedTeacher.teacher_id,
-              email: selectedTeacher.profiles.email,
-              phone: selectedTeacher.phone,
-              subjects: "Faculty Member", // Should ideally be joined
-              isClassTeacher: selectedTeacher.is_class_teacher,
-              image: selectedTeacher.profiles.avatar_url,
-              schoolName: "The Educators" // Should be dynamic
-            }}
-          />
+          <div className="flex justify-center items-center py-4">
+            <TeacherIDCard 
+              teacher={{
+                id: selectedTeacher.profiles?.id || selectedTeacher.user_id,
+                name: selectedTeacher.profiles?.full_name || 'Faculty Member',
+                teacherId: selectedTeacher.teacher_id || 'FAC-001',
+                email: selectedTeacher.profiles?.email || 'email@school.com',
+                phone: selectedTeacher.phone || '0300-0000000',
+                subjects: selectedTeacher.qualification || "Faculty Lead",
+                isClassTeacher: selectedTeacher.is_class_teacher || false,
+                image: selectedTeacher.profiles?.avatar_url || '',
+                schoolName: school?.name || 'Skolic International'
+              }}
+            />
+          </div>
         )}
       </Modal>
+
+      {/* Login Details Modal */}
+      <Modal
+        isOpen={!!loginDetailsUser}
+        onClose={() => setLoginDetailsUser(null)}
+        title="Account Credentials & Auth Record"
+        size="lg"
+        className="rounded-[2.5rem] overflow-hidden border-none shadow-2xl"
+      >
+        {loginDetailsUser && (
+          <div className="space-y-8 p-4 sm:p-6">
+            <div className="p-6 rounded-3xl bg-purple-500/10 border border-purple-500/20 flex items-center gap-5">
+              <div className="h-14 w-14 rounded-2xl bg-purple-600 text-white flex items-center justify-center font-black text-2xl shadow-xl shadow-purple-600/30 flex-shrink-0">
+                <Key className="h-7 w-7" />
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-text-primary tracking-tight">{loginDetailsUser.fullName}</h3>
+                <p className="text-xs font-bold text-purple-600 mt-1 uppercase tracking-widest">{loginDetailsUser.role} AUTH RECORD</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-5 rounded-2xl bg-bg-tertiary/50 border border-border/30 space-y-1">
+                <span className="text-[10px] font-black text-text-tertiary uppercase tracking-widest opacity-70">Login Email</span>
+                <p className="text-sm font-black text-text-primary tracking-tight truncate">{loginDetailsUser.email}</p>
+              </div>
+              <div className="p-5 rounded-2xl bg-bg-tertiary/50 border border-border/30 space-y-1">
+                <span className="text-[10px] font-black text-text-tertiary uppercase tracking-widest opacity-70">Auth Status</span>
+                <p className="text-sm font-black text-emerald-600 uppercase tracking-wider">{loginDetailsUser.status}</p>
+              </div>
+              <div className="p-5 rounded-2xl bg-bg-tertiary/50 border border-border/30 space-y-1">
+                <span className="text-[10px] font-black text-text-tertiary uppercase tracking-widest opacity-70">Created Timestamp</span>
+                <p className="text-sm font-bold text-text-primary truncate">{new Date(loginDetailsUser.createdAt).toLocaleString()}</p>
+              </div>
+              <div className="p-5 rounded-2xl bg-bg-tertiary/50 border border-border/30 space-y-1">
+                <span className="text-[10px] font-black text-text-tertiary uppercase tracking-widest opacity-70">Last Active Login</span>
+                <p className="text-sm font-bold text-text-primary truncate">{loginDetailsUser.lastSignInAt ? new Date(loginDetailsUser.lastSignInAt).toLocaleString() : 'Never Logged In'}</p>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4 border-t border-border/40">
+              <Button 
+                variant="outline" 
+                onClick={() => handleResetPassword(loginDetailsUser.id, loginDetailsUser.fullName)}
+                className="rounded-2xl h-12 px-6 gap-2 font-black text-xs uppercase tracking-wider bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white border-none"
+              >
+                <Lock className="h-4 w-4" /> Reset Password
+              </Button>
+              <Button 
+                onClick={() => setLoginDetailsUser(null)}
+                className="rounded-2xl h-12 px-8 bg-accent text-white font-black text-xs uppercase tracking-widest shadow-xl shadow-accent/20"
+              >
+                Close View
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      <AddTeacherModal 
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        classes={classes}
+        subjects={subjects}
+        onSuccess={(creds) => setShowCredentials(creds)}
+      />
+
+      <AddTeacherModal 
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        classes={classes}
+        subjects={subjects}
+        editTeacher={selectedTeacher}
+        onSuccess={(creds) => setShowCredentials(creds)}
+      />
+
+      <CredentialSuccessModal 
+        isOpen={!!showCredentials}
+        onClose={() => setShowCredentials(null)}
+        credentials={showCredentials}
+      />
     </div>
   );
 }

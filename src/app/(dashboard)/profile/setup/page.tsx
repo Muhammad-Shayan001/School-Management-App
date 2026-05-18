@@ -323,7 +323,7 @@ export default function ProfileSetupPage() {
                         disabled={!!profile?.student?.class_id}
                         options={[
                           { value: '', label: 'Select your class' },
-                          ...classes.map(c => ({ value: c.id, label: `${c.name} ${c.section ? `- ${c.section}` : ''}` }))
+                          ...classes.map(c => ({ value: c.id, label: `${c.name}${c.section && c.section.toUpperCase() !== 'A' ? ` - ${c.section}` : ''}` }))
                         ]}
                         required
                       />
@@ -427,7 +427,7 @@ export default function ProfileSetupPage() {
                               newAssigns[index].class_id = e.target.value;
                               setAssignments(newAssigns);
                             }}
-                            options={[{ value: '', label: 'Select Class' }, ...classes.map(c => ({ value: c.id, label: `${c.name} - ${c.section}` }))]}
+                            options={[{ value: '', label: 'Select Class' }, ...classes.map(c => ({ value: c.id, label: `${c.name}${c.section && c.section.toUpperCase() !== 'A' ? ` - ${c.section}` : ''}` }))]}
                             required
                           />
                           <Button 
@@ -480,7 +480,7 @@ export default function ProfileSetupPage() {
                           name="class_id"
                           value={formData.class_id}
                           onChange={handleInputChange}
-                          options={[{ value: '', label: 'Select Class' }, ...classes.map(c => ({ value: c.id, label: `${c.name} - ${c.section}` }))]}
+                          options={[{ value: '', label: 'Select Class' }, ...classes.map(c => ({ value: c.id, label: `${c.name}${c.section && c.section.toUpperCase() !== 'A' ? ` - ${c.section}` : ''}` }))]}
                           required
                         />
                       </div>

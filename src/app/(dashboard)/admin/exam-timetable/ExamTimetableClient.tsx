@@ -103,7 +103,7 @@ export default function ExamTimetableClient() {
         
         <div className="w-full sm:w-64">
           <Select
-            options={classes.map(c => ({ value: c.id, label: `${c.name} ${c.section || ''}` }))}
+            options={classes.map(c => ({ value: c.id, label: `${c.name}${c.section && c.section.toUpperCase() !== 'A' ? ` - ${c.section}` : ''}` }))}
             value={selectedClass}
             onChange={(e) => setSelectedClass(e.target.value)}
             disabled={isLoading}

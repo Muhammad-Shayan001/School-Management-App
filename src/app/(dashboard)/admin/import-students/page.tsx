@@ -253,19 +253,19 @@ export default function ImportStudentsPage() {
               <h2 className="text-sm font-black text-text-primary uppercase tracking-widest">Data Preview</h2>
               <span className="text-[10px] text-text-tertiary font-bold">{file?.name}</span>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+            <div className="overflow-x-auto overflow-y-auto max-h-[600px] scrollbar-premium">
+              <table className="w-full text-sm border-collapse">
                 <thead className="bg-bg-tertiary/30 text-[10px] font-black uppercase tracking-widest text-text-tertiary border-b border-border/50">
                   <tr>
-                    <th className="px-4 py-4 text-left">#</th>
-                    <th className="px-4 py-4 text-left">Name</th>
-                    <th className="px-4 py-4 text-left">Roll No</th>
-                    <th className="px-4 py-4 text-left">Class</th>
-                    <th className="px-4 py-4 text-left">Section</th>
-                    <th className="px-4 py-4 text-left">Father</th>
-                    <th className="px-4 py-4 text-left">Mobile</th>
-                    <th className="px-4 py-4 text-center">Status</th>
-                    <th className="px-4 py-4 text-center">Actions</th>
+                    <th className="px-4 py-4 text-left sticky top-0 bg-bg-tertiary/90 backdrop-blur-md z-10 whitespace-nowrap shadow-sm">#</th>
+                    <th className="px-4 py-4 text-left sticky top-0 bg-bg-tertiary/90 backdrop-blur-md z-10 whitespace-nowrap shadow-sm">Name</th>
+                    <th className="px-4 py-4 text-left sticky top-0 bg-bg-tertiary/90 backdrop-blur-md z-10 whitespace-nowrap shadow-sm">Roll No</th>
+                    <th className="px-4 py-4 text-left sticky top-0 bg-bg-tertiary/90 backdrop-blur-md z-10 whitespace-nowrap shadow-sm">Class</th>
+                    <th className="px-4 py-4 text-left sticky top-0 bg-bg-tertiary/90 backdrop-blur-md z-10 whitespace-nowrap shadow-sm">Section</th>
+                    <th className="px-4 py-4 text-left sticky top-0 bg-bg-tertiary/90 backdrop-blur-md z-10 whitespace-nowrap shadow-sm">Father</th>
+                    <th className="px-4 py-4 text-left sticky top-0 bg-bg-tertiary/90 backdrop-blur-md z-10 whitespace-nowrap shadow-sm">Mobile</th>
+                    <th className="px-4 py-4 text-center sticky top-0 bg-bg-tertiary/90 backdrop-blur-md z-10 whitespace-nowrap shadow-sm">Status</th>
+                    <th className="px-4 py-4 text-center sticky top-0 bg-bg-tertiary/90 backdrop-blur-md z-10 whitespace-nowrap shadow-sm">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/20">
@@ -388,16 +388,16 @@ export default function ImportStudentsPage() {
                 Download CSV
               </Button>
             </div>
-            <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-bg-tertiary/30 text-[10px] font-black uppercase tracking-widest text-text-tertiary border-b border-border/50 sticky top-0">
+            <div className="overflow-x-auto overflow-y-auto max-h-[600px] scrollbar-premium">
+              <table className="w-full text-sm border-collapse">
+                <thead className="bg-bg-tertiary/30 text-[10px] font-black uppercase tracking-widest text-text-tertiary border-b border-border/50">
                   <tr>
-                    <th className="px-4 py-3 text-left">Name</th>
-                    <th className="px-4 py-3 text-left">Roll No</th>
-                    <th className="px-4 py-3 text-left">Email</th>
-                    <th className="px-4 py-3 text-left">Password</th>
-                    <th className="px-4 py-3 text-center">Status</th>
-                    <th className="px-4 py-3 text-left">Details</th>
+                    <th className="px-4 py-3 text-left sticky top-0 bg-bg-tertiary/90 backdrop-blur-md z-10 whitespace-nowrap shadow-sm">Name</th>
+                    <th className="px-4 py-3 text-left sticky top-0 bg-bg-tertiary/90 backdrop-blur-md z-10 whitespace-nowrap shadow-sm">Roll No</th>
+                    <th className="px-4 py-3 text-left sticky top-0 bg-bg-tertiary/90 backdrop-blur-md z-10 whitespace-nowrap shadow-sm">Email</th>
+                    <th className="px-4 py-3 text-left sticky top-0 bg-bg-tertiary/90 backdrop-blur-md z-10 whitespace-nowrap shadow-sm">Password</th>
+                    <th className="px-4 py-3 text-center sticky top-0 bg-bg-tertiary/90 backdrop-blur-md z-10 whitespace-nowrap shadow-sm">Status</th>
+                    <th className="px-4 py-3 text-left sticky top-0 bg-bg-tertiary/90 backdrop-blur-md z-10 whitespace-nowrap shadow-sm">Details</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/20">

@@ -57,7 +57,7 @@ export async function markAttendance(params: {
       .single();
 
     if (studentFeeData && studentFeeData.fee_status !== 'paid') {
-      return { 
+      return {
         error: `Attendance blocked: Fee status is ${studentFeeData.fee_status.toUpperCase()}. Payment required.`,
         blockedByFees: true
       };
@@ -65,12 +65,12 @@ export async function markAttendance(params: {
   }
 
   const attendanceDate = params.date || new Date().toISOString().split('T')[0];
-  
+
   // LOGIC CHANGE: QR scans are now AUTO-APPROVED ('present')
   // Manual attendance is also 'present' by default
   let finalStatus = params.status;
   if (!finalStatus) {
-    finalStatus = 'present'; 
+    finalStatus = 'present';
   }
 
   // Check for existing record using 'user_id' (matching the DB schema)
@@ -88,7 +88,7 @@ export async function markAttendance(params: {
   }
 
   const attendanceData = {
-    user_id: params.userId, 
+    user_id: params.userId,
     role: params.role,
     status: finalStatus,
     method: params.method,
@@ -96,7 +96,7 @@ export async function markAttendance(params: {
     marked_by: caller.id,
     school_id: callerProfile.school_id,
     class_id: params.classId || null,
-    approved_by: caller.id // Auto-approved by the person marking it (Student or Teacher)
+    approved_by: (params.method === 'qr' && finalStatus === 'pending') ? null : caller.id
   };
 
   let error;
@@ -132,9 +132,9 @@ export async function approveAttendance(attendanceId: string) {
 
   const { error } = await adminClient
     .from('attendance')
-    .update({ 
+    .update({
       status: 'present',
-      approved_by: user.id 
+      approved_by: user.id
     })
     .eq('id', attendanceId);
 
@@ -157,9 +157,9 @@ export async function rejectAttendance(attendanceId: string) {
 
   const { error } = await adminClient
     .from('attendance')
-    .update({ 
+    .update({
       status: 'rejected',
-      approved_by: user.id 
+      approved_by: user.id
     })
     .eq('id', attendanceId);
 
@@ -208,12 +208,12 @@ export async function getSchoolAttendance(date: string, filters?: { status?: str
       .select('class_id')
       .eq('user_id', user.id)
       .single();
-      
+
     if (!teacherData?.class_id) {
       // Teacher has no class assigned, return empty immediately
       return { data: [], error: null };
     }
-    
+
     // Force the query to only return records for this teacher's class
     query = query.eq('class_id', teacherData.class_id);
   } else if (filters?.classId) {

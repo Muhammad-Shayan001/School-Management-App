@@ -17,8 +17,8 @@ export async function createAssignment(data: FormData) {
     .eq("id", user.id)
     .single();
 
-  if (profile?.role !== "teacher") {
-    throw new Error("Only teachers can create assignments");
+  if (profile?.role !== "teacher" && profile?.role !== "admin" && profile?.role !== "super_admin") {
+    throw new Error("Only teachers and administrators can create assignments");
   }
 
   const title = data.get("title") as string;
@@ -44,8 +44,7 @@ export async function createAssignment(data: FormData) {
       deadline,
       max_marks: max_marks || null,
       attachment_url,
-      school_id: profile.school_id,
-      campus_id: data.get("campus_id") as string || null,
+      school_id: profile?.school_id || null,
     })
     .select()
     .single();

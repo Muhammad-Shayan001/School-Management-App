@@ -96,10 +96,19 @@
   --color-glass-border: var(--glass-border);
   --color-glass-hover: var(--glass-hover);
 
-  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-inter), 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-poppins), 'Poppins', var(--font-sans);
   
   --shadow-md: var(--shadow-md);
   --shadow-lg: var(--shadow-lg);
+}
+
+@layer base {
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    font-weight: 600;
+    letter-spacing: -0.025em;
+  }
 }
 
 /* ─── Base Styles ───────────────────────────────────────────────────────────── */
@@ -241,6 +250,15 @@ input:focus, select:focus, textarea:focus {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
+}
+
+/* ─── Auth Layout Specific ──────────────────────────────────────────────────── */
+.auth-background {
+  background: var(--bg-tertiary);
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(37, 99, 235, 0.1) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.05) 0px, transparent 50%);
+  background-attachment: fixed;
 }
 /* ─── Premium Scrollbar Design ────────────────────────────────────────────── */
 .scrollbar-premium::-webkit-scrollbar {

@@ -112,7 +112,7 @@ export default function TimetableClient() {
         <div className="w-full sm:w-64">
           {viewMode === 'class' ? (
             <Select
-              options={classes.map(c => ({ value: c.id, label: `${c.name} ${c.section || ''}` }))}
+              options={classes.map(c => ({ value: c.id, label: `${c.name}${c.section && c.section.toUpperCase() !== 'A' ? ` - ${c.section}` : ''}` }))}
               value={selectedClass}
               onChange={(e) => setSelectedClass(e.target.value)}
               disabled={isLoading}
@@ -233,7 +233,7 @@ export default function TimetableClient() {
                         <User className="h-4 w-4 mr-2 text-text-tertiary" />
                         {viewMode === 'class' 
                           ? entry.teacher?.full_name || '-' 
-                          : `${entry.class?.name || ''} ${entry.class?.section || ''}`}
+                          : `${entry.class?.name || ''}${entry.class?.section && entry.class.section.toUpperCase() !== 'A' ? ` - ${entry.class.section}` : ''}`}
                       </div>
                     </td>
                     {viewMode === 'class' && (

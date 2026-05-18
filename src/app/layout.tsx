@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { Inter, Poppins } from 'next/font/google';
 import { AuthProvider } from '@/app/_components/providers/auth-provider';
 import { getCurrentUser } from '@/app/_lib/actions/auth';
 import { Toaster } from 'sonner';
@@ -8,6 +8,14 @@ import './globals.css';
 const inter = Inter({
   subsets: ['latin'],
   variable: '--font-inter',
+  display: 'swap',
+});
+
+const poppins = Poppins({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700'],
+  variable: '--font-poppins',
+  display: 'swap',
 });
 
 export const metadata: Metadata = {
@@ -29,7 +37,7 @@ export default async function RootLayout({
   const user = await getCurrentUser();
 
   return (
-    <html lang="en" className={`${inter.variable} h-full scroll-smooth`} suppressHydrationWarning>
+    <html lang="en" className={`${inter.variable} ${poppins.variable} h-full scroll-smooth`} suppressHydrationWarning>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
         <meta name="theme-color" content="#ffffff" />

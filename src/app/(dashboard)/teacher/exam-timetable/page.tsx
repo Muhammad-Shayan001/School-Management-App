@@ -212,7 +212,7 @@ export default function ExamSchedulePage() {
                   className="w-full px-4 py-3 bg-bg-tertiary border border-border rounded-xl font-bold outline-none focus:border-accent"
                 >
                   {classes.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name} {c.section}</option>
+                    <option key={c.id} value={c.id}>{c.name}{c.section && c.section.toUpperCase() !== 'A' ? ` - ${c.section}` : ''}</option>
                   ))}
                 </select>
               </div>

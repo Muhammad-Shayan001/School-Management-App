@@ -183,7 +183,7 @@ export default function SignupPage() {
                 name="class_id"
                 label="Select Class"
                 required
-                options={classes.map(c => ({ value: c.id, label: `${c.name} ${c.section || ''}` }))}
+                options={classes.map(c => ({ value: c.id, label: `${c.name}${c.section && c.section.toUpperCase() !== 'A' ? ` - ${c.section}` : ''}` }))}
                 placeholder={classes.length === 0 ? "No classes available for this school" : "Choose your class"}
                 disabled={classes.length === 0}
               />

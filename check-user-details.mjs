@@ -28,16 +28,16 @@ async function checkUser() {
   console.log('User Metadata:', JSON.stringify(user.user_metadata, null, 2));
 
   // Check Profile
-  const { data: profile, error: profileError } = await supabase
+  const { data: profiles, error: profileError } = await supabase
     .from('profiles')
     .select('*')
-    .eq('id', user.id)
-    .single();
+    .eq('id', user.id);
 
   if (profileError) {
     console.error('Profile error:', profileError.message);
   } else {
-    console.log('Profile found:', JSON.stringify(profile, null, 2));
+    console.log('Profiles found count:', profiles?.length);
+    console.log('Profiles found:', JSON.stringify(profiles, null, 2));
   }
 }
 

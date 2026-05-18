@@ -232,14 +232,14 @@ export default function TeacherAttendancePage() {
 
           {/* Detailed History */}
           <Card className="p-0 border-none shadow-2xl bg-white overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left">
+            <div className="overflow-x-auto overflow-y-auto max-h-[600px] scrollbar-premium">
+              <table className="w-full text-sm text-left border-collapse">
                 <thead className="bg-bg-tertiary/30 text-[10px] font-black uppercase tracking-widest text-text-tertiary border-b border-border/50">
                   <tr>
-                    <th className="px-8 py-6">Date</th>
-                    <th className="px-8 py-6 text-center">Status</th>
-                    <th className="px-8 py-6 text-center">Method</th>
-                    <th className="px-8 py-6 text-right">Activity Time</th>
+                    <th className="px-8 py-6 sticky top-0 bg-bg-tertiary/90 backdrop-blur-md z-10 whitespace-nowrap shadow-sm">Date</th>
+                    <th className="px-8 py-6 text-center sticky top-0 bg-bg-tertiary/90 backdrop-blur-md z-10 whitespace-nowrap shadow-sm">Status</th>
+                    <th className="px-8 py-6 text-center sticky top-0 bg-bg-tertiary/90 backdrop-blur-md z-10 whitespace-nowrap shadow-sm">Method</th>
+                    <th className="px-8 py-6 text-right sticky top-0 bg-bg-tertiary/90 backdrop-blur-md z-10 whitespace-nowrap shadow-sm">Activity Time</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/30">

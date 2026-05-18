@@ -67,7 +67,7 @@ export default function AddSchoolPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
+    <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-28">
       
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -379,11 +379,11 @@ export default function AddSchoolPage() {
         </Card>
 
         {/* Action Buttons */}
-        <div className="flex items-center justify-end gap-4 pt-4 border-t border-border">
-          <Button type="button" variant="outline" onClick={() => router.back()}>
+        <div className="flex flex-col-reverse sm:flex-row sm:items-center justify-end gap-3 pt-6 border-t border-border pb-12">
+          <Button type="button" variant="outline" onClick={() => router.back()} className="w-full sm:w-auto rounded-xl py-6 font-bold text-sm">
             Cancel
           </Button>
-          <Button type="submit" size="lg" isLoading={isLoading} leftIcon={<Save className="h-5 w-5" />}>
+          <Button type="submit" size="lg" isLoading={isLoading} leftIcon={<Save className="h-5 w-5" />} className="w-full sm:w-auto rounded-xl py-6 font-black text-sm shadow-xl shadow-accent/20">
             Create School & Admin
           </Button>
         </div>

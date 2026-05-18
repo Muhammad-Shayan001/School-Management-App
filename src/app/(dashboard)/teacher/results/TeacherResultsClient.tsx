@@ -213,7 +213,7 @@ export default function TeacherResultsClient() {
             >
               <option value="">Choose a class...</option>
               {classes.map((c) => (
-                <option key={c.id} value={c.id}>{c.name} {c.section ? `- ${c.section}` : ''}</option>
+                <option key={c.id} value={c.id}>{c.name}{c.section && c.section.toUpperCase() !== 'A' ? ` - ${c.section}` : ''}</option>
               ))}
             </select>
           </div>

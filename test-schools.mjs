@@ -12,7 +12,7 @@ async function checkSchools() {
   if (error) console.error("Error:", error);
   console.log("Total Schools:", schools?.length);
   if (schools?.length > 0) {
-    console.log("Latest School:", schools[schools.length - 1].name);
+    console.log("All Schools:", JSON.stringify(schools, null, 2));
   }
 }
 
