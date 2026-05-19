@@ -85,6 +85,10 @@ export function AddStudentModal({ isOpen, onClose, classes, onSuccess, editStude
     session_year: new Date().getFullYear().toString(),
   });
 
+  const selectedClass = classes.find(c => c.id === formData.class_id);
+  const showGroupField = selectedClass?.name === 'Class 11' || selectedClass?.name === 'Class 12';
+
+
   useEffect(() => {
     if (isOpen && editStudent) {
       setFormData({
@@ -286,13 +290,34 @@ export function AddStudentModal({ isOpen, onClose, classes, onSuccess, editStude
                       <Select 
                         label="Select Class *"
                         value={formData.class_id}
-                        onChange={(e) => setFormData(prev => ({ ...prev, class_id: e.target.value }))}
+                        onChange={(e) => {
+                          const classId = e.target.value;
+                          const cls = classes.find(c => c.id === classId);
+                          const isHighSchool = cls?.name === 'Class 11' || cls?.name === 'Class 12';
+                          setFormData(prev => ({
+                            ...prev,
+                            class_id: classId,
+                            group: isHighSchool ? (prev.group === 'General' ? 'Science' : prev.group) : 'General'
+                          }));
+                        }}
                         options={[
                           { label: 'Choose Classroom', value: '' },
                           ...classes.map(c => ({ label: `${c.name}${c.section && c.section.toUpperCase() !== 'A' ? ` - ${c.section}` : ''}`, value: c.id }))
                         ]}
                         className="h-14 bg-bg-tertiary/30"
                       />
+                      {showGroupField && (
+                        <Select 
+                          label="Select Group *"
+                          value={formData.group}
+                          onChange={(e) => setFormData(prev => ({ ...prev, group: e.target.value }))}
+                          options={[
+                            { label: 'Science', value: 'Science' },
+                            { label: 'Commerce', value: 'Commerce' }
+                          ]}
+                          className="h-14 bg-bg-tertiary/30"
+                        />
+                      )}
                       <Input 
                         name="admission_date"
                         value={formData.admission_date}

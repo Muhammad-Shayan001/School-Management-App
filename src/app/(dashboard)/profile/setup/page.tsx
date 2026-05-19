@@ -87,6 +87,7 @@ export default function ProfileSetupPage() {
             parent_phone: s.parent_phone || '',
             address: s.address || '',
             admission_date: s.admission_date || '',
+            group: s.group || 'General',
           });
         } else if (data.role === 'teacher') {
           const t = data.teacher || {};
@@ -140,7 +141,17 @@ export default function ProfileSetupPage() {
       val = formatCNIC(val);
     }
 
-    setFormData(prev => ({ ...prev, [name]: val }));
+    if (name === 'class_id') {
+      const cls = classes.find(c => c.id === val);
+      const isHighSchool = cls?.name === 'Class 11' || cls?.name === 'Class 12';
+      setFormData(prev => ({
+        ...prev,
+        class_id: val,
+        group: isHighSchool ? (prev.group === 'General' ? 'Science' : prev.group) : 'General'
+      }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: val }));
+    }
     setError(null);
   };
 
@@ -187,6 +198,8 @@ export default function ProfileSetupPage() {
   if (isLoading) return <PageSpinner />;
 
   const role = profile?.role;
+  const selectedClass = classes.find(c => c.id === formData.class_id);
+  const showGroupField = selectedClass?.name === 'Class 11' || selectedClass?.name === 'Class 12';
   const totalSteps = 2;
 
   return (
@@ -327,6 +340,19 @@ export default function ProfileSetupPage() {
                         ]}
                         required
                       />
+                      {showGroupField && (
+                        <Select 
+                          label="Academic Group (Science/Commerce) *" 
+                          name="group"
+                          value={formData.group || 'Science'}
+                          onChange={handleInputChange}
+                          options={[
+                            { value: 'Science', label: 'Science' },
+                            { value: 'Commerce', label: 'Commerce' }
+                          ]}
+                          required
+                        />
+                      )}
                       <Input 
                         label="Section" 
                         name="section"

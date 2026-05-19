@@ -185,9 +185,9 @@ export async function createCampus(formDataRaw: any) {
   }
 
   console.log('[createCampus] Seeding classes for campus...');
-  // Seed default classes (Class 1-10) for the new campus
-  const classNames = Array.from({ length: 10 }, (_, i) => `Class ${i + 1}`);
-  const classInserts = classNames.map(cn => ({
+  // Seed default classes (Class 1-12) for the new campus
+  const { CLASS_NAMES } = await import('@/app/_lib/utils/constants');
+  const classInserts = CLASS_NAMES.map(cn => ({
     name: cn,
     school_id: campus.id,
     section: 'A',

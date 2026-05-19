@@ -101,11 +101,11 @@ export default function TeacherAttendancePage() {
   const recordMap = attendanceRecords.reduce((acc, r) => ({ ...acc, [r.user_id]: r }), {});
 
   const stats = {
-    present: myRecords.filter(a => a.status === 'present').length,
+    present: myRecords.filter(a => a.status === 'present' || a.status === 'late').length,
     absent: myRecords.filter(a => a.status === 'absent' || a.status === 'rejected').length,
     pending: myRecords.filter(a => a.status === 'pending').length,
     percentage: myRecords.filter(a => a.status !== 'pending').length > 0 
-      ? Math.round((myRecords.filter(a => a.status === 'present').length / myRecords.filter(a => a.status !== 'pending').length) * 100) 
+      ? Math.round((myRecords.filter(a => a.status === 'present' || a.status === 'late').length / myRecords.filter(a => a.status !== 'pending').length) * 100) 
       : 0
   };
 
@@ -262,12 +262,12 @@ export default function TeacherAttendancePage() {
                           </div>
                         </td>
                         <td className="px-8 py-5 text-center">
-                           <Badge 
-                             variant={record.status === 'present' ? 'success' : record.status === 'pending' ? 'warning' : 'danger'}
-                             dot
-                           >
-                             {record.status}
-                           </Badge>
+                            <Badge 
+                              variant={record.status === 'present' ? 'success' : (record.status === 'late' || record.status === 'pending') ? 'warning' : 'danger'}
+                              dot
+                            >
+                              {record.status === 'present' ? 'Verified' : record.status === 'late' ? 'Late' : record.status}
+                            </Badge>
                         </td>
                         <td className="px-8 py-5 text-center">
                           <span className="text-[10px] font-black text-text-tertiary uppercase tracking-widest bg-bg-tertiary/50 px-4 py-1.5 rounded-full border border-border/50">

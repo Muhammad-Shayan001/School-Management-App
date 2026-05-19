@@ -32,7 +32,15 @@ export default function TeacherIDCard({ teacher }: { teacher: TeacherData }) {
     const ref = isFlipped ? backRef.current : frontRef.current;
     if (!ref) return;
     try {
-      const dataUrl = await toPng(ref, { cacheBust: true, pixelRatio: 3 });
+      const dataUrl = await toPng(ref, {
+        cacheBust: true,
+        pixelRatio: 3,
+        style: {
+          transform: 'none',
+          backfaceVisibility: 'visible',
+          webkitBackfaceVisibility: 'visible',
+        },
+      });
       const link = document.createElement('a');
       link.download = `staff-id-${teacher.teacherId || 'card'}-${isFlipped ? 'back' : 'front'}.png`;
       link.href = dataUrl;
@@ -45,8 +53,24 @@ export default function TeacherIDCard({ teacher }: { teacher: TeacherData }) {
   const downloadAsPDF = async () => {
     if (!frontRef.current || !backRef.current) return;
     try {
-      const frontUrl = await toPng(frontRef.current, { cacheBust: true, pixelRatio: 3 });
-      const backUrl = await toPng(backRef.current, { cacheBust: true, pixelRatio: 3 });
+      const frontUrl = await toPng(frontRef.current, {
+        cacheBust: true,
+        pixelRatio: 3,
+        style: {
+          transform: 'none',
+          backfaceVisibility: 'visible',
+          webkitBackfaceVisibility: 'visible',
+        },
+      });
+      const backUrl = await toPng(backRef.current, {
+        cacheBust: true,
+        pixelRatio: 3,
+        style: {
+          transform: 'none',
+          backfaceVisibility: 'visible',
+          webkitBackfaceVisibility: 'visible',
+        },
+      });
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: [54, 85.6] });
       pdf.addImage(frontUrl, 'PNG', 0, 0, 54, 85.6);
       pdf.addPage([54, 85.6]);

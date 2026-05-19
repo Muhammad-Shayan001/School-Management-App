@@ -21,11 +21,11 @@ export default async function StudentAttendancePage() {
   const attendance = data || [];
 
   const stats = {
-    present: attendance.filter(a => a.status === 'present').length,
+    present: attendance.filter(a => a.status === 'present' || a.status === 'late').length,
     absent: attendance.filter(a => a.status === 'absent' || a.status === 'rejected').length,
     pending: attendance.filter(a => a.status === 'pending').length,
     percentage: attendance.filter(a => a.status !== 'pending').length > 0 
-      ? Math.round((attendance.filter(a => a.status === 'present').length / attendance.filter(a => a.status !== 'pending').length) * 100) 
+      ? Math.round((attendance.filter(a => a.status === 'present' || a.status === 'late').length / attendance.filter(a => a.status !== 'pending').length) * 100) 
       : 0
   };
 
@@ -163,13 +163,13 @@ export default async function StudentAttendancePage() {
                         </div>
                       </td>
                       <td className="px-8 py-5 text-center">
-                         <Badge 
-                           variant={record.status === 'present' ? 'success' : record.status === 'pending' ? 'warning' : 'danger'}
-                           dot
-                           className="px-4 py-1.5"
-                         >
-                           {record.status === 'present' ? 'Verified' : record.status}
-                         </Badge>
+                          <Badge 
+                            variant={record.status === 'present' ? 'success' : (record.status === 'late' || record.status === 'pending') ? 'warning' : 'danger'}
+                            dot
+                            className="px-4 py-1.5"
+                          >
+                            {record.status === 'present' ? 'Verified' : record.status === 'late' ? 'Late' : record.status}
+                          </Badge>
                       </td>
                       <td className="px-8 py-5 text-center">
                         <span className="text-[10px] font-black text-text-tertiary uppercase tracking-widest bg-bg-tertiary/50 px-4 py-1.5 rounded-full border border-border/50">
