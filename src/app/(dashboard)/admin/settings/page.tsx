@@ -2,7 +2,8 @@
 import { Button } from '@/app/_components/ui/button';
 import { Input } from '@/app/_components/ui/input';
 import { useAuthStore } from '@/app/_lib/store/auth-store';
-import { Settings, Shield, Bell } from 'lucide-react';
+import { ChangePasswordForm } from '@/app/_components/auth/change-password-form';
+import { Settings, Bell } from 'lucide-react';
 
 export default function AdminSettingsPage() {
   const { user } = useAuthStore();
@@ -16,11 +17,7 @@ export default function AdminSettingsPage() {
         </div>
         <div className="mt-5 flex justify-end"><Button size="sm">Save</Button></div>
       </div>
-      <div className="glass-card p-6">
-        <div className="flex items-center gap-3 mb-5"><div className="h-9 w-9 rounded-lg bg-warning-subtle flex items-center justify-center"><Shield className="h-4 w-4 text-warning"/></div><div><h2 className="text-base font-semibold text-text-primary">Security</h2></div></div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4"><Input label="Current Password" type="password" placeholder="••••••••"/><Input label="New Password" type="password" placeholder="••••••••"/></div>
-        <div className="mt-5 flex justify-end"><Button size="sm" variant="secondary">Update Password</Button></div>
-      </div>
+      <ChangePasswordForm />
     </div>
   );
 }

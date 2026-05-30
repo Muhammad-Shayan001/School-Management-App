@@ -204,6 +204,51 @@ export async function getCurrentUser() {
   }
 }
 
+export async function changePassword(formData: FormData) {
+  try {
+    const currentPassword = formData.get('current_password') as string;
+    const newPassword = formData.get('new_password') as string;
+
+    if (!currentPassword || !newPassword) {
+      return { error: 'Current password and new password are required.' };
+    }
+
+    if (newPassword.length < 6) {
+      return { error: 'New password must be at least 6 characters.' };
+    }
+
+    const supabase = await createClient();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return { error: 'Unable to validate your session. Please sign in again.' };
+    }
+
+    if (!user.email) {
+      return { error: 'Unable to verify your account email.' };
+    }
+
+    const { error: verifyError } = await supabase.auth.signInWithPassword({
+      email: user.email.toLowerCase(),
+      password: currentPassword,
+    });
+
+    if (verifyError) {
+      return { error: 'Current password is incorrect.' };
+    }
+
+    const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
+    if (updateError) {
+      console.error('Error updating password:', updateError);
+      return { error: updateError.message || 'Failed to update password. Please try again.' };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Unexpected error in changePassword:', error);
+    return { error: 'An unexpected error occurred. Please try again.' };
+  }
+}
+
 /**
  * Generate a secure 6-digit OTP
  */
