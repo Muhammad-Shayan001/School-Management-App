@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { getFullProfile } from '@/app/_lib/actions/profile';
 import { CreditCard, AlertCircle, Loader2, ImageIcon, FileText, RotateCcw } from 'lucide-react';
 import QRCode from 'qrcode';
+import { triggerDownload, triggerPdfDownload, interceptWebViewDownload } from '@/app/_lib/utils/webview-download';
 
 export default function TeacherIdCardPage() {
   const [profile, setProfile] = useState<any>(null);
@@ -28,6 +29,7 @@ export default function TeacherIdCardPage() {
   }, []);
 
   const downloadAsPng = async () => {
+    if (interceptWebViewDownload()) return;
     const ref = isFlipped ? backRef.current : frontRef.current;
     if (!ref) return;
     setIsDownloading(true);
@@ -42,15 +44,14 @@ export default function TeacherIdCardPage() {
           webkitBackfaceVisibility: 'visible',
         },
       });
-      const link = document.createElement('a');
-      link.download = `${profile?.full_name?.replace(/ /g, '_')}_StaffID_${isFlipped ? 'Back' : 'Front'}.png`;
-      link.href = dataUrl;
-      link.click();
+      const fileName = `${profile?.full_name?.replace(/ /g, '_')}_StaffID_${isFlipped ? 'Back' : 'Front'}.png`;
+      await triggerDownload(dataUrl, fileName, 'image/png');
     } catch (err) { console.error(err); }
     setIsDownloading(false);
   };
 
   const downloadAsPdf = async () => {
+    if (interceptWebViewDownload()) return;
     if (!frontRef.current || !backRef.current) return;
     setIsDownloading(true);
     try {
@@ -78,7 +79,7 @@ export default function TeacherIdCardPage() {
       pdf.addImage(frontUrl, 'PNG', 0, 0, 54, 85.6);
       pdf.addPage([54, 85.6]);
       pdf.addImage(backUrl, 'PNG', 0, 0, 54, 85.6);
-      pdf.save(`${profile?.full_name?.replace(/ /g, '_')}_StaffID.pdf`);
+      await triggerPdfDownload(pdf, `${profile?.full_name?.replace(/ /g, '_')}_StaffID.pdf`);
     } catch (err) { console.error(err); }
     setIsDownloading(false);
   };

@@ -186,6 +186,7 @@ export async function executeStudentImport(
         role: 'student',
         status: 'approved',
         school_id: finalSchoolId,
+        plain_password: password,
       });
 
       // Create student_profile

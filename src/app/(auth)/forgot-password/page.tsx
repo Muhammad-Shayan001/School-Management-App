@@ -51,7 +51,7 @@ export default function ForgotPasswordPage() {
           Check your email
         </h1>
         <p className="text-sm font-medium text-text-secondary mb-8">
-          We have generated a new temporary password and sent it to your email address. Please log in with this new password.
+          Your password has been successfully sent to your email address. Please check your inbox (and spam folder) to retrieve your password.
         </p>
         <Link href="/login" className="w-full">
           <Button className="w-full h-12 rounded-2xl font-black uppercase tracking-widest">
@@ -117,7 +117,7 @@ export default function ForgotPasswordPage() {
           size="lg"
           isLoading={isLoading}
         >
-          Send Reset Link
+          Send Password to Email
         </Button>
       </form>
 

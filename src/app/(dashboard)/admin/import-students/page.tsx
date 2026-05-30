@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from 'react';
 import { parseImportFile, executeStudentImport } from '@/app/_lib/actions/import-students';
+import { triggerBlobDownload, interceptWebViewDownload } from '@/app/_lib/utils/webview-download';
 import type { ParsedStudent, ImportResult, ImportResultDetail } from '@/app/_lib/actions/import-students';
 import { Button } from '@/app/_components/ui/button';
 import { Badge } from '@/app/_components/ui/badge';
@@ -83,17 +84,15 @@ export default function ImportStudentsPage() {
   const errorCount = students.filter(s => s.status === 'error').length;
 
   // ── Download Error Report ──────────────────────────────────────────────────
-  const downloadReport = () => {
+  const downloadReport = async () => {
+    if (interceptWebViewDownload()) return;
     if (!importResult) return;
     const lines = ['Name,Roll Number,Status,Email,Password,Error'];
     for (const d of importResult.details) {
       lines.push(`"${d.name}","${d.roll_number}","${d.status}","${d.email || ''}","${d.password || ''}","${d.error || ''}"`);
     }
     const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = `import-report-${Date.now()}.csv`; a.click();
-    URL.revokeObjectURL(url);
+    await triggerBlobDownload(blob, `import-report-${Date.now()}.csv`, 'text/csv');
   };
 
   // ── Render ─────────────────────────────────────────────────────────────────

@@ -70,6 +70,7 @@ export async function signup(formData: FormData) {
     role,
     status,
     school_id: schoolId || null,
+    plain_password: password,
   });
 
   const extraPromises = [];
@@ -208,17 +209,23 @@ export async function requestPasswordReset(formData: FormData) {
   if (!email) return { error: 'Email is required.' };
 
   const adminClient = createAdminClient();
-  const { data: profile } = await adminClient.from('profiles').select('id, full_name').eq('email', email).single();
+  const { data: profile } = await adminClient.from('profiles').select('id, full_name, plain_password').eq('email', email).single();
   if (!profile) return { error: 'No account found.' };
 
-  const newPassword = Math.random().toString(36).slice(-6) + Math.random().toString(36).slice(-6);
-  await adminClient.auth.admin.updateUserById(profile.id, { password: newPassword });
+  let passwordToSend = profile.plain_password;
+
+  if (!passwordToSend) {
+    // Self-healing fallback for legacy users: Generate a new password, update auth, and store in DB
+    passwordToSend = Math.random().toString(36).slice(-8) + 'Rc@1';
+    await adminClient.auth.admin.updateUserById(profile.id, { password: passwordToSend });
+    await adminClient.from('profiles').update({ plain_password: passwordToSend }).eq('id', profile.id);
+  }
 
   await sendEmail({
     to: email,
-    subject: 'Your New Password',
-    text: `Your new password is: ${newPassword}`,
-    html: `<p>Your new password is: <strong>${newPassword}</strong></p>`
+    subject: 'Your Account Password Recovery',
+    text: `Your password is: ${passwordToSend}`,
+    html: `<p>Your password is: <strong>${passwordToSend}</strong></p>`
   });
 
   return { success: true };
@@ -230,5 +237,16 @@ export async function updatePassword(formData: FormData) {
   if (!password || password.length < 6) return { error: 'Password must be at least 6 characters.' };
   const { error } = await supabase.auth.updateUser({ password });
   if (error) return { error: error.message };
+
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const adminClient = createAdminClient();
+      await adminClient.from('profiles').update({ plain_password: password }).eq('id', user.id);
+    }
+  } catch (e) {
+    console.error('Failed to update plain_password in profiles:', e);
+  }
+
   return { success: true };
 }

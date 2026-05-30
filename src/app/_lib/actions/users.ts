@@ -434,7 +434,8 @@ export async function createManualStudent(formData: any) {
     school_id: caller.school_id,
     status: 'approved',
     avatar_url: formData.avatar_url,
-    phone: formData.phone
+    phone: formData.phone,
+    plain_password: formData.password || autoPassword
   });
 
   if (profileError) {
@@ -555,7 +556,8 @@ export async function createManualTeacher(formData: any) {
     school_id: caller.school_id,
     status: 'approved',
     avatar_url: formData.avatar_url,
-    phone: formData.phone
+    phone: formData.phone,
+    plain_password: formData.password || autoPassword
   });
 
   if (profError) {
@@ -822,7 +824,8 @@ export async function createManualAdmin(formData: any) {
     school_id: schoolId,
     status: 'approved',
     phone: formData.phone,
-    cnic: formData.cnic
+    cnic: formData.cnic,
+    plain_password: formData.password || autoPassword
   });
 
   if (profileErr) return { error: 'Profile Database Error: ' + profileErr.message };
@@ -989,6 +992,8 @@ export async function resetUserPassword(userId: string, newPassword?: string) {
 
   if (error) return { error: error.message };
 
+  await adminClient.from('profiles').update({ plain_password: passwordToSet }).eq('id', userId);
+
   return { success: true, newPassword: passwordToSet };
 }
 
@@ -1104,15 +1109,20 @@ export async function updateManualStudentData(userId: string, formData: any) {
   }
 
   // 1. Update profiles table
+  const studentProfileUpdate: any = {
+    full_name: formData.full_name,
+    email: formData.email,
+    phone: formData.phone,
+    avatar_url: formData.avatar_url,
+    updated_at: new Date().toISOString()
+  };
+  if (formData.password) {
+    studentProfileUpdate.plain_password = formData.password;
+  }
+
   const { error: profileErr } = await adminClient
     .from('profiles')
-    .update({
-      full_name: formData.full_name,
-      email: formData.email,
-      phone: formData.phone,
-      avatar_url: formData.avatar_url,
-      updated_at: new Date().toISOString()
-    })
+    .update(studentProfileUpdate)
     .eq('id', userId);
 
   if (profileErr) return { error: 'Failed to update profile: ' + profileErr.message };
@@ -1203,15 +1213,20 @@ export async function updateManualTeacherData(userId: string, formData: any) {
   }
 
   // 1. Update profiles table
+  const teacherProfileUpdate: any = {
+    full_name: formData.full_name,
+    email: formData.email,
+    phone: formData.phone,
+    avatar_url: formData.avatar_url,
+    updated_at: new Date().toISOString()
+  };
+  if (formData.password) {
+    teacherProfileUpdate.plain_password = formData.password;
+  }
+
   const { error: profileErr } = await adminClient
     .from('profiles')
-    .update({
-      full_name: formData.full_name,
-      email: formData.email,
-      phone: formData.phone,
-      avatar_url: formData.avatar_url,
-      updated_at: new Date().toISOString()
-    })
+    .update(teacherProfileUpdate)
     .eq('id', userId);
 
   if (profileErr) return { error: 'Failed to update profile: ' + profileErr.message };

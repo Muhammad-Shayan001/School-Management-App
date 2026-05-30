@@ -7,6 +7,7 @@ import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
 import { FileImage, FileText, BadgeCheck, RotateCcw } from 'lucide-react';
 import { Button } from '@/app/_components/ui/button';
+import { triggerDownload, triggerPdfDownload, interceptWebViewDownload } from '@/app/_lib/utils/webview-download';
 
 interface StudentData {
   id: string;
@@ -31,6 +32,7 @@ export default function StudentIDCard({ student }: { student: StudentData }) {
   const CARD_H = 508;
 
   const downloadAsImage = async () => {
+    if (interceptWebViewDownload()) return;
     const ref = isFlipped ? backRef.current : frontRef.current;
     if (!ref) return;
     try {
@@ -43,16 +45,15 @@ export default function StudentIDCard({ student }: { student: StudentData }) {
           webkitBackfaceVisibility: 'visible',
         },
       });
-      const link = document.createElement('a');
-      link.download = `student-id-${student.rollNo || 'card'}-${isFlipped ? 'back' : 'front'}.png`;
-      link.href = dataUrl;
-      link.click();
+      const fileName = `student-id-${student.rollNo || 'card'}-${isFlipped ? 'back' : 'front'}.png`;
+      await triggerDownload(dataUrl, fileName, 'image/png');
     } catch (err) {
       console.error('Download failed', err);
     }
   };
 
   const downloadAsPDF = async () => {
+    if (interceptWebViewDownload()) return;
     if (!frontRef.current || !backRef.current) return;
     try {
       const frontUrl = await toPng(frontRef.current, {
@@ -77,7 +78,7 @@ export default function StudentIDCard({ student }: { student: StudentData }) {
       pdf.addImage(frontUrl, 'PNG', 0, 0, 54, 85.6);
       pdf.addPage([54, 85.6]);
       pdf.addImage(backUrl, 'PNG', 0, 0, 54, 85.6);
-      pdf.save(`student-id-${student.rollNo || 'card'}.pdf`);
+      await triggerPdfDownload(pdf, `student-id-${student.rollNo || 'card'}.pdf`);
     } catch (err) {
       console.error('Download failed', err);
     }

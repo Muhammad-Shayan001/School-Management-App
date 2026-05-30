@@ -223,3 +223,48 @@ export async function uploadFile(formData: FormData) {
 
   return { publicUrl };
 }
+
+/**
+ * Upload a dynamically generated file (base64) to Supabase Storage
+ * and return a public HTTPS URL. Used by the Android WebView app
+ * to convert blob/data URI downloads into real downloadable URLs.
+ */
+export async function uploadTempFile(base64Data: string, fileName: string, mimeType: string) {
+  const adminClient = createAdminClient();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'Unauthorized' };
+
+  try {
+    // Decode base64 to binary using Node.js Buffer (much faster and memory-safe for large files)
+    const buffer = Buffer.from(base64Data, 'base64');
+
+    // Create unique path under temp_downloads/
+    const timestamp = Date.now();
+    const safeName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const filePath = `temp_downloads/${user.id}/${timestamp}_${safeName}`;
+
+    const { error } = await adminClient.storage
+      .from('profiles')
+      .upload(filePath, buffer, {
+        contentType: mimeType,
+        upsert: true,
+      });
+
+    if (error) {
+      console.error('TEMP FILE UPLOAD ERROR:', error);
+      return { error: error.message };
+    }
+
+    const { data: { publicUrl } } = adminClient.storage
+      .from('profiles')
+      .getPublicUrl(filePath);
+
+    const downloadUrl = `${publicUrl}?download=${encodeURIComponent(safeName)}`;
+
+    return { publicUrl: downloadUrl, fileName: safeName };
+  } catch (err: any) {
+    console.error('TEMP FILE UPLOAD EXCEPTION:', err);
+    return { error: err.message || 'Upload failed' };
+  }
+}
