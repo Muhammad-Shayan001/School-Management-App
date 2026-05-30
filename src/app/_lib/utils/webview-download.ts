@@ -53,60 +53,6 @@ export function interceptWebViewDownload(): boolean {
   return false;
 }
 
-// ── Shared helper: upload base64 to Supabase and get an HTTPS URL ────────
-async function uploadAndGetUrl(
-  base64: string,
-  fileName: string,
-  mimeType: string
-): Promise<{ publicUrl?: string; error?: string }> {
-  try {
-    const result = await uploadTempFile(base64, fileName, mimeType);
-    if (!result || result.error) {
-      return { error: result?.error || 'Upload returned no response' };
-    }
-    if (!result.publicUrl) {
-      return { error: 'Upload succeeded but no public URL was returned' };
-    }
-    return { publicUrl: result.publicUrl };
-  } catch (err: any) {
-    return { error: err.message || 'Upload exception' };
-  }
-}
-
-
-// ── Core handler used by ALL three public functions ──────────────────────
-async function handleDownload(
-  base64: string,
-  fileName: string,
-  mimeType: string,
-  toastId: string | number
-): Promise<void> {
-  console.log('[Download] Starting secure file upload...');
-  toast.loading('Uploading file for secure download...', { id: toastId });
-
-  const { publicUrl, error } = await uploadAndGetUrl(base64, fileName, mimeType);
-
-  if (error || !publicUrl) {
-    console.error('[Download] Supabase upload failed:', error);
-    toast.error(`Download failed: ${error || 'Could not upload file'}`, { id: toastId });
-    return;
-  }
-
-  console.log('[Download] Upload OK. Triggering direct HTTPS download.');
-  toast.success('Download started successfully!', { id: toastId });
-
-  // For Android WebViews, blob/data URIs fail. By using a Supabase HTTPS URL 
-  // with a ?download= query parameter, we force the Android DownloadManager 
-  // to reliably handle the file.
-  const link = document.createElement('a');
-  link.href = publicUrl;
-  link.download = fileName;
-  link.style.display = 'none';
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-}
-
 // ═════════════════════════════════════════════════════════════════════════════
 // PUBLIC API — these are the only functions imported by the rest of the app
 // ═════════════════════════════════════════════════════════════════════════════
@@ -120,26 +66,18 @@ export async function triggerDownload(
   fileName: string,
   mimeType: string
 ): Promise<void> {
-  console.log('--- triggerDownload START ---', fileName, mimeType);
-  const toastId = toast.loading('Preparing download...');
-
-  // Extract pure base64
-  let base64 = dataUrl;
-  if (dataUrl.includes(',')) {
-    base64 = dataUrl.split(',')[1];
+  const link = document.createElement('a');
+  // Ensure the dataUrl has the correct mime prefix if it doesn't already
+  if (!dataUrl.startsWith('data:')) {
+    link.href = `data:${mimeType};base64,${dataUrl}`;
+  } else {
+    link.href = dataUrl;
   }
-
-  if (!base64 || base64.length === 0) {
-    toast.error('Download failed: empty file data.', { id: toastId });
-    return;
-  }
-
-  try {
-    await handleDownload(base64, fileName, mimeType, toastId);
-  } catch (err: any) {
-    console.error('triggerDownload exception:', err);
-    toast.error(`Download error: ${err.message || 'Unknown error'}`, { id: toastId });
-  }
+  link.download = fileName;
+  link.style.display = 'none';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 
 /**
@@ -150,29 +88,17 @@ export async function triggerBlobDownload(
   fileName: string,
   mimeType: string
 ): Promise<void> {
-  console.log('--- triggerBlobDownload START ---', fileName, mimeType);
-  const toastId = toast.loading('Preparing download...');
-
-  try {
-    // Convert Blob → base64 via FileReader
-    const dataUrl = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = () => reject(new Error('Failed to read blob'));
-      reader.readAsDataURL(blob);
-    });
-
-    const base64 = dataUrl.split(',')[1];
-    if (!base64 || base64.length === 0) {
-      toast.error('Download failed: empty file data.', { id: toastId });
-      return;
-    }
-
-    await handleDownload(base64, fileName, mimeType, toastId);
-  } catch (err: any) {
-    console.error('triggerBlobDownload exception:', err);
-    toast.error(`Download error: ${err.message || 'Unknown error'}`, { id: toastId });
-  }
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  link.style.display = 'none';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  
+  // Clean up
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 /**
@@ -182,19 +108,5 @@ export async function triggerPdfDownload(
   pdf: any,
   fileName: string
 ): Promise<void> {
-  console.log('--- triggerPdfDownload START ---', fileName);
-  const toastId = toast.loading('Preparing PDF download...');
-
-  try {
-    const base64 = pdf.output('datauristring').split(',')[1];
-    if (!base64 || base64.length === 0) {
-      toast.error('Download failed: PDF generation returned empty data.', { id: toastId });
-      return;
-    }
-
-    await handleDownload(base64, fileName, 'application/pdf', toastId);
-  } catch (err: any) {
-    console.error('triggerPdfDownload exception:', err);
-    toast.error(`Download error: ${err.message || 'Unknown error'}`, { id: toastId });
-  }
+  pdf.save(fileName);
 }
