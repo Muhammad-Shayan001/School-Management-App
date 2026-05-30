@@ -319,7 +319,7 @@ export async function requestPasswordReset(formData: FormData) {
     }
 
     // Build reset URL with token
-    const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`;
+    const resetUrl = `https://skolic-schools-management-app.vercel.app/reset-password?token=${resetToken}`;
 
     // Send email with reset link and OTP
     const emailResult = await sendEmail({
