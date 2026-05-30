@@ -235,6 +235,23 @@ input:focus, select:focus, textarea:focus {
   animation: float 4s ease-in-out infinite;
 }
 
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+@keyframes download-pulse {
+  0%, 100% { box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.2); }
+  50% { box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.5); }
+}
+
+.download-app-btn {
+  animation: download-pulse 2.5s ease-in-out infinite;
+}
+
+.download-app-btn:hover {
+  animation: none;
+}
+
 .gradient-bg {
   background: linear-gradient(135deg, var(--accent), var(--accent-dark));
 }

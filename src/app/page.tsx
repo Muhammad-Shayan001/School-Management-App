@@ -8,7 +8,7 @@ import {
   ArrowRight, BookOpen, Shield, Users, Zap, CheckCircle2, 
   MessageSquare, Calendar, ClipboardList, QrCode, CreditCard,
   Mail, MapPin, Phone, Send, Info, Award, Globe, Users2,
-  TrendingUp, GraduationCap, ChevronRight, Play, Star
+  TrendingUp, GraduationCap, ChevronRight, Play, Star, Smartphone, Download
 } from 'lucide-react';
 import { IMAGES } from '@/app/_lib/utils/images';
 
@@ -37,10 +37,20 @@ export default async function HomePage() {
             <a href="#" className="text-sm font-bold text-text-secondary hover:text-accent transition-colors">Home</a>
             <a href="#features" className="text-sm font-bold text-text-secondary hover:text-accent transition-colors">Features</a>
             <a href="#about" className="text-sm font-bold text-text-secondary hover:text-accent transition-colors">About</a>
+            <a href="#mobile-app" className="text-sm font-bold text-text-secondary hover:text-accent transition-colors">Mobile App</a>
             <a href="#contact" className="text-sm font-bold text-text-secondary hover:text-accent transition-colors">Contact</a>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            <a
+              href="https://skolic-app.netlify.app/"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Download Android App"
+              className="hidden sm:inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 text-white text-sm font-bold shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 hover:-translate-y-0.5 transition-all duration-300"
+            >
+              <Smartphone className="h-4 w-4" /> Get App
+            </a>
             <Link href="/login" className="hidden sm:block text-sm font-bold text-text-primary hover:text-accent transition-colors px-4">
               Login
             </Link>
@@ -70,8 +80,14 @@ export default async function HomePage() {
               <Link href="/signup" className="px-8 py-4 rounded-2xl gradient-bg text-white font-bold flex items-center justify-center gap-2 shadow-xl shadow-accent/20 hover:shadow-accent/40 hover:-translate-y-1 transition-all duration-300">
                 Get Started Now <ArrowRight className="h-5 w-5" />
               </Link>
-              <a href="#contact" className="px-8 py-4 rounded-2xl bg-white border border-border text-text-primary font-bold flex items-center justify-center gap-2 hover:bg-bg-tertiary transition-all duration-300">
-                Contact Us
+              <a
+                href="https://skolic-app.netlify.app/"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Download Android App APK"
+                className="px-8 py-4 rounded-2xl bg-emerald-500 text-white font-bold flex items-center justify-center gap-2 shadow-xl shadow-emerald-500/20 hover:shadow-emerald-500/40 hover:-translate-y-1 transition-all duration-300"
+              >
+                <Download className="h-5 w-5" /> Download App
               </a>
             </div>
             
@@ -355,7 +371,7 @@ export default async function HomePage() {
                   </div>
                   <div>
                     <p className="text-xs font-black text-text-tertiary uppercase">Email Us</p>
-                    <p className="font-bold text-text-primary">support@skolic.com</p>
+                    <a href="mailto:skolic@gmail.com" className="font-bold text-text-primary hover:text-accent transition-colors">skolic@gmail.com</a>
                   </div>
                 </div>
                 <div className="flex items-center gap-4 group">
@@ -364,7 +380,7 @@ export default async function HomePage() {
                   </div>
                   <div>
                     <p className="text-xs font-black text-text-tertiary uppercase">Call Us</p>
-                    <p className="font-bold text-text-primary">+1 (555) 000-111</p>
+                    <a href="tel:+923178923535" className="font-bold text-text-primary hover:text-accent transition-colors">+92 317 8923535</a>
                   </div>
                 </div>
                 <div className="flex items-center gap-4 group">
@@ -373,7 +389,7 @@ export default async function HomePage() {
                   </div>
                   <div>
                     <p className="text-xs font-black text-text-tertiary uppercase">Location</p>
-                    <p className="font-bold text-text-primary">123 Education St, Tech City</p>
+                    <p className="font-bold text-text-primary">Pakistan</p>
                   </div>
                 </div>
               </div>
@@ -381,7 +397,7 @@ export default async function HomePage() {
               <div className="pt-8">
                 <p className="text-sm font-bold text-text-secondary mb-4 uppercase tracking-widest">Connect Directly</p>
                 <a 
-                  href="https://wa.me/1234567890" 
+                  href="https://wa.me/923178923535" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-[#25D366] text-white font-black shadow-lg hover:shadow-[#25D366]/40 hover:-translate-y-1 transition-all duration-300"
@@ -420,6 +436,107 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* Mobile App Section */}
+      <section id="mobile-app" className="py-24 bg-bg-primary relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-accent/5 rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
+        <div className="max-w-7xl mx-auto px-6 relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            {/* Phone Mockup */}
+            <div className="reveal flex justify-center lg:justify-start">
+              <div className="relative">
+                <div className="absolute -inset-4 bg-gradient-to-br from-emerald-500/20 via-accent/10 to-purple-500/20 rounded-[3rem] blur-2xl" />
+                <div className="relative w-[280px] h-[560px] bg-text-primary rounded-[3rem] p-3 shadow-2xl border border-white/10">
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-7 bg-text-primary rounded-b-2xl z-20" />
+                  <div className="w-full h-full rounded-[2.25rem] bg-gradient-to-br from-emerald-500 via-accent to-accent-dark flex flex-col items-center justify-center p-6 overflow-hidden relative">
+                    <div className="absolute top-0 left-0 w-full h-full opacity-10">
+                      <div className="absolute top-8 left-6 w-20 h-20 border-2 border-white rounded-2xl rotate-12" />
+                      <div className="absolute bottom-12 right-4 w-16 h-16 border-2 border-white rounded-full" />
+                      <div className="absolute top-1/3 right-8 w-12 h-12 border-2 border-white rounded-xl -rotate-6" />
+                    </div>
+                    <div className="relative z-10 text-center space-y-4">
+                      <div className="h-20 w-20 bg-white/20 rounded-3xl flex items-center justify-center mx-auto backdrop-blur-sm border border-white/30">
+                        <GraduationCap className="h-10 w-10 text-white" />
+                      </div>
+                      <h4 className="text-white text-xl font-black">Skolic</h4>
+                      <p className="text-white/80 text-xs font-medium">School Management App</p>
+                      <div className="pt-4 space-y-2">
+                        {['Attendance', 'Results', 'ID Cards', 'Fees'].map((item, i) => (
+                          <div key={i} className="flex items-center gap-2 text-white/90 text-xs font-medium">
+                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-300" />
+                            {item}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                {/* Floating badges */}
+                <div className="absolute -right-6 top-20 glass-card p-3 shadow-xl bg-white/95 animate-float hidden lg:block">
+                  <div className="flex items-center gap-2">
+                    <div className="h-8 w-8 rounded-lg bg-emerald-100 flex items-center justify-center">
+                      <Download className="h-4 w-4 text-emerald-600" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-text-tertiary uppercase">Downloads</p>
+                      <p className="text-sm font-black text-text-primary">1K+</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="absolute -left-6 bottom-32 glass-card p-3 shadow-xl bg-white/95 animate-float hidden lg:block" style={{ animationDelay: '1s' }}>
+                  <div className="flex items-center gap-2">
+                    <div className="flex gap-0.5 text-amber-500">
+                      {[1,2,3,4,5].map(s => <Star key={s} className="h-3 w-3 fill-current" />)}
+                    </div>
+                    <p className="text-xs font-black text-text-primary">4.8</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="reveal space-y-8" style={{ animationDelay: '200ms' }}>
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 border border-emerald-500/10 text-emerald-600 text-xs font-black uppercase tracking-widest">
+                <Smartphone className="h-4 w-4" />
+                Mobile App Available
+              </div>
+              <h3 className="text-4xl md:text-5xl font-black text-text-primary tracking-tight leading-tight">
+                Take Your School <br />
+                <span className="text-gradient">On the Go</span>
+              </h3>
+              <p className="text-text-secondary font-medium leading-relaxed text-lg max-w-xl">
+                Download the School Management System Android App for quick access to attendance, assignments, results, ID cards, fee management, and school updates — anytime, anywhere.
+              </p>
+              <div className="grid grid-cols-2 gap-4 max-w-md">
+                {[
+                  { icon: <CheckCircle2 className="h-5 w-5 text-emerald-500" />, text: 'Real-time Attendance' },
+                  { icon: <ClipboardList className="h-5 w-5 text-blue-500" />, text: 'Instant Results' },
+                  { icon: <CreditCard className="h-5 w-5 text-purple-500" />, text: 'Fee Management' },
+                  { icon: <QrCode className="h-5 w-5 text-amber-500" />, text: 'Digital ID Cards' },
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-white border border-border">
+                    {item.icon}
+                    <span className="text-sm font-bold text-text-primary">{item.text}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                <a
+                  href="https://skolic-app.netlify.app/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Download Android App APK from Skolic"
+                  className="download-app-btn px-8 py-4 rounded-2xl bg-emerald-500 text-white font-black flex items-center justify-center gap-3 shadow-xl shadow-emerald-500/20 hover:shadow-emerald-500/40 hover:-translate-y-1 transition-all duration-300 text-lg"
+                >
+                  <Download className="h-6 w-6" /> Download Android App
+                </a>
+              </div>
+              <p className="text-xs text-text-tertiary font-medium">✓ Free Download &nbsp;·&nbsp; ✓ No Sign-up Required &nbsp;·&nbsp; ✓ Works Offline</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="bg-text-primary pt-20 pb-10">
         <div className="max-w-7xl mx-auto px-6">
@@ -431,6 +548,15 @@ export default async function HomePage() {
               <p className="text-text-tertiary text-sm leading-relaxed">
                 The ultimate school management software designed to simplify administration and enhance learning outcomes.
               </p>
+              <a
+                href="https://skolic-app.netlify.app/"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Download Android App"
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-emerald-500 text-white text-sm font-bold shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 hover:-translate-y-0.5 transition-all duration-300"
+              >
+                <Download className="h-4 w-4" /> Download Android App
+              </a>
             </div>
             <div>
               <h5 className="text-white font-black uppercase text-xs tracking-[0.2em] mb-6">Quick Links</h5>
@@ -438,6 +564,7 @@ export default async function HomePage() {
                 <li><a href="#" className="text-text-tertiary hover:text-white transition-colors text-sm">Home</a></li>
                 <li><a href="#features" className="text-text-tertiary hover:text-white transition-colors text-sm">Features</a></li>
                 <li><a href="#about" className="text-text-tertiary hover:text-white transition-colors text-sm">About Us</a></li>
+                <li><a href="#mobile-app" className="text-text-tertiary hover:text-white transition-colors text-sm">Mobile App</a></li>
                 <li><a href="#contact" className="text-text-tertiary hover:text-white transition-colors text-sm">Contact</a></li>
               </ul>
             </div>
@@ -447,19 +574,22 @@ export default async function HomePage() {
                 <li><a href="#" className="text-text-tertiary hover:text-white transition-colors text-sm">Attendance</a></li>
                 <li><a href="#" className="text-text-tertiary hover:text-white transition-colors text-sm">Result Portals</a></li>
                 <li><a href="#" className="text-text-tertiary hover:text-white transition-colors text-sm">QR Scanner</a></li>
-                <li><a href="#" className="text-text-tertiary hover:text-white transition-colors text-sm">Mobile App</a></li>
+                <li><a href="#mobile-app" className="text-text-tertiary hover:text-white transition-colors text-sm">Mobile App</a></li>
               </ul>
             </div>
             <div className="space-y-6">
-              <h5 className="text-white font-black uppercase text-xs tracking-[0.2em] mb-6">Stay Connected</h5>
-              <div className="flex gap-4">
-                {[1,2,3,4].map(i => (
-                  <div key={i} className="h-10 w-10 rounded-lg bg-white/10 flex items-center justify-center text-white hover:bg-accent transition-colors cursor-pointer">
-                    <Globe className="h-5 w-5" />
-                  </div>
-                ))}
+              <h5 className="text-white font-black uppercase text-xs tracking-[0.2em] mb-6">Contact</h5>
+              <div className="space-y-4">
+                <a href="mailto:skolic@gmail.com" className="flex items-center gap-3 text-text-tertiary hover:text-white transition-colors text-sm">
+                  <Mail className="h-4 w-4" /> skolic@gmail.com
+                </a>
+                <a href="tel:+923178923535" className="flex items-center gap-3 text-text-tertiary hover:text-white transition-colors text-sm">
+                  <Phone className="h-4 w-4" /> +92 317 8923535
+                </a>
+                <a href="https://wa.me/923178923535" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-text-tertiary hover:text-white transition-colors text-sm">
+                  <MessageSquare className="h-4 w-4" /> WhatsApp
+                </a>
               </div>
-              <p className="text-xs text-text-tertiary">Subscribe to our newsletter for updates.</p>
             </div>
           </div>
           <div className="pt-10 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-6">
@@ -476,9 +606,10 @@ export default async function HomePage() {
 
       {/* Floating WhatsApp Button */}
       <a 
-        href="https://wa.me/1234567890" 
+        href="https://wa.me/923178923535" 
         target="_blank" 
         rel="noopener noreferrer"
+        aria-label="Chat on WhatsApp"
         className="fixed bottom-8 right-8 z-50 h-14 w-14 rounded-full bg-[#25D366] text-white flex items-center justify-center shadow-2xl hover:scale-110 transition-transform duration-300 animate-float sm:hidden"
       >
         <MessageSquare className="h-7 w-7" />
