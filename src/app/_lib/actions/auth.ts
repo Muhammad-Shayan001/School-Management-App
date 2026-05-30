@@ -236,13 +236,17 @@ export async function changePassword(formData: FormData) {
       return { error: 'Current password is incorrect.' };
     }
 
-    const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
+    const adminClient = createAdminClient();
+    const { error: updateError } = await adminClient.auth.admin.updateUserById(user.id, {
+      password: newPassword,
+    });
+
     if (updateError) {
       console.error('Error updating password:', updateError);
       return { error: updateError.message || 'Failed to update password. Please try again.' };
     }
 
-    return { success: true };
+    return { success: true, message: 'Password updated successfully.' };
   } catch (error) {
     console.error('Unexpected error in changePassword:', error);
     return { error: 'An unexpected error occurred. Please try again.' };

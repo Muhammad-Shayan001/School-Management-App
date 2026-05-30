@@ -46,6 +46,7 @@ export function ChangePasswordForm() {
     } else {
       setSuccess(true);
       e.currentTarget.reset();
+      window.alert(result?.message || 'Password updated successfully.');
     }
 
     setIsLoading(false);
