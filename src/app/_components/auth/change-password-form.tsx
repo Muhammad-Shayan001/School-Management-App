@@ -1,55 +1,44 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import { changePassword } from '@/app/_lib/actions/auth';
 import { Button } from '@/app/_components/ui/button';
 import { Input } from '@/app/_components/ui/input';
 import { Shield, Lock, CheckCircle, AlertCircle } from 'lucide-react';
+import { toast } from 'sonner';
 
 export function ChangePasswordForm() {
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
-    setSuccess(false);
-    setIsLoading(true);
 
     const formData = new FormData(e.currentTarget);
-    const currentPassword = formData.get('current_password') as string;
     const newPassword = formData.get('new_password') as string;
     const confirmPassword = formData.get('confirm_password') as string;
 
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      setError('Please fill in all password fields.');
-      setIsLoading(false);
-      return;
-    }
-
     if (newPassword !== confirmPassword) {
       setError('New password and confirmation do not match.');
-      setIsLoading(false);
       return;
     }
-
+    
     if (newPassword.length < 6) {
       setError('New password must be at least 6 characters.');
-      setIsLoading(false);
       return;
     }
 
-    const result = await changePassword(formData);
-    if (result?.error) {
-      setError(result.error);
-    } else {
-      setSuccess(true);
-      e.currentTarget.reset();
-      window.alert(result?.message || 'Password updated successfully.');
-    }
-
-    setIsLoading(false);
+    startTransition(async () => {
+      const result = await changePassword(formData);
+      if (result?.error) {
+        toast.error(result.error);
+        setError(result.error);
+      } else {
+        toast.success(result.message || 'Password updated successfully.');
+        e.currentTarget.reset();
+      }
+    });
   }
 
   return (
@@ -69,13 +58,6 @@ export function ChangePasswordForm() {
           <div className="rounded-lg bg-danger-subtle border border-danger/30 p-4 text-sm text-danger flex items-start gap-3">
             <AlertCircle className="h-5 w-5 shrink-0" />
             <div>{error}</div>
-          </div>
-        )}
-
-        {success && (
-          <div className="rounded-lg bg-success-subtle border border-success/30 p-4 text-sm text-success flex items-start gap-3">
-            <CheckCircle className="h-5 w-5 shrink-0" />
-            <div>Your password has been updated successfully.</div>
           </div>
         )}
 
@@ -114,7 +96,7 @@ export function ChangePasswordForm() {
         </div>
 
         <div className="mt-5 flex justify-end">
-          <Button type="submit" size="sm" variant="secondary" isLoading={isLoading}>
+          <Button type="submit" size="sm" variant="secondary" isLoading={isPending}>
             Update Password
           </Button>
         </div>
