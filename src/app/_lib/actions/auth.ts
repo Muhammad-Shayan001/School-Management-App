@@ -204,49 +204,207 @@ export async function getCurrentUser() {
   }
 }
 
-export async function requestPasswordReset(formData: FormData) {
-  const email = formData.get('email') as string;
-  if (!email) return { error: 'Email is required.' };
-
-  const adminClient = createAdminClient();
-  const { data: profile } = await adminClient.from('profiles').select('id, full_name, plain_password').eq('email', email).single();
-  if (!profile) return { error: 'No account found.' };
-
-  let passwordToSend = profile.plain_password;
-
-  if (!passwordToSend) {
-    // Self-healing fallback for legacy users: Generate a new password, update auth, and store in DB
-    passwordToSend = Math.random().toString(36).slice(-8) + 'Rc@1';
-    await adminClient.auth.admin.updateUserById(profile.id, { password: passwordToSend });
-    await adminClient.from('profiles').update({ plain_password: passwordToSend }).eq('id', profile.id);
-  }
-
-  await sendEmail({
-    to: email,
-    subject: 'Your Account Password Recovery',
-    text: `Your password is: ${passwordToSend}`,
-    html: `<p>Your password is: <strong>${passwordToSend}</strong></p>`
-  });
-
-  return { success: true };
+/**
+ * Generate a secure 6-digit OTP
+ */
+function generateOTP(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-export async function updatePassword(formData: FormData) {
-  const supabase = await createClient();
-  const password = formData.get('password') as string;
-  if (!password || password.length < 6) return { error: 'Password must be at least 6 characters.' };
-  const { error } = await supabase.auth.updateUser({ password });
-  if (error) return { error: error.message };
-
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const adminClient = createAdminClient();
-      await adminClient.from('profiles').update({ plain_password: password }).eq('id', user.id);
-    }
-  } catch (e) {
-    console.error('Failed to update plain_password in profiles:', e);
+/**
+ * Generate a secure reset token (32 bytes hex)
+ */
+function generateResetToken(): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+  let token = '';
+  const randomBytes = new Uint8Array(32);
+  for (let i = 0; i < 32; i++) {
+    randomBytes[i] = Math.floor(Math.random() * chars.length);
+    token += chars[randomBytes[i]];
   }
+  return token;
+}
 
-  return { success: true };
+/**
+ * Request a password reset token and send it to the user's email.
+ * Returns a reset token that can be used to set a new password.
+ */
+export async function requestPasswordReset(formData: FormData) {
+  try {
+    const email = formData.get('email') as string;
+    if (!email) return { error: 'Email is required.' };
+
+    const adminClient = createAdminClient();
+    
+    // Find user by email
+    const { data: profile } = await adminClient
+      .from('profiles')
+      .select('id, full_name, email')
+      .eq('email', email.toLowerCase())
+      .single();
+
+    if (!profile) {
+      // Don't reveal if email exists (security best practice)
+      return { success: true };
+    }
+
+    // Generate secure token and OTP
+    const resetToken = generateResetToken();
+    const otp = generateOTP();
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour expiration
+
+    // Store reset token in database
+    const { error: insertError } = await adminClient
+      .from('password_reset_tokens')
+      .insert({
+        user_id: profile.id,
+        email: profile.email,
+        token: resetToken,
+        otp: otp,
+        expires_at: expiresAt.toISOString(),
+      });
+
+    if (insertError) {
+      console.error('Error storing reset token:', insertError);
+      return { error: 'Failed to generate reset token. Please try again.' };
+    }
+
+    // Build reset URL with token
+    const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`;
+
+    // Send email with reset link and OTP
+    const emailResult = await sendEmail({
+      to: email,
+      subject: 'Password Reset Request - Skolic School Management System',
+      text: `Hello ${profile.full_name},\n\nClick the link below to reset your password:\n${resetUrl}\n\nOr enter this OTP: ${otp}\n\nThis link expires in 1 hour.\n\nIf you didn't request this, please ignore this email.`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #333;">Password Reset Request</h2>
+          <p>Hello <strong>${profile.full_name}</strong>,</p>
+          <p>We received a request to reset your password. Click the button below to proceed:</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${resetUrl}" style="background-color: #4F46E5; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
+              Reset Password
+            </a>
+          </div>
+          <p>Or enter this verification code: <strong style="font-size: 18px; letter-spacing: 2px;">${otp}</strong></p>
+          <p style="color: #999; font-size: 12px; margin-top: 20px;">
+            This link expires in 1 hour. If you didn't request this, please ignore this email.
+          </p>
+        </div>
+      `
+    });
+
+    if (!emailResult.success) {
+      console.error('Failed to send reset email:', emailResult.error);
+      return { error: 'Failed to send reset email. Please try again later.' };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Unexpected error in requestPasswordReset:', error);
+    return { error: 'An unexpected error occurred. Please try again.' };
+  }
+}
+
+/**
+ * Update password using a valid reset token (without requiring authentication)
+ */
+export async function resetPasswordWithToken(formData: FormData) {
+  try {
+    const token = formData.get('token') as string;
+    const password = formData.get('password') as string;
+
+    if (!token) return { error: 'Reset token is missing.' };
+    if (!password || password.length < 6) {
+      return { error: 'Password must be at least 6 characters.' };
+    }
+
+    const adminClient = createAdminClient();
+
+    // Find and validate the reset token
+    const { data: resetRecord, error: findError } = await adminClient
+      .from('password_reset_tokens')
+      .select('user_id, email, expires_at, used_at')
+      .eq('token', token)
+      .single();
+
+    if (findError || !resetRecord) {
+      return { error: 'Invalid or expired reset token.' };
+    }
+
+    // Check if token is expired
+    if (new Date(resetRecord.expires_at) < new Date()) {
+      return { error: 'Reset token has expired. Please request a new one.' };
+    }
+
+    // Check if token has already been used
+    if (resetRecord.used_at) {
+      return { error: 'This reset token has already been used. Please request a new one.' };
+    }
+
+    // Update the user's password in Supabase Auth
+    const { error: updateError } = await adminClient.auth.admin.updateUserById(
+      resetRecord.user_id,
+      { password }
+    );
+
+    if (updateError) {
+      console.error('Error updating password:', updateError);
+      return { error: 'Failed to update password. Please try again.' };
+    }
+
+    // Mark the token as used
+    await adminClient
+      .from('password_reset_tokens')
+      .update({ used_at: new Date().toISOString() })
+      .eq('token', token);
+
+    // Remove the plain_password field if it exists (security improvement)
+    await adminClient
+      .from('profiles')
+      .update({ plain_password: null })
+      .eq('id', resetRecord.user_id);
+
+    return { success: true };
+  } catch (error) {
+    console.error('Unexpected error in resetPasswordWithToken:', error);
+    return { error: 'An unexpected error occurred. Please try again.' };
+  }
+}
+
+/**
+ * Validate a password reset token without changing password
+ */
+export async function validateResetToken(token: string) {
+  try {
+    if (!token) return { valid: false, error: 'Token is missing.' };
+
+    const adminClient = createAdminClient();
+
+    const { data: resetRecord, error: findError } = await adminClient
+      .from('password_reset_tokens')
+      .select('email, expires_at, used_at')
+      .eq('token', token)
+      .single();
+
+    if (findError || !resetRecord) {
+      return { valid: false, error: 'Invalid reset token.' };
+    }
+
+    // Check if token is expired
+    if (new Date(resetRecord.expires_at) < new Date()) {
+      return { valid: false, error: 'Reset token has expired.' };
+    }
+
+    // Check if token has already been used
+    if (resetRecord.used_at) {
+      return { valid: false, error: 'This reset token has already been used.' };
+    }
+
+    return { valid: true, email: resetRecord.email };
+  } catch (error) {
+    console.error('Unexpected error in validateResetToken:', error);
+    return { valid: false, error: 'An unexpected error occurred.' };
+  }
 }

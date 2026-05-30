@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "setup-password-reset": "node setup-password-reset.mjs",
+    "test-password-reset": "node test-password-reset-flow.mjs",
+    "apply-password-reset-migration": "node apply-password-reset-migration.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.2",

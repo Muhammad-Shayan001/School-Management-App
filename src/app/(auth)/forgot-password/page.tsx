@@ -1,28 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { requestPasswordReset } from '@/app/_lib/actions/auth';
-import { getPublicSchools } from '@/app/_lib/actions/schools';
 import { Button } from '@/app/_components/ui/button';
 import { Input } from '@/app/_components/ui/input';
-import { Select } from '@/app/_components/ui/select';
-import { Mail, ArrowLeft, CheckCircle, School } from 'lucide-react';
+import { Mail, ArrowLeft, CheckCircle, AlertCircle } from 'lucide-react';
 
 export default function ForgotPasswordPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [schools, setSchools] = useState<any[]>([]);
-  const [selectedSchool, setSelectedSchool] = useState('');
-
-  useEffect(() => {
-    async function loadSchools() {
-      const { data } = await getPublicSchools();
-      if (data) setSchools(data);
-    }
-    loadSchools();
-  }, []);
+  const [email, setEmail] = useState('');
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -37,24 +26,35 @@ export default function ForgotPasswordPage() {
     } else {
       setSuccess(true);
     }
-    
+
     setIsLoading(false);
   }
-
-  const currentSchool = schools.find(s => s.id === selectedSchool);
 
   if (success) {
     return (
       <div className="text-center animate-slide-in-up p-8">
-        <CheckCircle className="mx-auto h-16 w-16 text-success mb-6" />
+        <div className="flex justify-center mb-6">
+          <div className="relative">
+            <div className="absolute inset-0 bg-success/20 blur-xl rounded-full" />
+            <CheckCircle className="h-16 w-16 text-success relative" />
+          </div>
+        </div>
         <h1 className="text-2xl font-black text-text-primary tracking-tight mb-2 uppercase">
-          Check your email
+          Check Your Email
         </h1>
-        <p className="text-sm font-medium text-text-secondary mb-8">
-          Your password has been successfully sent to your email address. Please check your inbox (and spam folder) to retrieve your password.
+        <p className="text-sm text-text-secondary mb-4">
+          We've sent a password reset link to:
         </p>
+        <p className="text-sm font-bold text-text-primary mb-6 break-all">
+          {email}
+        </p>
+        <div className="bg-bg-secondary/50 rounded-lg p-4 mb-6 border border-border/30">
+          <p className="text-xs text-text-tertiary leading-relaxed">
+            The reset link expires in <strong>1 hour</strong>. If you don't see the email, check your spam folder. If you didn't request this, you can safely ignore it.
+          </p>
+        </div>
         <Link href="/login" className="w-full">
-          <Button className="w-full h-12 rounded-2xl font-black uppercase tracking-widest">
+          <Button className="w-full h-12 rounded-xl font-bold">
             Return to Login
           </Button>
         </Link>
@@ -64,43 +64,29 @@ export default function ForgotPasswordPage() {
 
   return (
     <>
-      {/* Dynamic Brand Header */}
+      {/* Header */}
       <div className="flex flex-col items-center text-center mb-10 animate-in fade-in slide-in-from-top duration-700">
-        <div className="h-16 w-16 rounded-2xl bg-bg-tertiary flex items-center justify-center mb-6 shadow-xl shadow-black/[0.05] overflow-hidden border border-white">
-           {currentSchool?.logo_url ? (
-              <img src={currentSchool.logo_url} alt="Logo" className="h-full w-full object-cover" />
-           ) : (
-              <School className="h-8 w-8 text-accent" />
-           )}
+        <div className="h-16 w-16 rounded-2xl bg-accent/10 flex items-center justify-center mb-6 border border-accent/30">
+          <Mail className="h-8 w-8 text-accent" />
         </div>
         <h1 className="text-2xl font-black text-text-primary tracking-tight uppercase">
-          Reset Password
+          Forgot Password?
         </h1>
-        <p className="mt-2 text-sm font-bold text-text-tertiary uppercase tracking-widest opacity-60">
-          Recover your {currentSchool?.name || 'Skolic'} account
+        <p className="mt-2 text-sm font-medium text-text-secondary">
+          Enter your email address and we'll send you a link to reset your password.
         </p>
       </div>
 
       {/* Error message */}
       {error && (
-        <div className="mb-6 p-3 rounded-lg bg-danger-subtle border border-danger/20 text-sm text-danger animate-slide-in-up">
-          {error}
+        <div className="mb-6 p-4 rounded-lg bg-danger-subtle border border-danger/30 text-sm text-danger animate-slide-in-up flex gap-3">
+          <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+          <div>{error}</div>
         </div>
       )}
 
-      {/* Forgot Password Form */}
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <Select
-          name="school_id"
-          label="Institution"
-          placeholder="Select your school"
-          required
-          options={schools.map(s => ({ value: s.id, label: s.name }))}
-          value={selectedSchool}
-          onChange={(e) => setSelectedSchool(e.target.value)}
-          className="bg-white/50 border-white/30"
-        />
-
+      {/* Form */}
+      <form onSubmit={handleSubmit} className="space-y-5">
         <Input
           name="email"
           type="email"
@@ -108,27 +94,36 @@ export default function ForgotPasswordPage() {
           placeholder="you@example.com"
           required
           autoComplete="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           leftIcon={<Mail className="h-4 w-4" />}
         />
 
         <Button
           type="submit"
-          className="w-full"
-          size="lg"
+          className="w-full h-12 rounded-xl font-bold"
           isLoading={isLoading}
+          disabled={!email || isLoading}
         >
-          Send Password to Email
+          {isLoading ? 'Sending...' : 'Send Reset Link'}
         </Button>
       </form>
 
-      {/* Footer links */}
+      {/* Info box */}
+      <div className="mt-6 p-4 rounded-lg bg-info-subtle border border-info/30">
+        <p className="text-xs text-text-tertiary leading-relaxed">
+          <strong>Secure Process:</strong> We'll send you a secure reset link via email. Click it to create a new password. Never share this link with anyone.
+        </p>
+      </div>
+
+      {/* Footer link */}
       <div className="mt-6 text-center">
         <Link
           href="/login"
           className="inline-flex items-center text-sm font-medium text-text-secondary hover:text-text-primary transition-colors"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to log in
+          Back to login
         </Link>
       </div>
     </>
