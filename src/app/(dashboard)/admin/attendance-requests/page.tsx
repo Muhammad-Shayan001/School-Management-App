@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import { User, Check, X, Clock, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
 
-type AttendanceRecord = Awaited<ReturnType<typeof getSchoolAttendance>>['data'][0];
+type AttendanceRecord = NonNullable<Awaited<ReturnType<typeof getSchoolAttendance>>['data']>[number];
 
 function AttendanceRequestCard({ record, onApprove, onReject, isProcessing }: { record: AttendanceRecord, onApprove: () => void, onReject: () => void, isProcessing: boolean }) {
   if (!record.profiles) return null;
@@ -27,14 +27,14 @@ function AttendanceRequestCard({ record, onApprove, onReject, isProcessing }: { 
         </div>
       </div>
       <div className="flex items-center gap-3">
-        <Badge variant="warning" size="sm">
+        <Badge variant="warning">
           <Clock className="h-3 w-3 mr-1.5" />
           Pending Approval
         </Badge>
-        <Button size="icon-sm" variant="success" onClick={onApprove} isLoading={isProcessing} aria-label="Approve">
+        <Button size="sm" variant="primary" onClick={onApprove} isLoading={isProcessing} aria-label="Approve">
           <Check className="h-4 w-4" />
         </Button>
-        <Button size="icon-sm" variant="danger" onClick={onReject} isLoading={isProcessing} aria-label="Reject">
+        <Button size="sm" variant="danger" onClick={onReject} isLoading={isProcessing} aria-label="Reject">
           <X className="h-4 w-4" />
         </Button>
       </div>

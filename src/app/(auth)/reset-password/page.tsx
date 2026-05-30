@@ -235,18 +235,3 @@ export default function ResetPasswordPage() {
     </>
   );
 }
-          leftIcon={<Lock className="h-4 w-4" />}
-        />
-
-        <Button
-          type="submit"
-          className="w-full"
-          size="lg"
-          isLoading={isLoading}
-        >
-          Update Password
-        </Button>
-      </form>
-    </>
-  );
-}

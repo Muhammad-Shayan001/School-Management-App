@@ -84,13 +84,14 @@ export async function POST(request: NextRequest) {
       .eq('token', token);
 
     // Clean up plain_password if it exists
-    await adminClient
-      .from('profiles')
-      .update({ plain_password: null })
-      .eq('id', resetRecord.user_id)
-      .catch(() => {
-        // Ignore errors if field doesn't exist
-      });
+    try {
+      await adminClient
+        .from('profiles')
+        .update({ plain_password: null })
+        .eq('id', resetRecord.user_id);
+    } catch {
+      // Ignore errors if field doesn't exist
+    }
 
     return NextResponse.json(
       { success: true, message: 'Password reset successfully.' },
