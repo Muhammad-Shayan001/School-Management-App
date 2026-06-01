@@ -123,11 +123,11 @@ export default function AdminIdCardPage() {
         {!isIncomplete && (
           <div className="flex gap-3 flex-wrap">
             <button onClick={() => setIsFlipped(!isFlipped)}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 font-bold text-sm hover:bg-slate-200 transition-all border border-slate-200">
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-100 text-black font-bold text-sm hover:bg-slate-200 transition-all border border-slate-200">
               <RotateCcw className="h-4 w-4" /> {isFlipped ? 'Show Front' : 'Show Back'}
             </button>
             <button onClick={downloadAsPng} disabled={isDownloading}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-700 text-white font-bold text-sm hover:bg-amber-800 transition-all shadow-lg shadow-amber-700/25 disabled:opacity-60">
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-700 text-black font-bold text-sm hover:bg-amber-800 transition-all shadow-lg shadow-amber-700/25 disabled:opacity-60">
               <ImageIcon className="h-4 w-4" /> Download PNG
             </button>
             <button onClick={downloadAsPdf} disabled={isDownloading}
@@ -302,7 +302,7 @@ export default function AdminIdCardPage() {
                   background: 'rgba(0,0,0,0.25)', padding: '12px 22px', textAlign: 'center',
                 }}>
                   <p style={{ fontSize: '7.5px', fontWeight: 700, color: 'rgba(255,255,255,0.45)', letterSpacing: '0.18em', textTransform: 'uppercase', margin: 0 }}>
-                    Authorized Personnel — {schoolName}
+                    Authorized Personal — {schoolName}
                   </p>
                 </div>
               </div>

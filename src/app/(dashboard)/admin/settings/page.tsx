@@ -3,6 +3,7 @@ import { Button } from '@/app/_components/ui/button';
 import { Input } from '@/app/_components/ui/input';
 import { useAuthStore } from '@/app/_lib/store/auth-store';
 import { ChangePasswordForm } from '@/app/_components/auth/change-password-form';
+import { CustomGroupsManager } from '@/app/_components/dashboard/custom-groups-manager';
 import { Settings, Bell } from 'lucide-react';
 
 export default function AdminSettingsPage() {
@@ -18,6 +19,7 @@ export default function AdminSettingsPage() {
         <div className="mt-5 flex justify-end"><Button size="sm">Save</Button></div>
       </div>
       <ChangePasswordForm />
+      <CustomGroupsManager />
     </div>
   );
 }

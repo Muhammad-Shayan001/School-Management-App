@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getFullProfile, updateProfile } from '@/app/_lib/actions/profile';
 import { getPublicClasses } from '@/app/_lib/actions/schools';
+import { getAllStudentGroups } from '@/app/_lib/actions/groups';
 import { ImageUpload } from '@/app/_components/ui/image-upload';
 import { Input } from '@/app/_components/ui/input';
 import { Select } from '@/app/_components/ui/select';
@@ -51,6 +52,12 @@ export default function ProfileSetupPage() {
   const [step, setStep] = useState(1);
   const [profile, setProfile] = useState<any>(null);
   const [classes, setClasses] = useState<any[]>([]);
+  const [groupOptions, setGroupOptions] = useState<any[]>([
+    { label: 'Science', value: 'Science' },
+    { label: 'Commerce', value: 'Commerce' },
+    { label: 'Engineering', value: 'Engineering' },
+    { label: 'Other', value: 'Other' }
+  ]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState('');
@@ -125,6 +132,15 @@ export default function ProfileSetupPage() {
         if (data.school_id) {
           const { data: classList } = await getPublicClasses(data.school_id);
           setClasses(classList || []);
+          
+          // Fetch dynamic groups
+          const { data: groups } = await getAllStudentGroups(data.school_id);
+          if (groups && groups.length > 0) {
+            setGroupOptions(groups.map((g: any) => ({
+              label: g.label || g.value,
+              value: g.value
+            })));
+          }
         }
       }
       setIsLoading(false);
@@ -342,14 +358,11 @@ export default function ProfileSetupPage() {
                       />
                       {showGroupField && (
                         <Select 
-                          label="Academic Group (Science/Commerce) *" 
+                          label="Academic Group *" 
                           name="group"
                           value={formData.group || 'Science'}
                           onChange={handleInputChange}
-                          options={[
-                            { value: 'Science', label: 'Science' },
-                            { value: 'Commerce', label: 'Commerce' }
-                          ]}
+                          options={groupOptions}
                           required
                         />
                       )}

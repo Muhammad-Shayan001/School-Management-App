@@ -13,6 +13,8 @@ import { Select } from '@/app/_components/ui/select';
 import { Badge } from '@/app/_components/ui/badge';
 import { cn } from '@/app/_lib/utils/cn';
 import { createManualStudent, updateManualStudentData } from '@/app/_lib/actions/users';
+import { getAllStudentGroups } from '@/app/_lib/actions/groups';
+import { useAuthStore } from '@/app/_lib/store/auth-store';
 import { toast } from 'sonner';
 
 interface AddStudentModalProps {
@@ -24,9 +26,16 @@ interface AddStudentModalProps {
 }
 
 export function AddStudentModal({ isOpen, onClose, classes, onSuccess, editStudent }: AddStudentModalProps) {
+  const { user } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [groupOptions, setGroupOptions] = useState<any[]>([
+    { label: 'Science', value: 'Science' },
+    { label: 'Commerce', value: 'Commerce' },
+    { label: 'Engineering', value: 'Engineering' },
+    { label: 'Other', value: 'Other' }
+  ]);
 
   const [formData, setFormData] = useState({
     // Section 1: Student Information
@@ -88,6 +97,21 @@ export function AddStudentModal({ isOpen, onClose, classes, onSuccess, editStude
   const selectedClass = classes.find(c => c.id === formData.class_id);
   const showGroupField = selectedClass?.name === 'Class 11' || selectedClass?.name === 'Class 12';
 
+  // Fetch dynamic groups from database
+  useEffect(() => {
+    if (isOpen && user?.school_id) {
+      const fetchGroups = async () => {
+        const { data } = await getAllStudentGroups(user.school_id);
+        if (data && data.length > 0) {
+          setGroupOptions(data.map((g: any) => ({
+            label: g.label || g.value,
+            value: g.value
+          })));
+        }
+      };
+      fetchGroups();
+    }
+  }, [isOpen, user?.school_id]);
 
   useEffect(() => {
     if (isOpen && editStudent) {
@@ -311,10 +335,7 @@ export function AddStudentModal({ isOpen, onClose, classes, onSuccess, editStude
                           label="Select Group *"
                           value={formData.group}
                           onChange={(e) => setFormData(prev => ({ ...prev, group: e.target.value }))}
-                          options={[
-                            { label: 'Science', value: 'Science' },
-                            { label: 'Commerce', value: 'Commerce' }
-                          ]}
+                          options={groupOptions}
                           className="h-14 bg-bg-tertiary/30"
                         />
                       )}
