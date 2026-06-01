@@ -41,18 +41,33 @@ export default function AttendanceScanner() {
 
   const inputRef = useRef<HTMLInputElement>(null);
   const statusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isMountedRef = useRef(false);
 
-  // Focus on component mount only (removed aggressive re-focus loop)
+  // Focus on component mount only - with delayed timing and no scroll
   useEffect(() => {
-    if (isOffDay?.isOff || isCameraOpen) return;
+    if (isOffDay?.isOff || isCameraOpen || !isMountedRef.current) return;
 
-    // Focus once on mount to allow scanner input
+    // Focus once after component fully renders, without scrolling
     const focusTimer = setTimeout(() => {
-      inputRef.current?.focus();
-    }, 100);
+      if (inputRef.current) {
+        inputRef.current.focus({ preventScroll: true });
+      }
+    }, 300);
 
     return () => clearTimeout(focusTimer);
   }, [isOffDay, isCameraOpen]);
+
+  // Mark component as mounted
+  useEffect(() => {
+    isMountedRef.current = true;
+    // Focus only on first mount
+    const timer = setTimeout(() => {
+      if (inputRef.current && isMountedRef.current) {
+        inputRef.current.focus({ preventScroll: true });
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Clean up camera on unmount
   useEffect(() => {
@@ -328,7 +343,7 @@ export default function AttendanceScanner() {
             value={selectedGate}
             onChange={(e) => {
               setSelectedGate(e.target.value);
-              inputRef.current?.focus();
+              setTimeout(() => inputRef.current?.focus({ preventScroll: true }), 50);
             }}
             className="bg-transparent font-bold text-sm text-text-primary focus:outline-none cursor-pointer border-none p-0 focus:ring-0"
           >
@@ -341,7 +356,7 @@ export default function AttendanceScanner() {
         <button
           onClick={() => {
             setIsMuted(!isMuted);
-            inputRef.current?.focus();
+            setTimeout(() => inputRef.current?.focus({ preventScroll: true }), 50);
           }}
           className={cn(
             "p-2 rounded-xl transition-all flex items-center gap-2 text-xs font-black uppercase tracking-wider",
@@ -444,7 +459,10 @@ export default function AttendanceScanner() {
           ) : (
             <>
               <button
-                onClick={stopCamera}
+                onClick={() => {
+                  stopCamera();
+                  setTimeout(() => inputRef.current?.focus({ preventScroll: true }), 100);
+                }}
                 className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-bg-tertiary text-text-secondary font-black text-[11px] uppercase tracking-wider hover:bg-bg-tertiary/80 transition-all"
               >
                 Close Camera
@@ -465,7 +483,7 @@ export default function AttendanceScanner() {
         <form onSubmit={handleScanSubmit} className="mt-8 w-full relative z-10">
           <div className="relative group">
             <div className="absolute -inset-0.5 bg-gradient-to-r from-accent to-purple-600 rounded-xl blur opacity-25 group-hover:opacity-50 transition duration-300" />
-            <div className="relative flex items-center bg-bg-primary rounded-xl border border-border/70 overflow-hidden px-4">
+            <div className="relative flex items-center bg-bg-primary rounded-xl border border-border/70 overflow-hidden px-4 cursor-text" onClick={() => inputRef.current?.focus()}>
               <Keyboard className="h-4 w-4 text-text-tertiary flex-shrink-0" />
               <input
                 ref={inputRef}
