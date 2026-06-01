@@ -42,22 +42,16 @@ export default function AttendanceScanner() {
   const inputRef = useRef<HTMLInputElement>(null);
   const statusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Auto-focus enforcement loop (only if camera is not open)
+  // Focus on component mount only (removed aggressive re-focus loop)
   useEffect(() => {
     if (isOffDay?.isOff || isCameraOpen) return;
 
-    // Focus immediately on mount
-    setTimeout(() => {
+    // Focus once on mount to allow scanner input
+    const focusTimer = setTimeout(() => {
       inputRef.current?.focus();
     }, 100);
 
-    const keepFocus = setInterval(() => {
-      if (inputRef.current && document.activeElement !== inputRef.current && !isCameraOpen) {
-        inputRef.current.focus();
-      }
-    }, 1000);
-
-    return () => clearInterval(keepFocus);
+    return () => clearTimeout(focusTimer);
   }, [isOffDay, isCameraOpen]);
 
   // Clean up camera on unmount
