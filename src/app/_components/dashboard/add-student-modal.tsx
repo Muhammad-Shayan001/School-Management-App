@@ -101,7 +101,7 @@ export function AddStudentModal({ isOpen, onClose, classes, onSuccess, editStude
   useEffect(() => {
     if (isOpen && user?.school_id) {
       const fetchGroups = async () => {
-        const { data } = await getAllStudentGroups(user.school_id);
+        const { data } = await getAllStudentGroups(user.school_id!);
         if (data && data.length > 0) {
           setGroupOptions(data.map((g: any) => ({
             label: g.label || g.value,
