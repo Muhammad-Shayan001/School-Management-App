@@ -158,6 +158,10 @@ export interface Notification {
   is_read: boolean;
   link: string | null;
   created_at: string;
+  attendance_id?: string | null;
+  category?: string | null;
+  school_id?: string | null;
+  attendance_status?: 'present' | 'absent' | 'late' | 'pending' | 'rejected' | null;
 }
 
 // ─── Announcements ──────────────────────────────────────────────────────────

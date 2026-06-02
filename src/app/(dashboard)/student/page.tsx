@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { StatsCard } from '@/app/_components/dashboard/stats-card';
 import { getFullProfile } from '@/app/_lib/actions/profile';
-import { BarChart3, Calendar, Megaphone, FileText, UserCircle, ClipboardList, CreditCard, ShieldCheck, XCircle, AlertCircle } from 'lucide-react';
+import { BarChart3, Calendar, Megaphone, FileText, UserCircle, ClipboardList, CreditCard, ShieldCheck, XCircle, AlertCircle, Bell } from 'lucide-react';
 import { AnnouncementWidget } from '@/app/_components/dashboard/AnnouncementWidget';
 import { NextExamWidget } from '@/app/_components/dashboard/NextExamWidget';
 

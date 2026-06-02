@@ -3,6 +3,7 @@
 import { createClient } from '@/app/_lib/supabase/server';
 import { createAdminClient } from '@/app/_lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
+import { createAttendanceNotification } from './attendance-notifications';
 
 /**
  * Creates an attendance record. 
@@ -100,20 +101,55 @@ export async function markAttendance(params: {
   };
 
   let error;
+  let attendanceId: string | null = null;
+
   if (existing) {
     const { error: updateErr } = await adminClient
       .from('attendance')
       .update(attendanceData)
       .eq('id', existing.id);
     error = updateErr;
+    attendanceId = existing.id;
   } else {
-    const { error: insertErr } = await adminClient
+    const { data: insertedData, error: insertErr } = await adminClient
       .from('attendance')
-      .insert(attendanceData);
+      .insert(attendanceData)
+      .select('id')
+      .single();
     error = insertErr;
+    attendanceId = insertedData?.id || null;
   }
 
   if (error) return { error: error.message };
+
+  // Create attendance notification for student
+  if (params.role === 'student' && attendanceId) {
+    const { data: studentProfile } = await adminClient
+      .from('profiles')
+      .select('full_name')
+      .eq('id', params.userId)
+      .single();
+
+    const studentName = studentProfile?.full_name || 'Student';
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+
+    await createAttendanceNotification({
+      studentId: params.userId,
+      studentName,
+      attendanceId,
+      attendanceStatus: finalStatus,
+      attendanceDate: attendanceDate,
+      schoolId: callerProfile.school_id,
+      category: 'attendance_marked',
+      method: params.method,
+      time: timeStr,
+    });
+  }
 
   revalidatePath('/admin/attendance');
   revalidatePath('/teacher/attendance');
@@ -130,6 +166,17 @@ export async function approveAttendance(attendanceId: string) {
 
   if (!user) return { error: 'Unauthorized' };
 
+  // Fetch the attendance record before updating
+  const { data: attendanceRecord, error: fetchError } = await adminClient
+    .from('attendance')
+    .select('user_id, status, date, school_id')
+    .eq('id', attendanceId)
+    .single();
+
+  if (fetchError || !attendanceRecord) {
+    return { error: 'Attendance record not found' };
+  }
+
   const { error } = await adminClient
     .from('attendance')
     .update({
@@ -139,6 +186,32 @@ export async function approveAttendance(attendanceId: string) {
     .eq('id', attendanceId);
 
   if (error) return { error: error.message };
+
+  // Create notification for attendance approval
+  const { data: studentProfile } = await adminClient
+    .from('profiles')
+    .select('full_name')
+    .eq('id', attendanceRecord.user_id)
+    .single();
+
+  const studentName = studentProfile?.full_name || 'Student';
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  });
+
+  await createAttendanceNotification({
+    studentId: attendanceRecord.user_id,
+    studentName,
+    attendanceId,
+    attendanceStatus: 'present',
+    attendanceDate: attendanceRecord.date,
+    schoolId: attendanceRecord.school_id,
+    category: 'attendance_approved',
+    time: timeStr,
+  });
 
   revalidatePath('/admin/attendance');
   revalidatePath('/teacher/attendance');
@@ -155,6 +228,17 @@ export async function rejectAttendance(attendanceId: string) {
 
   if (!user) return { error: 'Unauthorized' };
 
+  // Fetch the attendance record before updating
+  const { data: attendanceRecord, error: fetchError } = await adminClient
+    .from('attendance')
+    .select('user_id, status, date, school_id')
+    .eq('id', attendanceId)
+    .single();
+
+  if (fetchError || !attendanceRecord) {
+    return { error: 'Attendance record not found' };
+  }
+
   const { error } = await adminClient
     .from('attendance')
     .update({
@@ -164,6 +248,35 @@ export async function rejectAttendance(attendanceId: string) {
     .eq('id', attendanceId);
 
   if (error) return { error: error.message };
+
+  // Create notification for attendance rejection
+  const { data: studentProfile } = await adminClient
+    .from('profiles')
+    .select('full_name')
+    .eq('id', attendanceRecord.user_id)
+    .single();
+
+  const studentName = studentProfile?.full_name || 'Student';
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  });
+
+  await createAttendanceNotification({
+    studentId: attendanceRecord.user_id,
+    studentName,
+    attendanceId,
+    attendanceStatus: 'rejected',
+    attendanceDate: attendanceRecord.date,
+    schoolId: attendanceRecord.school_id,
+    category: 'attendance_updated',
+    time: timeStr,
+  });
+
+  revalidatePath('/admin/attendance');
+  revalidatePath('/teacher/attendance');
 
   revalidatePath('/admin/attendance');
   revalidatePath('/teacher/attendance');
@@ -394,6 +507,7 @@ export async function finalizeDailyAttendance(date: string) {
 
   const updates = [];
   const inserts = [];
+  const notificationsToCreate = [];
 
   for (const studentId of studentIds) {
     const record = existingMap.get(studentId);
@@ -410,6 +524,7 @@ export async function finalizeDailyAttendance(date: string) {
         class_id: teacherProfile.class_id,
         approved_by: user.id
       });
+      notificationsToCreate.push({ studentId, finalStatus: 'absent' });
     } else if (record.status === 'pending') {
       // Pending record -> mark as absent
       updates.push(
@@ -418,18 +533,60 @@ export async function finalizeDailyAttendance(date: string) {
           .update({ status: 'absent', approved_by: user.id })
           .eq('id', record.id)
       );
+      notificationsToCreate.push({ studentId, finalStatus: 'absent' });
     }
   }
 
-  // Execute inserts
+  // Execute inserts and get the IDs
+  let insertedIds: string[] = [];
   if (inserts.length > 0) {
-    const { error: insertError } = await adminClient.from('attendance').insert(inserts);
+    const { data: insertedRecords, error: insertError } = await adminClient
+      .from('attendance')
+      .insert(inserts)
+      .select('id, user_id');
     if (insertError) return { error: insertError.message };
+    insertedIds = insertedRecords?.map((r: any) => r.id) || [];
   }
 
   // Execute updates
   if (updates.length > 0) {
     await Promise.all(updates);
+  }
+
+  // Create notifications for all finalized attendance records
+  // First, get student profiles for names
+  const { data: profiles } = await adminClient
+    .from('profiles')
+    .select('id, full_name')
+    .in('id', studentIds);
+
+  const profileMap = new Map((profiles || []).map((p: any) => [p.id, p.full_name]));
+
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  });
+
+  // Create notifications for newly marked absents
+  for (let i = 0; i < notificationsToCreate.length; i++) {
+    const { studentId, finalStatus } = notificationsToCreate[i];
+    const attendanceId = insertedIds[i] || existingMap.get(studentId)?.id;
+    
+    if (attendanceId) {
+      const studentName = profileMap.get(studentId) || 'Student';
+      await createAttendanceNotification({
+        studentId,
+        studentName,
+        attendanceId,
+        attendanceStatus: finalStatus as 'present' | 'absent' | 'late' | 'pending' | 'rejected',
+        attendanceDate: date,
+        schoolId: profile.school_id,
+        category: 'attendance_updated',
+        time: timeStr,
+      });
+    }
   }
 
   revalidatePath('/admin/attendance');

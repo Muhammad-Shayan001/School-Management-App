@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="2000" height="2200" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <!-- Background -->
+  <rect width="2000" height="2200" fill="#ffffff"/>
+  
+  <!-- Title -->
+  <text x="1000" y="40" font-size="28" font-weight="bold" text-anchor="middle" fill="#1e3a8a">Student Admission Records</text>
+  
+  <!-- Header Row -->
+  <rect x="40" y="80" width="1920" height="120" fill="#1e3a8a" stroke="#0f172a" stroke-width="1"/>
+  <line x1="40" y1="80" x2="40" y2="200" stroke="#0f172a" stroke-width="1"/>
+  <text x="118" y="148" font-size="13" font-weight="bold" text-anchor="middle" fill="#ffffff">Name</text>
+  <line x1="180" y1="80" x2="180" y2="200" stroke="#0f172a" stroke-width="1"/>
+  <text x="228" y="148" font-size="13" font-weight="bold" text-anchor="middle" fill="#ffffff">Roll No</text>
+  <line x1="260" y1="80" x2="260" y2="200" stroke="#0f172a" stroke-width="1"/>
+  <text x="298" y="148" font-size="13" font-weight="bold" text-anchor="middle" fill="#ffffff">Class</text>
+  <line x1="320" y1="80" x2="320" y2="200" stroke="#0f172a" stroke-width="1"/>
+  <text x="358" y="148" font-size="13" font-weight="bold" text-anchor="middle" fill="#ffffff">Section</text>
+  <line x1="380" y1="80" x2="380" y2="200" stroke="#0f172a" stroke-width="1"/>
+  <text x="453" y="148" font-size="13" font-weight="bold" text-anchor="middle" fill="#ffffff">Father Name</text>
+  <line x1="510" y1="80" x2="510" y2="200" stroke="#0f172a" stroke-width="1"/>
+  <text x="578" y="148" font-size="13" font-weight="bold" text-anchor="middle" fill="#ffffff">Mobile</text>
+  <line x1="630" y1="80" x2="630" y2="200" stroke="#0f172a" stroke-width="1"/>
+  <text x="738" y="148" font-size="13" font-weight="bold" text-anchor="middle" fill="#ffffff">Email</text>
+  <line x1="830" y1="80" x2="830" y2="200" stroke="#0f172a" stroke-width="1"/>
+  <text x="913" y="148" font-size="13" font-weight="bold" text-anchor="middle" fill="#ffffff">Password</text>
+  <line x1="980" y1="80" x2="980" y2="200" stroke="#0f172a" stroke-width="1"/>
+  <!-- Row 1 -->
+  <rect x="40" y="200" width="1920" height="120" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1"/>
+  <line x1="40" y1="200" x2="40" y2="320" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="53" y="265" font-size="11" fill="#1e293b">Ahmed Khan</text>
+  <line x1="180" y1="200" x2="180" y2="320" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="193" y="265" font-size="11" fill="#1e293b">001</text>
+  <line x1="260" y1="200" x2="260" y2="320" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="273" y="265" font-size="11" fill="#1e293b">5</text>
+  <line x1="320" y1="200" x2="320" y2="320" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="333" y="265" font-size="11" fill="#1e293b">A</text>
+  <line x1="380" y1="200" x2="380" y2="320" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="393" y="265" font-size="11" fill="#1e293b">Khan Sr.</text>
+  <line x1="510" y1="200" x2="510" y2="320" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="523" y="265" font-size="11" fill="#1e293b">0300-1111111</text>
+  <line x1="630" y1="200" x2="630" y2="320" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="643" y="265" font-size="11" fill="#1e293b">ahmed.khan@school.com</text>
+  <line x1="830" y1="200" x2="830" y2="320" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="843" y="265" font-size="11" fill="#1e293b">UserPass001!</text>
+  <line x1="980" y1="200" x2="980" y2="320" stroke="#cbd5e1" stroke-width="1"/>
+  <!-- Row 2 -->
+  <rect x="40" y="320" width="1920" height="120" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <line x1="40" y1="320" x2="40" y2="440" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="53" y="385" font-size="11" fill="#1e293b">Sara Ali</text>
+  <line x1="180" y1="320" x2="180" y2="440" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="193" y="385" font-size="11" fill="#1e293b">002</text>
+  <line x1="260" y1="320" x2="260" y2="440" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="273" y="385" font-size="11" fill="#1e293b">5</text>
+  <line x1="320" y1="320" x2="320" y2="440" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="333" y="385" font-size="11" fill="#1e293b">A</text>
+  <line x1="380" y1="320" x2="380" y2="440" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="393" y="385" font-size="11" fill="#1e293b">Ali Sr.</text>
+  <line x1="510" y1="320" x2="510" y2="440" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="523" y="385" font-size="11" fill="#1e293b">0301-2222222</text>
+  <line x1="630" y1="320" x2="630" y2="440" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="643" y="385" font-size="11" fill="#1e293b">sara.ali@school.com</text>
+  <line x1="830" y1="320" x2="830" y2="440" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="843" y="385" font-size="11" fill="#1e293b">UserPass002!</text>
+  <line x1="980" y1="320" x2="980" y2="440" stroke="#cbd5e1" stroke-width="1"/>
+  <!-- Row 3 -->
+  <rect x="40" y="440" width="1920" height="120" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1"/>
+  <line x1="40" y1="440" x2="40" y2="560" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="53" y="505" font-size="11" fill="#1e293b">Zainab Tariq</text>
+  <line x1="180" y1="440" x2="180" y2="560" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="193" y="505" font-size="11" fill="#1e293b">003</text>
+  <line x1="260" y1="440" x2="260" y2="560" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="273" y="505" font-size="11" fill="#1e293b">5</text>
+  <line x1="320" y1="440" x2="320" y2="560" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="333" y="505" font-size="11" fill="#1e293b">A</text>
+  <line x1="380" y1="440" x2="380" y2="560" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="393" y="505" font-size="11" fill="#1e293b">Tariq J.</text>
+  <line x1="510" y1="440" x2="510" y2="560" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="523" y="505" font-size="11" fill="#1e293b">0302-3333333</text>
+  <line x1="630" y1="440" x2="630" y2="560" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="643" y="505" font-size="11" fill="#1e293b">zainab.tariq@school.com</text>
+  <line x1="830" y1="440" x2="830" y2="560" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="843" y="505" font-size="11" fill="#1e293b">UserPass003!</text>
+  <line x1="980" y1="440" x2="980" y2="560" stroke="#cbd5e1" stroke-width="1"/>
+  <!-- Row 4 -->
+  <rect x="40" y="560" width="1920" height="120" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <line x1="40" y1="560" x2="40" y2="680" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="53" y="625" font-size="11" fill="#1e293b">Bilal Hussain</text>
+  <line x1="180" y1="560" x2="180" y2="680" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="193" y="625" font-size="11" fill="#1e293b">004</text>
+  <line x1="260" y1="560" x2="260" y2="680" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="273" y="625" font-size="11" fill="#1e293b">5</text>
+  <line x1="320" y1="560" x2="320" y2="680" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="333" y="625" font-size="11" fill="#1e293b">A</text>
+  <line x1="380" y1="560" x2="380" y2="680" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="393" y="625" font-size="11" fill="#1e293b">Hussain M.</text>
+  <line x1="510" y1="560" x2="510" y2="680" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="523" y="625" font-size="11" fill="#1e293b">0303-4444444</text>
+  <line x1="630" y1="560" x2="630" y2="680" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="643" y="625" font-size="11" fill="#1e293b">bilal.hussain@school.com</text>
+  <line x1="830" y1="560" x2="830" y2="680" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="843" y="625" font-size="11" fill="#1e293b">UserPass004!</text>
+  <line x1="980" y1="560" x2="980" y2="680" stroke="#cbd5e1" stroke-width="1"/>
+  <!-- Row 5 -->
+  <rect x="40" y="680" width="1920" height="120" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1"/>
+  <line x1="40" y1="680" x2="40" y2="800" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="53" y="745" font-size="11" fill="#1e293b">Fatima Noor</text>
+  <line x1="180" y1="680" x2="180" y2="800" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="193" y="745" font-size="11" fill="#1e293b">005</text>
+  <line x1="260" y1="680" x2="260" y2="800" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="273" y="745" font-size="11" fill="#1e293b">5</text>
+  <line x1="320" y1="680" x2="320" y2="800" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="333" y="745" font-size="11" fill="#1e293b">A</text>
+  <line x1="380" y1="680" x2="380" y2="800" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="393" y="745" font-size="11" fill="#1e293b">Noor N.</text>
+  <line x1="510" y1="680" x2="510" y2="800" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="523" y="745" font-size="11" fill="#1e293b">0304-5555555</text>
+  <line x1="630" y1="680" x2="630" y2="800" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="643" y="745" font-size="11" fill="#1e293b">fatima.noor@school.com</text>
+  <line x1="830" y1="680" x2="830" y2="800" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="843" y="745" font-size="11" fill="#1e293b">UserPass005!</text>
+  <line x1="980" y1="680" x2="980" y2="800" stroke="#cbd5e1" stroke-width="1"/>
+  <!-- Row 6 -->
+  <rect x="40" y="800" width="1920" height="120" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <line x1="40" y1="800" x2="40" y2="920" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="53" y="865" font-size="11" fill="#1e293b">Omar Farooq</text>
+  <line x1="180" y1="800" x2="180" y2="920" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="193" y="865" font-size="11" fill="#1e293b">006</text>
+  <line x1="260" y1="800" x2="260" y2="920" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="273" y="865" font-size="11" fill="#1e293b">5</text>
+  <line x1="320" y1="800" x2="320" y2="920" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="333" y="865" font-size="11" fill="#1e293b">A</text>
+  <line x1="380" y1="800" x2="380" y2="920" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="393" y="865" font-size="11" fill="#1e293b">Farooq S.</text>
+  <line x1="510" y1="800" x2="510" y2="920" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="523" y="865" font-size="11" fill="#1e293b">0305-6666666</text>
+  <line x1="630" y1="800" x2="630" y2="920" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="643" y="865" font-size="11" fill="#1e293b">omar.farooq@school.com</text>
+  <line x1="830" y1="800" x2="830" y2="920" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="843" y="865" font-size="11" fill="#1e293b">UserPass006!</text>
+  <line x1="980" y1="800" x2="980" y2="920" stroke="#cbd5e1" stroke-width="1"/>
+  <!-- Row 7 -->
+  <rect x="40" y="920" width="1920" height="120" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1"/>
+  <line x1="40" y1="920" x2="40" y2="1040" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="53" y="985" font-size="11" fill="#1e293b">Ayesha Raza</text>
+  <line x1="180" y1="920" x2="180" y2="1040" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="193" y="985" font-size="11" fill="#1e293b">007</text>
+  <line x1="260" y1="920" x2="260" y2="1040" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="273" y="985" font-size="11" fill="#1e293b">5</text>
+  <line x1="320" y1="920" x2="320" y2="1040" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="333" y="985" font-size="11" fill="#1e293b">A</text>
+  <line x1="380" y1="920" x2="380" y2="1040" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="393" y="985" font-size="11" fill="#1e293b">Raza K.</text>
+  <line x1="510" y1="920" x2="510" y2="1040" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="523" y="985" font-size="11" fill="#1e293b">0306-7777777</text>
+  <line x1="630" y1="920" x2="630" y2="1040" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="643" y="985" font-size="11" fill="#1e293b">ayesha.raza@school.com</text>
+  <line x1="830" y1="920" x2="830" y2="1040" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="843" y="985" font-size="11" fill="#1e293b">UserPass007!</text>
+  <line x1="980" y1="920" x2="980" y2="1040" stroke="#cbd5e1" stroke-width="1"/>
+  <!-- Row 8 -->
+  <rect x="40" y="1040" width="1920" height="120" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <line x1="40" y1="1040" x2="40" y2="1160" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="53" y="1105" font-size="11" fill="#1e293b">Hassan Baloch</text>
+  <line x1="180" y1="1040" x2="180" y2="1160" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="193" y="1105" font-size="11" fill="#1e293b">008</text>
+  <line x1="260" y1="1040" x2="260" y2="1160" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="273" y="1105" font-size="11" fill="#1e293b">5</text>
+  <line x1="320" y1="1040" x2="320" y2="1160" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="333" y="1105" font-size="11" fill="#1e293b">A</text>
+  <line x1="380" y1="1040" x2="380" y2="1160" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="393" y="1105" font-size="11" fill="#1e293b">Baloch H.</text>
+  <line x1="510" y1="1040" x2="510" y2="1160" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="523" y="1105" font-size="11" fill="#1e293b">0307-8888888</text>
+  <line x1="630" y1="1040" x2="630" y2="1160" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="643" y="1105" font-size="11" fill="#1e293b">hassan.baloch@school.com</text>
+  <line x1="830" y1="1040" x2="830" y2="1160" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="843" y="1105" font-size="11" fill="#1e293b">UserPass008!</text>
+  <line x1="980" y1="1040" x2="980" y2="1160" stroke="#cbd5e1" stroke-width="1"/>
+  <!-- Row 9 -->
+  <rect x="40" y="1160" width="1920" height="120" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1"/>
+  <line x1="40" y1="1160" x2="40" y2="1280" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="53" y="1225" font-size="11" fill="#1e293b">Mariam Shah</text>
+  <line x1="180" y1="1160" x2="180" y2="1280" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="193" y="1225" font-size="11" fill="#1e293b">009</text>
+  <line x1="260" y1="1160" x2="260" y2="1280" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="273" y="1225" font-size="11" fill="#1e293b">5</text>
+  <line x1="320" y1="1160" x2="320" y2="1280" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="333" y="1225" font-size="11" fill="#1e293b">A</text>
+  <line x1="380" y1="1160" x2="380" y2="1280" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="393" y="1225" font-size="11" fill="#1e293b">Shah T.</text>
+  <line x1="510" y1="1160" x2="510" y2="1280" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="523" y="1225" font-size="11" fill="#1e293b">0308-9999999</text>
+  <line x1="630" y1="1160" x2="630" y2="1280" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="643" y="1225" font-size="11" fill="#1e293b">mariam.shah@school.com</text>
+  <line x1="830" y1="1160" x2="830" y2="1280" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="843" y="1225" font-size="11" fill="#1e293b">UserPass009!</text>
+  <line x1="980" y1="1160" x2="980" y2="1280" stroke="#cbd5e1" stroke-width="1"/>
+  <!-- Row 10 -->
+  <rect x="40" y="1280" width="1920" height="120" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+  <line x1="40" y1="1280" x2="40" y2="1400" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="53" y="1345" font-size="11" fill="#1e293b">Usman Sheikh</text>
+  <line x1="180" y1="1280" x2="180" y2="1400" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="193" y="1345" font-size="11" fill="#1e293b">010</text>
+  <line x1="260" y1="1280" x2="260" y2="1400" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="273" y="1345" font-size="11" fill="#1e293b">5</text>
+  <line x1="320" y1="1280" x2="320" y2="1400" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="333" y="1345" font-size="11" fill="#1e293b">A</text>
+  <line x1="380" y1="1280" x2="380" y2="1400" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="393" y="1345" font-size="11" fill="#1e293b">Sheikh A.</text>
+  <line x1="510" y1="1280" x2="510" y2="1400" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="523" y="1345" font-size="11" fill="#1e293b">0309-0000000</text>
+  <line x1="630" y1="1280" x2="630" y2="1400" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="643" y="1345" font-size="11" fill="#1e293b">usman.sheikh@school.com</text>
+  <line x1="830" y1="1280" x2="830" y2="1400" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="843" y="1345" font-size="11" fill="#1e293b">UserPass010!</text>
+  <line x1="980" y1="1280" x2="980" y2="1400" stroke="#cbd5e1" stroke-width="1"/>
+</svg>

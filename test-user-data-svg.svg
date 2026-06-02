@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1600" viewBox="0 0 1000 1600">
+  <rect width="1000" height="1600" fill="white"/>
+  <text x="50" y="40" font-size="20" font-weight="bold" fill="black">Student Records</text>
+  
+  <!-- Header Row -->
+  <text x="50" y="80"><tspan>Name</tspan></text>
+  <text x="50" y="110"><tspan>Roll No</tspan></text>
+  <text x="50" y="140"><tspan>Class</tspan></text>
+  <text x="50" y="170"><tspan>Section</tspan></text>
+  <text x="50" y="200"><tspan>Father Name</tspan></text>
+  <text x="50" y="230"><tspan>Mobile</tspan></text>
+  <text x="50" y="260"><tspan>Email</tspan></text>
+  <text x="50" y="290"><tspan>Password</tspan></text>
+  
+  <!-- Student 1: Ali Khan -->
+  <text x="50" y="330"><tspan>Ali Khan</tspan></text>
+  <text x="50" y="360"><tspan>011</tspan></text>
+  <text x="50" y="390"><tspan>5</tspan></text>
+  <text x="50" y="420"><tspan>A</tspan></text>
+  <text x="50" y="450"><tspan>Khan Ahmed</tspan></text>
+  <text x="50" y="480"><tspan>0310-1111111</tspan></text>
+  <text x="50" y="510"><tspan>ali.khan@school.com</tspan></text>
+  <text x="50" y="540"><tspan>UserPass011!</tspan></text>
+  
+  <!-- Student 2: Sana Ahmed -->
+  <text x="50" y="580"><tspan>Sana Ahmed</tspan></text>
+  <text x="50" y="610"><tspan>012</tspan></text>
+  <text x="50" y="640"><tspan>5</tspan></text>
+  <text x="50" y="670"><tspan>A</tspan></text>
+  <text x="50" y="700"><tspan>Ahmed Raza</tspan></text>
+  <text x="50" y="730"><tspan>0311-2222222</tspan></text>
+  <text x="50" y="760"><tspan>sana.ahmed@school.com</tspan></text>
+  <text x="50" y="790"><tspan>UserPass012!</tspan></text>
+  
+  <!-- Student 3: Hamza Malik -->
+  <text x="50" y="830"><tspan>Hamza Malik</tspan></text>
+  <text x="50" y="860"><tspan>013</tspan></text>
+  <text x="50" y="890"><tspan>5</tspan></text>
+  <text x="50" y="920"><tspan>A</tspan></text>
+  <text x="50" y="950"><tspan>Malik Asif</tspan></text>
+  <text x="50" y="980"><tspan>0312-3333333</tspan></text>
+  <text x="50" y="1010"><tspan>hamza.malik@school.com</tspan></text>
+  <text x="50" y="1040"><tspan>UserPass013!</tspan></text>
+  
+  <!-- Student 4: Dua Fatima -->
+  <text x="50" y="1080"><tspan>Dua Fatima</tspan></text>
+  <text x="50" y="1110"><tspan>014</tspan></text>
+  <text x="50" y="1140"><tspan>5</tspan></text>
+  <text x="50" y="1170"><tspan>A</tspan></text>
+  <text x="50" y="1200"><tspan>Fatima Tariq</tspan></text>
+  <text x="50" y="1230"><tspan>0313-4444444</tspan></text>
+  <text x="50" y="1260"><tspan>dua.fatima@school.com</tspan></text>
+  <text x="50" y="1290"><tspan>UserPass014!</tspan></text>
+  
+  <!-- Student 5: Bilal Siddiqui -->
+  <text x="500" y="330"><tspan>Bilal Siddiqui</tspan></text>
+  <text x="500" y="360"><tspan>015</tspan></text>
+  <text x="500" y="390"><tspan>5</tspan></text>
+  <text x="500" y="420"><tspan>A</tspan></text>
+  <text x="500" y="450"><tspan>Siddiqui Kamran</tspan></text>
+  <text x="500" y="480"><tspan>0314-5555555</tspan></text>
+  <text x="500" y="510"><tspan>bilal.siddiqui@school.com</tspan></text>
+  <text x="500" y="540"><tspan>UserPass015!</tspan></text>
+  
+  <!-- Student 6: Zainab Bibi -->
+  <text x="500" y="580"><tspan>Zainab Bibi</tspan></text>
+  <text x="500" y="610"><tspan>016</tspan></text>
+  <text x="500" y="640"><tspan>5</tspan></text>
+  <text x="500" y="670"><tspan>A</tspan></text>
+  <text x="500" y="700"><tspan>Bibi Bashir</tspan></text>
+  <text x="500" y="730"><tspan>0315-6666666</tspan></text>
+  <text x="500" y="760"><tspan>zainab.bibi@school.com</tspan></text>
+  <text x="500" y="790"><tspan>UserPass016!</tspan></text>
+  
+  <!-- Student 7: Mustafa Iqbal -->
+  <text x="500" y="830"><tspan>Mustafa Iqbal</tspan></text>
+  <text x="500" y="860"><tspan>017</tspan></text>
+  <text x="500" y="890"><tspan>5</tspan></text>
+  <text x="500" y="920"><tspan>A</tspan></text>
+  <text x="500" y="950"><tspan>Iqbal Javed</tspan></text>
+  <text x="500" y="980"><tspan>0316-7777777</tspan></text>
+  <text x="500" y="1010"><tspan>mustafa.iqbal@school.com</tspan></text>
+  <text x="500" y="1040"><tspan>UserPass017!</tspan></text>
+  
+  <!-- Student 8: Amina Yousuf -->
+  <text x="500" y="1080"><tspan>Amina Yousuf</tspan></text>
+  <text x="500" y="1110"><tspan>018</tspan></text>
+  <text x="500" y="1140"><tspan>5</tspan></text>
+  <text x="500" y="1170"><tspan>A</tspan></text>
+  <text x="500" y="1200"><tspan>Yousuf Irfan</tspan></text>
+  <text x="500" y="1230"><tspan>0317-8888888</tspan></text>
+  <text x="500" y="1260"><tspan>amina.yousuf@school.com</tspan></text>
+  <text x="500" y="1290"><tspan>UserPass018!</tspan></text>
+  
+  <!-- Student 9: Zayd Mansoor -->
+  <text x="500" y="1330"><tspan>Zayd Mansoor</tspan></text>
+  <text x="500" y="1360"><tspan>019</tspan></text>
+  <text x="500" y="1390"><tspan>5</tspan></text>
+  <text x="500" y="1420"><tspan>A</tspan></text>
+  <text x="500" y="1450"><tspan>Mansoor Ali</tspan></text>
+  <text x="500" y="1480"><tspan>0318-9999999</tspan></text>
+  <text x="500" y="1510"><tspan>zayd.mansoor@school.com</tspan></text>
+  <text x="500" y="1540"><tspan>UserPass019!</tspan></text>
+  
+  <!-- Student 10: Eshal Noor -->
+  <text x="50" y="1330"><tspan>Eshal Noor</tspan></text>
+  <text x="50" y="1360"><tspan>020</tspan></text>
+  <text x="50" y="1390"><tspan>5</tspan></text>
+  <text x="50" y="1420"><tspan>A</tspan></text>
+  <text x="50" y="1450"><tspan>Noor Zaman</tspan></text>
+  <text x="50" y="1480"><tspan>0319-0000000</tspan></text>
+  <text x="50" y="1510"><tspan>eshal.noor@school.com</tspan></text>
+  <text x="50" y="1540"><tspan>UserPass020!</tspan></text>
+</svg>

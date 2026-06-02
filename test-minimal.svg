@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400">
+  <text x="10" y="30">Name</text>
+  <text x="10" y="60">Ali Khan</text>
+  <text x="10" y="90">Sana Ahmed</text>
+  
+  <text x="150" y="30">Roll No</text>
+  <text x="150" y="60">011</text>
+  <text x="150" y="90">012</text>
+  
+  <text x="250" y="30">Class</text>
+  <text x="250" y="60">5</text>
+  <text x="250" y="90">5</text>
+  
+  <text x="300" y="30">Section</text>
+  <text x="300" y="60">A</text>
+  <text x="300" y="90">A</text>
+  
+  <text x="380" y="30">Email</text>
+  <text x="380" y="60">ali.khan@school.com</text>
+  <text x="380" y="90">sana.ahmed@school.com</text>
+</svg>
