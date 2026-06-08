@@ -1,6 +1,6 @@
 import { getCurrentUser } from '@/app/_lib/actions/auth';
 import { getTeacherProfiles } from '@/app/_lib/actions/users';
-import { getClasses, getSubjects } from '@/app/_lib/actions/schools';
+import { getClasses, getSubjects, getSchoolInfo } from '@/app/_lib/actions/schools';
 import { TeacherManagement } from '@/app/_components/dashboard/teacher-management';
 import { Badge } from '@/app/_components/ui/badge';
 import { GraduationCap } from 'lucide-react';
@@ -11,10 +11,11 @@ export default async function AdminTeachersPage() {
 
   if (!schoolId) return null;
 
-  const [teachersResult, classesResult, subjectsResult] = await Promise.all([
+  const [teachersResult, classesResult, subjectsResult, schoolResult] = await Promise.all([
     getTeacherProfiles(),
     getClasses(),
-    getSubjects()
+    getSubjects(),
+    getSchoolInfo()
   ]);
 
   return (
@@ -39,6 +40,7 @@ export default async function AdminTeachersPage() {
         teachers={teachersResult.data || []} 
         classes={classesResult.data || []}
         subjects={subjectsResult.data || []}
+        school={schoolResult?.data || {}}
       />
     </div>
   );

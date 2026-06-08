@@ -588,7 +588,8 @@ export function TeacherManagement({ teachers, classes, subjects, school }: Teach
                 subjects: selectedTeacher.qualification || "Faculty Lead",
                 isClassTeacher: selectedTeacher.is_class_teacher || false,
                 image: selectedTeacher.profiles?.avatar_url || '',
-                schoolName: school?.name || 'Skolic International'
+                schoolName: school?.name || 'Skolic International',
+                schoolLogo: school?.logo_url || null
               }}
             />
           </div>

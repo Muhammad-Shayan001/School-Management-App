@@ -128,9 +128,9 @@ export default function SyllabusCreator({ classes, subjects, assignments, onSucc
                   }
                   return true;
                 })
-                // Deduplicate by name if no class is selected yet, just to make it clean
+                // Deduplicate by name to prevent multiple subjects of the same name showing up
                 .filter((s, index, self) => 
-                  !assignments || formData.class_id || index === self.findIndex((t) => t.name === s.name)
+                  index === self.findIndex((t) => t?.name?.trim().toLowerCase() === s?.name?.trim().toLowerCase())
                 )
                 .map((s, idx) => (
                 <option key={s?.id || `subject-${idx}`} value={s?.id}>{s?.name}</option>
