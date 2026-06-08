@@ -348,7 +348,7 @@ export function StudentManagement({ students, classes, school }: StudentManageme
         className="rounded-[3rem] overflow-hidden border-none"
       >
         {selectedStudent && (
-          <div className="space-y-10 max-h-[85vh] overflow-y-auto pr-3 scrollbar-premium animate-in fade-in slide-in-from-top-4 duration-700 pb-10">
+          <div className="space-y-10 pr-3 animate-in fade-in slide-in-from-top-4 duration-700 pb-10">
              {/* Dynamic Banner Header */}
              <div className="relative p-8 md:p-10 rounded-[3rem] bg-gradient-to-br from-accent/10 via-accent/5 to-transparent border border-accent/10 flex flex-col md:flex-row items-center gap-8 md:gap-10 overflow-hidden group/header">
                 <div className="absolute -top-32 -right-32 h-80 w-80 bg-accent/5 rounded-full blur-3xl pointer-events-none group-hover/header:scale-125 transition-transform duration-1000" />

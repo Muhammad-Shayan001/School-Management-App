@@ -332,7 +332,7 @@ export function TeacherManagement({ teachers, classes, subjects, school }: Teach
         className="rounded-[3rem] overflow-hidden border-none"
       >
         {selectedTeacher && (
-          <div className="space-y-10 max-h-[85vh] overflow-y-auto pr-3 scrollbar-premium animate-in fade-in slide-in-from-top-4 duration-700 pb-10">
+          <div className="space-y-10 pr-3 animate-in fade-in slide-in-from-top-4 duration-700 pb-10">
              {/* Profile Header Banner */}
              <div className="relative p-8 md:p-10 rounded-[3rem] bg-gradient-to-br from-purple-500/10 via-purple-500/5 to-transparent border border-purple-500/10 flex flex-col md:flex-row items-center gap-8 md:gap-10 overflow-hidden group/header">
                 <div className="absolute -top-32 -right-32 h-80 w-80 bg-purple-500/5 rounded-full blur-3xl pointer-events-none group-hover/header:scale-125 transition-transform duration-1000" />

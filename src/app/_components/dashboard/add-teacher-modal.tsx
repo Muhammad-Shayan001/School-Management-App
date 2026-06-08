@@ -172,7 +172,7 @@ export function AddTeacherModal({ isOpen, onClose, classes, subjects, onSuccess,
       size="xl"
       className="rounded-[3rem] overflow-hidden border-none"
     >
-      <div className="space-y-8 p-4 sm:p-6 md:p-8 max-h-[85vh] overflow-y-auto scrollbar-premium">
+      <div className="space-y-8 p-4 sm:p-6 md:p-8">
         {/* Progress Stepper */}
         <div className="flex items-center justify-between px-4 md:px-10 relative">
            <div className="absolute top-1/2 left-4 right-4 md:left-10 md:right-10 h-0.5 bg-border/40 -z-10" />

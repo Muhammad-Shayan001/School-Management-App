@@ -63,11 +63,11 @@ export function Modal({
         onClick={onClose}
       />
 
-      {/* Dialog */}
       <div
         className={cn(
           'relative w-full glass-card p-6 animate-slide-in-up',
           'bg-bg-secondary border border-glass-border',
+          'max-h-[90vh] overflow-y-auto scrollbar-premium',
           sizeClasses[size],
           className
         )}
