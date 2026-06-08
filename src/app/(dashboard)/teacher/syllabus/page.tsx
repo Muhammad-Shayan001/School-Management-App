@@ -59,7 +59,7 @@ export default function TeacherSyllabusPage() {
 
       {isCreating ? (
         <SyllabusCreator 
-          // Use unique classes and subjects to avoid key warnings
+          assignments={assignments}
           classes={Array.from(new Map(assignments.map(a => [a.classes.id, a.classes])).values())} 
           subjects={Array.from(new Map(assignments.map(a => [a.subjects.id, a.subjects])).values())}
           onCancel={() => setIsCreating(false)}

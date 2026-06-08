@@ -212,36 +212,36 @@ export function AddTeacherModal({ isOpen, onClose, classes, subjects, onSuccess,
 
                 <div className="flex-1 w-full grid grid-cols-1 md:grid-cols-2 gap-6">
                    <div className="space-y-2 col-span-1 md:col-span-2">
-                      <label className="text-[10px] font-black text-text-tertiary uppercase tracking-widest ml-1">Full Name</label>
-                      <Input name="full_name" value={formData.full_name} onChange={handleChange} placeholder="e.g. Dr. Salman Khan" className="h-12 md:h-14 rounded-2xl bg-bg-tertiary/50 border-transparent font-bold" />
+                      <label className="text-[10px] font-black text-text-primary uppercase tracking-widest ml-1">Full Name</label>
+                      <Input name="full_name" value={formData.full_name} onChange={handleChange} placeholder="e.g. Dr. Salman Khan" className="h-12 md:h-14 rounded-2xl bg-bg-tertiary/50 border-transparent font-bold text-text-secondary" />
                    </div>
                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-text-tertiary uppercase tracking-widest ml-1">Work Email</label>
-                      <Input name="email" value={formData.email} onChange={handleChange} type="email" placeholder="salman@school.edu" className="h-12 md:h-14 rounded-2xl bg-bg-tertiary/50 border-transparent font-bold" />
+                      <label className="text-[10px] font-black text-text-primary uppercase tracking-widest ml-1">Work Email</label>
+                      <Input name="email" value={formData.email} onChange={handleChange} type="email" placeholder="salman@school.edu" className="h-12 md:h-14 rounded-2xl bg-bg-tertiary/50 border-transparent font-bold text-text-secondary" />
                    </div>
                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-text-tertiary uppercase tracking-widest ml-1">Phone Number</label>
-                      <Input name="phone" value={formData.phone} onChange={handleChange} placeholder="+92 3XX XXXXXXX" className="h-12 md:h-14 rounded-2xl bg-bg-tertiary/50 border-transparent font-bold" />
+                      <label className="text-[10px] font-black text-text-primary uppercase tracking-widest ml-1">Phone Number</label>
+                      <Input name="phone" value={formData.phone} onChange={handleChange} placeholder="+92 3XX XXXXXXX" className="h-12 md:h-14 rounded-2xl bg-bg-tertiary/50 border-transparent font-bold text-text-secondary" />
                    </div>
                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-text-tertiary uppercase tracking-widest ml-1">Account Password</label>
-                      <Input name="password" value={formData.password} onChange={handleChange} placeholder="Auto-generated if left blank" className="h-12 md:h-14 rounded-2xl bg-bg-tertiary/50 border-transparent font-mono text-xs" />
+                      <label className="text-[10px] font-black text-text-primary uppercase tracking-widest ml-1">Account Password</label>
+                      <Input name="password" value={formData.password} onChange={handleChange} placeholder="Auto-generated if left blank" className="h-12 md:h-14 rounded-2xl bg-bg-tertiary/50 border-transparent font-mono text-xs text-text-secondary" />
                    </div>
                 </div>
              </div>
 
              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-2">
-                   <label className="text-[10px] font-black text-text-tertiary uppercase tracking-widest ml-1">Qualification</label>
-                   <Input name="qualification" value={formData.qualification} onChange={handleChange} placeholder="e.g. M.Phil in Physics" className="h-12 md:h-14 rounded-2xl bg-bg-tertiary/50 border-transparent font-bold" />
+                   <label className="text-[10px] font-black text-text-primary uppercase tracking-widest ml-1">Qualification</label>
+                   <Input name="qualification" value={formData.qualification} onChange={handleChange} placeholder="e.g. M.Phil in Physics" className="h-12 md:h-14 rounded-2xl bg-bg-tertiary/50 border-transparent font-bold text-text-secondary" />
                 </div>
                 <div className="space-y-2">
-                   <label className="text-[10px] font-black text-text-tertiary uppercase tracking-widest ml-1">Years of Experience</label>
-                   <Input name="experience" value={formData.experience} onChange={handleChange} placeholder="e.g. 5 Years" className="h-12 md:h-14 rounded-2xl bg-bg-tertiary/50 border-transparent font-bold" />
+                   <label className="text-[10px] font-black text-text-primary uppercase tracking-widest ml-1">Years of Experience</label>
+                   <Input name="experience" value={formData.experience} onChange={handleChange} placeholder="e.g. 5 Years" className="h-12 md:h-14 rounded-2xl bg-bg-tertiary/50 border-transparent font-bold text-text-secondary" />
                 </div>
                 <div className="space-y-2">
-                   <label className="text-[10px] font-black text-text-tertiary uppercase tracking-widest ml-1">CNIC Number</label>
-                   <Input name="cnic" value={formData.cnic} onChange={handleChange} placeholder="42101-XXXXXXX-X" className="h-12 md:h-14 rounded-2xl bg-bg-tertiary/50 border-transparent font-bold" />
+                   <label className="text-[10px] font-black text-text-primary uppercase tracking-widest ml-1">CNIC Number</label>
+                   <Input name="cnic" value={formData.cnic} onChange={handleChange} placeholder="42101-XXXXXXX-X" className="h-12 md:h-14 rounded-2xl bg-bg-tertiary/50 border-transparent font-bold text-text-secondary" />
                 </div>
              </div>
 
@@ -264,7 +264,7 @@ export function AddTeacherModal({ isOpen, onClose, classes, subjects, onSuccess,
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-text-tertiary uppercase tracking-widest ml-1">Is Class Teacher?</label>
+                      <label className="text-[10px] font-black text-text-primary uppercase tracking-widest ml-1">Is Class Teacher?</label>
                       <Select 
                         value={formData.is_class_teacher}
                         onChange={(e) => setFormData(prev => ({ ...prev, is_class_teacher: e.target.value }))}
@@ -272,12 +272,12 @@ export function AddTeacherModal({ isOpen, onClose, classes, subjects, onSuccess,
                           { label: 'No', value: 'false' },
                           { label: 'Yes', value: 'true' }
                         ]}
-                        className="h-14 rounded-2xl bg-white border-transparent font-black uppercase text-[10px] tracking-widest"
+                        className="h-14 rounded-2xl bg-white border-transparent font-black uppercase text-[10px] tracking-widest text-text-secondary"
                       />
                    </div>
                    {formData.is_class_teacher === 'true' && (
                      <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                        <label className="text-[10px] font-black text-text-tertiary uppercase tracking-widest ml-1">Assigned Class</label>
+                        <label className="text-[10px] font-black text-text-primary uppercase tracking-widest ml-1">Assigned Class</label>
                         <Select 
                           value={formData.class_id}
                           onChange={(e) => setFormData(prev => ({ ...prev, class_id: e.target.value }))}
@@ -285,7 +285,7 @@ export function AddTeacherModal({ isOpen, onClose, classes, subjects, onSuccess,
                             { label: 'Select Class', value: '' },
                             ...classes.map(c => ({ label: `${c.name}${c.section && c.section.toUpperCase() !== 'A' ? ` - ${c.section}` : ''}`, value: c.id }))
                           ]}
-                          className="h-14 rounded-2xl bg-white border-transparent font-black uppercase text-[10px] tracking-widest"
+                          className="h-14 rounded-2xl bg-white border-transparent font-black uppercase text-[10px] tracking-widest text-text-secondary"
                         />
                      </div>
                    )}
@@ -307,7 +307,7 @@ export function AddTeacherModal({ isOpen, onClose, classes, subjects, onSuccess,
                    {formData.assignments.map((assignment, idx) => (
                      <div key={idx} className="grid grid-cols-1 md:grid-cols-11 gap-4 p-6 rounded-[2rem] bg-bg-tertiary/30 items-end border border-transparent hover:border-accent/10 transition-all duration-300">
                         <div className="md:col-span-5 space-y-2">
-                           <label className="text-[9px] font-black text-text-tertiary uppercase tracking-widest ml-1">Class</label>
+                           <label className="text-[9px] font-black text-text-primary uppercase tracking-widest ml-1">Class</label>
                            <Select 
                              value={assignment.class_id}
                              onChange={(e) => updateAssignment(idx, 'class_id', e.target.value)}
@@ -315,18 +315,18 @@ export function AddTeacherModal({ isOpen, onClose, classes, subjects, onSuccess,
                                { label: 'Select Class', value: '' },
                                ...classes.map(c => ({ label: `${c.name}${c.section && c.section.toUpperCase() !== 'A' ? ` - ${c.section}` : ''}`, value: c.id }))
                              ]}
-                             className="h-12 rounded-xl bg-white border-none font-bold text-xs"
+                             className="h-12 rounded-xl bg-white border-none font-bold text-xs text-text-secondary"
                            />
                         </div>
                         <div className="md:col-span-5 space-y-2">
-                           <label className="text-[9px] font-black text-text-tertiary uppercase tracking-widest ml-1">Subject</label>
+                           <label className="text-[9px] font-black text-text-primary uppercase tracking-widest ml-1">Subject</label>
                            {assignment.subject_id === 'other' ? (
                               <div className="flex gap-2">
                                  <Input 
                                    value={assignment.custom_subject || ''}
                                    onChange={(e) => updateAssignment(idx, 'custom_subject', e.target.value)}
                                    placeholder="Enter subject name..."
-                                   className="h-12 rounded-xl bg-white border-none font-bold text-xs flex-1"
+                                   className="h-12 rounded-xl bg-white border-none font-bold text-xs flex-1 text-text-secondary"
                                  />
                                  <Button variant="outline" size="sm" onClick={() => updateAssignment(idx, 'subject_id', '')} className="h-12 rounded-xl text-[10px] uppercase font-black tracking-wider">
                                    Cancel
@@ -341,7 +341,7 @@ export function AddTeacherModal({ isOpen, onClose, classes, subjects, onSuccess,
                                   ...subjects.map(s => ({ label: s.name, value: s.id })),
                                   { label: 'Other (Add new)', value: 'other' }
                                 ]}
-                                className="h-12 rounded-xl bg-white border-none font-bold text-xs"
+                                className="h-12 rounded-xl bg-white border-none font-bold text-xs text-text-secondary"
                               />
                            )}
                         </div>

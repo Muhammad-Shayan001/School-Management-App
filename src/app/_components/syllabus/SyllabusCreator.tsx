@@ -10,12 +10,13 @@ import { cn } from '@/app/_lib/utils/cn';
 interface SyllabusCreatorProps {
   classes: any[];
   subjects: any[];
+  assignments?: any[];
   onSuccess: () => void;
   onCancel: () => void;
   isAdmin?: boolean;
 }
 
-export default function SyllabusCreator({ classes, subjects, onSuccess, onCancel, isAdmin }: SyllabusCreatorProps) {
+export default function SyllabusCreator({ classes, subjects, assignments, onSuccess, onCancel, isAdmin }: SyllabusCreatorProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
@@ -120,7 +121,18 @@ export default function SyllabusCreator({ classes, subjects, onSuccess, onCancel
               onChange={(e) => setFormData({...formData, subject_id: e.target.value})}
             >
               <option value="">Select Subject</option>
-              {subjects.map((s, idx) => (
+              {subjects
+                .filter(s => {
+                  if (assignments && formData.class_id) {
+                    return assignments.some(a => a.class_id === formData.class_id && a.subject_id === s.id);
+                  }
+                  return true;
+                })
+                // Deduplicate by name if no class is selected yet, just to make it clean
+                .filter((s, index, self) => 
+                  !assignments || formData.class_id || index === self.findIndex((t) => t.name === s.name)
+                )
+                .map((s, idx) => (
                 <option key={s?.id || `subject-${idx}`} value={s?.id}>{s?.name}</option>
               ))}
             </select>

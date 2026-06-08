@@ -258,22 +258,25 @@ export default function StudentIDCard({ student }: { student: StudentData }) {
       {/* Action Controls */}
       <div className="flex flex-col sm:flex-row items-center gap-3 w-full max-w-[320px]">
         <Button
+          variant="secondary"
           onClick={() => setIsFlipped(!isFlipped)}
-          className="w-full h-11 rounded-2xl bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200 shadow-sm font-bold text-[10px] uppercase tracking-widest gap-2"
+          className="w-full h-11 rounded-2xl shadow-sm font-bold text-[10px] uppercase tracking-widest gap-2 bg-slate-100 hover:bg-slate-200"
         >
           <RotateCcw className="h-4 w-4" /> {isFlipped ? 'Show Front' : 'Show Back'}
         </Button>
         <Button
+          variant="secondary"
           onClick={downloadAsImage}
-          className="w-full h-11 rounded-2xl bg-white text-black border border-border hover:bg-bg-tertiary shadow-sm font-bold text-[10px] uppercase tracking-widest gap-2"
+          className="w-full h-11 rounded-2xl shadow-sm font-bold text-[10px] uppercase tracking-widest gap-2"
         >
           <FileImage className="h-4 w-4 text-blue-600" /> Download Image
         </Button>
         <Button
+          variant="secondary"
           onClick={downloadAsPDF}
-          className="w-full h-11 rounded-2xl bg-blue-600 text-black hover:bg-blue-700 shadow-xl shadow-blue-600/20 font-bold text-[10px] uppercase tracking-widest gap-2"
+          className="w-full h-11 rounded-2xl shadow-sm font-bold text-[10px] uppercase tracking-widest gap-2"
         >
-          <FileText className="h-4 w-4" /> Export PDF
+          <FileText className="h-4 w-4 text-blue-600" /> Export PDF
         </Button>
       </div>
     </div>
