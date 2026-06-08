@@ -133,7 +133,7 @@ export function FeeManagementClient() {
                 </div>
 
                 <div className="flex items-center gap-2 pt-2">
-                  {student.fee_status !== 'paid' && (
+                  {student.fee_status !== 'paid' ? (
                     <Button 
                       size="sm" 
                       className="flex-1 bg-success/10 text-success hover:bg-success hover:text-white border-success/20"
@@ -143,20 +143,7 @@ export function FeeManagementClient() {
                     >
                       Mark Paid
                     </Button>
-                  )}
-                  {student.fee_status !== 'pending' && (
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      className="flex-1"
-                      onClick={() => handleUpdateStatus(student.user_id, 'pending')}
-                      isLoading={actionLoading === student.user_id + 'pending'}
-                      leftIcon={<Clock className="h-3.5 w-3.5" />}
-                    >
-                      Pending
-                    </Button>
-                  )}
-                  {student.fee_status !== 'unpaid' && (
+                  ) : (
                     <Button 
                       size="sm" 
                       className="flex-1 bg-danger/10 text-danger hover:bg-danger hover:text-white border-danger/20"
@@ -164,7 +151,7 @@ export function FeeManagementClient() {
                       isLoading={actionLoading === student.user_id + 'unpaid'}
                       leftIcon={<XCircle className="h-3.5 w-3.5" />}
                     >
-                      Unpaid
+                      Mark Unpaid
                     </Button>
                   )}
                 </div>

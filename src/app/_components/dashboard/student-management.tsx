@@ -190,7 +190,7 @@ export function StudentManagement({ students, classes, school }: StudentManageme
 
       {/* Luxury Table Design */}
       <div className="glass-card bg-white/80 backdrop-blur-xl border border-white/40 shadow-2xl shadow-black/[0.02] overflow-hidden rounded-[2rem] md:rounded-[3rem]">
-        <div className="overflow-x-auto overflow-y-auto max-h-[650px] scrollbar-premium">
+        <div className="overflow-x-auto overflow-y-auto scrollbar-premium">
           <table className="w-full text-left border-collapse min-w-[1000px]">
             <thead>
               <tr className="bg-bg-tertiary/30 border-b border-border/40">
@@ -591,7 +591,8 @@ export function StudentManagement({ students, classes, school }: StudentManageme
                 parentName: selectedStudent.father_name || selectedStudent.parent_name || 'Guardian',
                 phone: selectedStudent.sms_phone || selectedStudent.phone || 'N/A',
                 image: selectedStudent.profiles?.avatar_url || '',
-                schoolName: school?.name || 'Skolic International'
+                schoolName: school?.name || 'Skolic International',
+                schoolLogo: school?.logo_url
               }}
             />
           </div>

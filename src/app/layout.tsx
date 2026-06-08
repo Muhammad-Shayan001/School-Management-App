@@ -2,7 +2,13 @@ import type { Metadata } from 'next';
 import { AuthProvider } from '@/app/_components/providers/auth-provider';
 import { getCurrentUser } from '@/app/_lib/actions/auth';
 import { Toaster } from 'sonner';
+import { Montserrat } from 'next/font/google';
 import './globals.css';
+
+const montserrat = Montserrat({
+  subsets: ['latin'],
+  variable: '--font-montserrat',
+});
 
 export const metadata: Metadata = {
   title: 'Skolic — Smart School Management System',
@@ -23,7 +29,7 @@ export default async function RootLayout({
   const user = await getCurrentUser();
 
   return (
-    <html lang="en" className="h-full scroll-smooth" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }} suppressHydrationWarning>
+    <html lang="en" className={`h-full scroll-smooth ${montserrat.variable}`} suppressHydrationWarning>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
         <meta name="theme-color" content="#ffffff" />

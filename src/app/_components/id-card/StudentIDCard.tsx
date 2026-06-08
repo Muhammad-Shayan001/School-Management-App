@@ -265,13 +265,13 @@ export default function StudentIDCard({ student }: { student: StudentData }) {
         </Button>
         <Button
           onClick={downloadAsImage}
-          className="w-full h-11 rounded-2xl bg-white text-text-primary border border-border hover:bg-bg-tertiary shadow-sm font-bold text-[10px] uppercase tracking-widest gap-2"
+          className="w-full h-11 rounded-2xl bg-white text-black border border-border hover:bg-bg-tertiary shadow-sm font-bold text-[10px] uppercase tracking-widest gap-2"
         >
           <FileImage className="h-4 w-4 text-blue-600" /> Download Image
         </Button>
         <Button
           onClick={downloadAsPDF}
-          className="w-full h-11 rounded-2xl bg-blue-600 text-white hover:bg-blue-700 shadow-xl shadow-blue-600/20 font-bold text-[10px] uppercase tracking-widest gap-2"
+          className="w-full h-11 rounded-2xl bg-blue-600 text-black hover:bg-blue-700 shadow-xl shadow-blue-600/20 font-bold text-[10px] uppercase tracking-widest gap-2"
         >
           <FileText className="h-4 w-4" /> Export PDF
         </Button>

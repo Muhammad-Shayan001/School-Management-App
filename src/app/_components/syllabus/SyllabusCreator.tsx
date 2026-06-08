@@ -96,7 +96,14 @@ export default function SyllabusCreator({ classes, subjects, onSuccess, onCancel
               onChange={(e) => setFormData({...formData, class_id: e.target.value})}
             >
               <option value="">Select Class</option>
-              {classes.map((c, idx) => (
+              {[...classes]
+                .sort((a, b) => {
+                  const numA = parseInt(a?.name?.replace(/\D/g, '')) || 0;
+                  const numB = parseInt(b?.name?.replace(/\D/g, '')) || 0;
+                  if (numA !== numB) return numA - numB;
+                  return (a?.name || '').localeCompare(b?.name || '');
+                })
+                .map((c, idx) => (
                 <option key={c?.id || `class-${idx}`} value={c?.id}>{c?.name}{c?.section && c.section.toUpperCase() !== 'A' ? ` (${c.section})` : ''}</option>
               ))}
             </select>
