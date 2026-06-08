@@ -19,6 +19,7 @@ interface TeacherData {
   isClassTeacher: boolean;
   image?: string;
   schoolName: string;
+  schoolLogo?: string | null;
 }
 
 export default function TeacherIDCard({ teacher }: { teacher: TeacherData }) {
@@ -130,13 +131,17 @@ export default function TeacherIDCard({ teacher }: { teacher: TeacherData }) {
                 {/* School Logo */}
                 <div style={{
                   width: '52px', height: '52px', borderRadius: '16px',
-                  background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(14px)',
-                  border: '1px solid rgba(255,255,255,0.18)',
+                  background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(14px)',
+                  border: '1px solid rgba(255,255,255,0.2)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   overflow: 'hidden', marginBottom: '10px', zIndex: 2,
-                  boxShadow: '0 8px 25px rgba(0,0,0,0.3)',
+                  boxShadow: '0 8px 25px rgba(0,0,0,0.25)',
                 }}>
-                  <img src="/images/Skolic app icon.png" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '4px' }} />
+                  {teacher.schoolLogo ? (
+                    <img src={teacher.schoolLogo} crossOrigin="anonymous" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    <img src="/images/Skolic app icon.png" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '4px' }} />
+                  )}
                 </div>
 
                 <h2 style={{
@@ -190,7 +195,7 @@ export default function TeacherIDCard({ teacher }: { teacher: TeacherData }) {
                 padding: '12px 22px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               }}>
                 <span style={{ fontSize: '7.5px', fontWeight: 700, color: 'rgba(255,255,255,0.5)', letterSpacing: '0.18em', textTransform: 'uppercase' }}>
-                  Valid 2025–26
+                  Valid {new Date().getFullYear()}–{new Date().getFullYear() + 1}
                 </span>
                 <span style={{ fontSize: '7.5px', fontWeight: 700, color: 'rgba(212,168,67,0.45)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
                   Powered by Skolic
@@ -212,14 +217,19 @@ export default function TeacherIDCard({ teacher }: { teacher: TeacherData }) {
                 <circle cx="280" cy="430" r="105" fill="white" />
               </svg>
 
+              {/* School Logo on back */}
               <div style={{
                 width: '46px', height: '46px', borderRadius: '14px',
-                background: 'rgba(255,255,255,0.06)', backdropFilter: 'blur(10px)',
-                border: '1px solid rgba(255,255,255,0.1)',
+                background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(10px)',
+                border: '1px solid rgba(255,255,255,0.15)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 overflow: 'hidden', marginBottom: '12px', zIndex: 2,
               }}>
-                <img src="/images/Skolic app icon.png" alt="" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '4px' }} />
+                {teacher.schoolLogo ? (
+                  <img src={teacher.schoolLogo} crossOrigin="anonymous" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <img src="/images/Skolic app icon.png" alt="" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '4px' }} />
+                )}
               </div>
 
               <p style={{ fontSize: '14px', fontWeight: 900, color: 'rgba(255,255,255,0.95)', letterSpacing: '0.08em', textTransform: 'uppercase', margin: '0 0 24px', zIndex: 2, textShadow: '0 2px 8px rgba(0,0,0,0.35)' }}>
@@ -250,25 +260,28 @@ export default function TeacherIDCard({ teacher }: { teacher: TeacherData }) {
         </div>
       </div>
 
-      {/* Action Controls */}
+      {/* Action Controls — matching student card button style */}
       <div className="flex flex-col sm:flex-row items-center gap-3 w-full max-w-[320px]">
         <Button
+          variant="secondary"
           onClick={() => setIsFlipped(!isFlipped)}
-          className="w-full h-11 rounded-2xl bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200 shadow-sm font-bold text-[10px] uppercase tracking-widest gap-2"
+          className="w-full h-11 rounded-2xl shadow-sm font-bold text-[10px] uppercase tracking-widest gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700"
         >
           <RotateCcw className="h-4 w-4" /> {isFlipped ? 'Show Front' : 'Show Back'}
         </Button>
         <Button
+          variant="secondary"
           onClick={downloadAsImage}
-          className="w-full h-11 rounded-2xl bg-white text-text-primary border border-border hover:bg-bg-tertiary shadow-sm font-bold text-[10px] uppercase tracking-widest gap-2"
+          className="w-full h-11 rounded-2xl shadow-sm font-bold text-[10px] uppercase tracking-widest gap-2"
         >
           <FileImage className="h-4 w-4 text-emerald-600" /> Download Image
         </Button>
         <Button
+          variant="secondary"
           onClick={downloadAsPDF}
-          className="w-full h-11 rounded-2xl bg-emerald-700 text-white hover:bg-emerald-800 shadow-xl shadow-emerald-700/20 font-bold text-[10px] uppercase tracking-widest gap-2"
+          className="w-full h-11 rounded-2xl shadow-sm font-bold text-[10px] uppercase tracking-widest gap-2"
         >
-          <FileText className="h-4 w-4" /> Export PDF
+          <FileText className="h-4 w-4 text-emerald-600" /> Export PDF
         </Button>
       </div>
     </div>
