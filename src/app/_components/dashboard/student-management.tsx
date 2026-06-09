@@ -19,7 +19,7 @@ import { CredentialSuccessModal } from './credential-success-modal';
 import { generateAdmissionForm } from '@/app/_lib/utils/pdf-admission';
 import StudentIDCard from '@/app/_components/id-card/StudentIDCard';
 import { useCampusStore } from '@/app/_lib/store/campus-store';
-import { updateFeeStatus, deleteStudent, resetUserPassword, toggleUserStatus, getUserLoginDetails } from '@/app/_lib/actions/users';
+import { updateFeeStatus, deleteStudent, resetUserPassword, toggleUserStatus, getUserLoginDetails, markAllStudentsUnpaid } from '@/app/_lib/actions/users';
 import { toast } from 'sonner';
 
 interface StudentManagementProps {
@@ -43,6 +43,7 @@ export function StudentManagement({ students, classes, school }: StudentManageme
   const [showCredentials, setShowCredentials] = useState<any>(null);
   const [isUpdatingFee, setIsUpdatingFee] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [isResettingFees, setIsResettingFees] = useState(false);
   const [activeProfileTab, setActiveProfileTab] = useState('Attendance');
 
   const { campuses, activeCampus } = useCampusStore();
@@ -182,15 +183,16 @@ export function StudentManagement({ students, classes, school }: StudentManageme
           <Button 
             onClick={async () => {
               if (confirm('Are you sure you want to mark ALL students as unpaid? This action cannot be undone easily.')) {
-                setIsLoading(true);
+                setIsResettingFees(true);
                 const res = await markAllStudentsUnpaid();
                 if (res.error) {
                   alert(res.error);
                 }
-                setIsLoading(false);
+                setIsResettingFees(false);
               }
             }}
             variant="outline"
+            isLoading={isResettingFees}
             className="h-14 px-6 rounded-[1.5rem] gap-2 font-black uppercase text-[10px] tracking-widest text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300 ml-auto"
           >
             Reset All Fees
