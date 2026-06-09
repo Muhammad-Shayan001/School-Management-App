@@ -50,6 +50,8 @@ export async function markAttendance(params: {
   }
 
   // FEE VALIDATION
+  let finalStatus = params.status;
+
   if (params.role === 'student') {
     const { data: studentFeeData } = await adminClient
       .from('student_profiles')
@@ -57,7 +59,13 @@ export async function markAttendance(params: {
       .eq('user_id', params.userId)
       .single();
 
-    if (studentFeeData && studentFeeData.fee_status !== 'paid') {
+    if (params.method === 'qr') {
+      if (studentFeeData?.fee_status === 'paid') {
+        finalStatus = 'present';
+      } else {
+        finalStatus = 'pending';
+      }
+    } else if (studentFeeData && studentFeeData.fee_status !== 'paid') {
       return {
         error: `Attendance blocked: Fee status is ${studentFeeData.fee_status.toUpperCase()}. Payment required.`,
         blockedByFees: true
@@ -67,9 +75,7 @@ export async function markAttendance(params: {
 
   const attendanceDate = params.date || new Date().toISOString().split('T')[0];
 
-  // LOGIC CHANGE: QR scans are now AUTO-APPROVED ('present')
-  // Manual attendance is also 'present' by default
-  let finalStatus = params.status;
+  // Manual attendance is also 'present' by default if not set
   if (!finalStatus) {
     finalStatus = 'present';
   }
@@ -138,22 +144,47 @@ export async function markAttendance(params: {
       hour12: true,
     });
 
-    await createAttendanceNotification({
-      studentId: params.userId,
-      studentName,
-      attendanceId,
-      attendanceStatus: finalStatus,
-      attendanceDate: attendanceDate,
-      schoolId: callerProfile.school_id,
-      category: 'attendance_marked',
-      method: params.method,
-      time: timeStr,
-    });
+    if (finalStatus === 'pending') {
+      if (params.classId) {
+        const { data: teacherProfile } = await adminClient
+          .from('teacher_profiles')
+          .select('user_id')
+          .eq('class_id', params.classId)
+          .eq('is_class_teacher', true)
+          .single();
+
+        if (teacherProfile?.user_id) {
+          await createAttendanceNotification({
+            studentId: teacherProfile.user_id,
+            studentName: studentName,
+            attendanceId,
+            attendanceStatus: finalStatus,
+            attendanceDate: attendanceDate,
+            schoolId: callerProfile.school_id,
+            category: 'attendance_approval_needed',
+            method: params.method,
+            time: timeStr,
+          });
+        }
+      }
+    } else {
+      await createAttendanceNotification({
+        studentId: params.userId,
+        studentName,
+        attendanceId,
+        attendanceStatus: finalStatus as 'present' | 'absent' | 'late',
+        attendanceDate: attendanceDate,
+        schoolId: callerProfile.school_id,
+        category: 'attendance_marked',
+        method: params.method,
+        time: timeStr,
+      });
+    }
   }
 
   revalidatePath('/admin/attendance');
   revalidatePath('/teacher/attendance');
-  return { success: true };
+  return { success: true, status: finalStatus };
 }
 
 /**

@@ -182,6 +182,37 @@ export async function updateFeeStatus(studentId: string, status: 'paid' | 'unpai
 }
 
 /**
+ * Mark all students in the school as 'unpaid'.
+ */
+export async function markAllStudentsUnpaid() {
+  const adminClient = createAdminClient();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { error: 'Unauthorized' };
+
+  const { data: caller } = await adminClient
+    .from('profiles')
+    .select('role, school_id')
+    .eq('id', user.id)
+    .single();
+
+  if (!caller || !['super_admin', 'admin'].includes(caller.role)) {
+    return { error: 'Unauthorized: Only admins can manage fee status.' };
+  }
+
+  const { error } = await adminClient
+    .from('student_profiles')
+    .update({ fee_status: 'unpaid' })
+    .eq('school_id', caller.school_id);
+
+  if (error) return { error: error.message };
+
+  revalidatePath('/admin/students');
+  return { success: true };
+}
+
+/**
  * Get user count statistics by role and status.
  */
 export async function getUserStats() {

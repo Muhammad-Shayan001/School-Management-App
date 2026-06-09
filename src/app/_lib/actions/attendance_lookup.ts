@@ -69,7 +69,6 @@ export async function markAttendanceByUid(uid: string) {
     const result = await markAttendance({
       userId: profile.id,
       role: profile.role as any,
-      status: 'pending', // User requested: QR scans should be pending approval
       method: 'qr',
       classId: classId
     });
@@ -78,9 +77,18 @@ export async function markAttendanceByUid(uid: string) {
       return { success: false, message: result.error };
     }
 
+    if (result.status === 'pending') {
+      return {
+        success: true,
+        status: 'pending',
+        message: `Sent for approval: ${profile.full_name}`
+      };
+    }
+
     return {
       success: true,
-      message: `Attendance request sent for ${profile.full_name}. Pending approval.`
+      status: 'present',
+      message: `Present: ${profile.full_name}`
     };
   } catch (error: any) {
     return { success: false, message: error?.message || 'Internal server error' };

@@ -180,8 +180,24 @@ export function StudentManagement({ students, classes, school }: StudentManageme
             className="h-14 min-w-[180px] rounded-[1.5rem] font-black uppercase text-[10px] tracking-widest border-transparent bg-bg-tertiary/50"
           />
           <Button 
+            onClick={async () => {
+              if (confirm('Are you sure you want to mark ALL students as unpaid? This action cannot be undone easily.')) {
+                setIsLoading(true);
+                const res = await markAllStudentsUnpaid();
+                if (res.error) {
+                  alert(res.error);
+                }
+                setIsLoading(false);
+              }
+            }}
+            variant="outline"
+            className="h-14 px-6 rounded-[1.5rem] gap-2 font-black uppercase text-[10px] tracking-widest text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300 ml-auto"
+          >
+            Reset All Fees
+          </Button>
+          <Button 
             onClick={() => setIsAddModalOpen(true)}
-            className="h-14 px-8 rounded-[1.5rem] gap-3 font-black uppercase text-[11px] tracking-[0.2em] shadow-xl shadow-accent/20 bg-accent text-white hover:scale-105 active:scale-95 transition-all ml-auto"
+            className="h-14 px-8 rounded-[1.5rem] gap-3 font-black uppercase text-[11px] tracking-[0.2em] shadow-xl shadow-accent/20 bg-accent text-white hover:scale-105 active:scale-95 transition-all"
           >
             <UserPlus className="h-5 w-5" /> Enroll Student
           </Button>

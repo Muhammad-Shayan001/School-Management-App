@@ -6,7 +6,7 @@ import { useAuthStore } from '@/app/_lib/store/auth-store';
 import {
   CheckCircle2, XCircle, Loader2, Palmtree,
   Volume2, VolumeX, ShieldAlert, Cpu, History,
-  MapPin, Keyboard, Camera, SwitchCamera, ScanLine
+  MapPin, Keyboard, Camera, SwitchCamera, ScanLine, Clock
 } from 'lucide-react';
 import { cn } from '@/app/_lib/utils/cn';
 
@@ -14,7 +14,7 @@ interface ScanLog {
   id: string;
   timestamp: string;
   scannedId: string;
-  status: 'success' | 'failed' | 'duplicate';
+  status: 'success' | 'failed' | 'duplicate' | 'pending';
   message: string;
   gate: string;
 }
@@ -30,7 +30,7 @@ export default function AttendanceScanner() {
 
   const [lastScan, setLastScan] = useState<{ id: string; time: number } | null>(null);
   const [statusMessage, setStatusMessage] = useState<{
-    type: 'idle' | 'success' | 'error' | 'duplicate';
+    type: 'idle' | 'success' | 'error' | 'duplicate' | 'pending';
     text: string;
   }>({ type: 'idle', text: 'Waiting for ID card scan...' });
 
@@ -172,22 +172,41 @@ export default function AttendanceScanner() {
       const timestamp = new Date().toLocaleTimeString();
 
       if (result.success) {
-        playBeep('success');
-        setStatusMessage({
-          type: 'success',
-          text: result.message || 'Attendance request sent!'
-        });
-        setLastScan({ id: scannedId, time: now });
+        if (result.status === 'pending') {
+          playBeep('success'); // Same beep for now
+          setStatusMessage({
+            type: 'pending',
+            text: result.message || 'Sent for approval.'
+          });
+          setLastScan({ id: scannedId, time: now });
 
-        const successLog: ScanLog = {
-          id: Math.random().toString(36).substring(7),
-          timestamp,
-          scannedId,
-          status: 'success',
-          message: result.message || 'Attendance request sent successfully.',
-          gate: selectedGate
-        };
-        setLogs(prev => [successLog, ...prev].slice(0, 50));
+          const pendingLog: ScanLog = {
+            id: Math.random().toString(36).substring(7),
+            timestamp,
+            scannedId,
+            status: 'pending',
+            message: result.message || 'Sent for approval.',
+            gate: selectedGate
+          };
+          setLogs(prev => [pendingLog, ...prev].slice(0, 50));
+        } else {
+          playBeep('success');
+          setStatusMessage({
+            type: 'success',
+            text: result.message || 'Attendance request sent!'
+          });
+          setLastScan({ id: scannedId, time: now });
+
+          const successLog: ScanLog = {
+            id: Math.random().toString(36).substring(7),
+            timestamp,
+            scannedId,
+            status: 'success',
+            message: result.message || 'Attendance request sent successfully.',
+            gate: selectedGate
+          };
+          setLogs(prev => [successLog, ...prev].slice(0, 50));
+        }
       } else {
         playBeep('error');
         setStatusMessage({
@@ -392,6 +411,7 @@ export default function AttendanceScanner() {
                 statusMessage.type === 'success' && "border-success/40",
                 statusMessage.type === 'error' && "border-danger/40",
                 statusMessage.type === 'duplicate' && "border-warning/40",
+                statusMessage.type === 'pending' && "border-amber-500/40",
                 statusMessage.type === 'idle' && "border-accent/40"
               )} />
               {/* Inner Glow Circle */}
@@ -400,6 +420,7 @@ export default function AttendanceScanner() {
                 statusMessage.type === 'success' && "bg-success/10 text-success shadow-success/10",
                 statusMessage.type === 'error' && "bg-danger/10 text-danger shadow-danger/10",
                 statusMessage.type === 'duplicate' && "bg-warning/10 text-warning shadow-warning/10",
+                statusMessage.type === 'pending' && "bg-amber-500/10 text-amber-500 shadow-amber-500/10",
                 statusMessage.type === 'idle' && "bg-accent/5 text-accent shadow-accent/5"
               )}>
                 {/* Visual Radar Laser Bar */}
@@ -411,6 +432,8 @@ export default function AttendanceScanner() {
                   <Loader2 className="h-16 w-16 animate-spin" />
                 ) : statusMessage.type === 'success' ? (
                   <CheckCircle2 className="h-16 w-16 animate-in zoom-in duration-300" />
+                ) : statusMessage.type === 'pending' ? (
+                  <Clock className="h-16 w-16 animate-in zoom-in duration-300" />
                 ) : statusMessage.type === 'error' ? (
                   <XCircle className="h-16 w-16 animate-in zoom-in duration-300" />
                 ) : statusMessage.type === 'duplicate' ? (
@@ -430,9 +453,11 @@ export default function AttendanceScanner() {
             statusMessage.type === 'success' && "text-success",
             statusMessage.type === 'error' && "text-danger",
             statusMessage.type === 'duplicate' && "text-warning",
+            statusMessage.type === 'pending' && "text-amber-500",
             statusMessage.type === 'idle' && "text-text-tertiary"
           )}>
             {statusMessage.type === 'success' && "Verification Success"}
+            {statusMessage.type === 'pending' && "Approval Required"}
             {statusMessage.type === 'error' && "Verification Failed"}
             {statusMessage.type === 'duplicate' && "Security Debounce"}
             {statusMessage.type === 'idle' && "System Ready"}
@@ -548,7 +573,8 @@ export default function AttendanceScanner() {
                   "p-3 rounded-2xl flex items-center justify-between gap-4 text-xs border transition-all animate-in slide-in-from-top-2 duration-300",
                   log.status === 'success' && "bg-emerald-50/40 border-emerald-100 text-emerald-900",
                   log.status === 'failed' && "bg-red-50/40 border-red-100 text-red-900",
-                  log.status === 'duplicate' && "bg-amber-50/40 border-amber-100 text-amber-900"
+                  log.status === 'duplicate' && "bg-amber-50/40 border-amber-100 text-amber-900",
+                  log.status === 'pending' && "bg-amber-50/40 border-amber-300 text-amber-900"
                 )}
               >
                 <div className="flex items-center gap-3">
@@ -556,9 +582,11 @@ export default function AttendanceScanner() {
                     "h-6 w-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold",
                     log.status === 'success' && "bg-success/15 text-success",
                     log.status === 'failed' && "bg-danger/15 text-danger",
-                    log.status === 'duplicate' && "bg-warning/15 text-warning"
+                    log.status === 'duplicate' && "bg-warning/15 text-warning",
+                    log.status === 'pending' && "bg-amber-500/15 text-amber-600"
                   )}>
                     {log.status === 'success' && "✓"}
+                    {log.status === 'pending' && "!"}
                     {log.status === 'failed' && "✗"}
                     {log.status === 'duplicate' && "⚠"}
                   </div>

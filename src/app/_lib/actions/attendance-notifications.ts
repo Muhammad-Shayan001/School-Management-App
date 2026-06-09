@@ -10,7 +10,7 @@ export interface AttendanceNotificationParams {
   attendanceStatus: 'present' | 'absent' | 'late' | 'pending' | 'rejected';
   attendanceDate: string;
   schoolId: string;
-  category: 'attendance_marked' | 'attendance_approved' | 'attendance_updated';
+  category: 'attendance_marked' | 'attendance_approved' | 'attendance_updated' | 'attendance_approval_needed';
   method?: 'manual' | 'qr' | 'camera' | 'scanner';
   time?: string;
 }
@@ -54,6 +54,12 @@ function formatNotificationMessage(params: AttendanceNotificationParams): {
       return {
         title: 'Attendance Updated',
         message: `${studentName}, your attendance status has been updated to ${attendanceStatus?.toUpperCase()} on ${formattedDate} at ${formattedTime}.`,
+      };
+
+    case 'attendance_approval_needed':
+      return {
+        title: 'Attendance Approval Needed',
+        message: `${studentName} has scanned their ID for attendance, but their fee status is unpaid. Please approve or reject for ${formattedDate}.`,
       };
 
     default:
