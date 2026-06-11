@@ -40,8 +40,8 @@ function formatNotificationMessage(params: AttendanceNotificationParams): {
   switch (category) {
     case 'attendance_marked':
       return {
-        title: 'Attendance Marked',
-        message: `${studentName}, your attendance has been marked ${attendanceStatus?.toUpperCase()} on ${formattedDate} at ${formattedTime}.`,
+        title: 'Attendance Marked Successfully',
+        message: `${studentName} has been marked ${attendanceStatus?.charAt(0).toUpperCase()}${attendanceStatus?.slice(1)} on ${formattedDate} at ${formattedTime}.`,
       };
 
     case 'attendance_approved':
