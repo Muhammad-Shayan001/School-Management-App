@@ -82,9 +82,13 @@ export default function AttendanceScanner() {
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0];
     if (user?.school_id) {
-      checkOffDay(today, 'student', user.school_id).then(res => {
-        if (res.isOff) setIsOffDay(res);
-      });
+      checkOffDay(today, 'student', user.school_id)
+        .then(res => {
+          if (res.isOff) setIsOffDay(res);
+        })
+        .catch(() => {
+          setIsOffDay(null);
+        });
     }
   }, [user]);
 

@@ -4,6 +4,14 @@ import { createClient } from '@/app/_lib/supabase/server';
 import { createAdminClient } from '@/app/_lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 
+function isMissingHolidayTableError(error: { message?: string } | null | undefined) {
+  return Boolean(error?.message?.includes("public.holidays") || error?.message?.includes('schema cache'));
+}
+
+function holidaySetupHint() {
+  return 'Holiday storage is not initialized yet. Run fix_all_missing_tables.sql or setup_holidays.sql in Supabase, then reload the schema cache.';
+}
+
 export async function addHoliday(params: {
   date: string;
   title: string;
@@ -25,18 +33,27 @@ export async function addHoliday(params: {
     return { error: 'Only Principals/Admins can manage holidays' };
   }
 
+  if (!profile.school_id) {
+    return { error: 'School not found for the current admin account.' };
+  }
+
   const { error } = await adminClient
     .from('holidays')
-    .insert({
+    .upsert({
       school_id: profile.school_id,
       date: params.date,
-      title: params.title,
+      title: params.title.trim(),
       type: params.type,
       created_by: user.id
+    }, {
+      onConflict: 'school_id,date'
     });
 
   if (error) {
     console.error('Holiday insert error:', error);
+    if (isMissingHolidayTableError(error)) {
+      return { error: holidaySetupHint() };
+    }
     return { error: error.message };
   }
 
@@ -55,7 +72,12 @@ export async function deleteHoliday(id: string) {
     .delete()
     .eq('id', id);
 
-  if (error) return { error: error.message };
+  if (error) {
+    if (isMissingHolidayTableError(error)) {
+      return { error: holidaySetupHint() };
+    }
+    return { error: error.message };
+  }
   
   revalidatePath('/admin/attendance');
   return { success: true };
@@ -94,12 +116,16 @@ export async function checkOffDay(dateStr: string, role: 'student' | 'teacher', 
 
   // 2. Check database for scheduled holidays
   const supabase = await createClient();
-  const { data: holiday } = await supabase
+  const { data: holiday, error } = await supabase
     .from('holidays')
     .select('*')
     .eq('school_id', schoolId)
     .eq('date', dateStr)
     .single();
+
+  if (error && isMissingHolidayTableError(error)) {
+    return { isOff: false };
+  }
 
   if (holiday) {
     if (holiday.type === 'everyone' || 
