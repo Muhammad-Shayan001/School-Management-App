@@ -129,10 +129,10 @@ export default async function AssignmentDetailPage({
                 </div>
 
                 <div className="space-y-4">
-                    <h4 className="text-[10px] font-black text-text-tertiary uppercase tracking-widest flex items-center gap-2">
+                    <h4 className="text-[10px] font-black text-black uppercase tracking-widest flex items-center gap-2">
                         <MessageSquare className="h-4 w-4" /> Instructor Instructions
                     </h4>
-                    <div className="p-6 rounded-3xl bg-white border border-border/20 text-sm font-medium text-text-secondary leading-relaxed shadow-inner">
+                    <div className="p-6 rounded-3xl bg-white border border-border/20 text-sm font-medium text-black leading-relaxed shadow-inner">
                         {assignment.description || "No specific instructions provided by the teacher."}
                     </div>
                 </div>
@@ -185,8 +185,8 @@ export default async function AssignmentDetailPage({
 
                             {submission.text_answer && (
                                 <div className="space-y-3">
-                                    <p className="text-[10px] font-black text-text-tertiary uppercase tracking-widest ml-1">Your Written Response</p>
-                                    <div className="p-6 rounded-[32px] bg-bg-tertiary/30 border border-border/20 text-sm font-medium text-text-secondary leading-relaxed">
+                                    <p className="text-[10px] font-black text-black uppercase tracking-widest ml-1">Your Written Response</p>
+                                    <div className="p-6 rounded-[32px] bg-bg-tertiary/30 border border-border/20 text-sm font-medium text-black leading-relaxed">
                                         {submission.text_answer}
                                     </div>
                                 </div>

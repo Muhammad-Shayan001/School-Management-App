@@ -3,6 +3,7 @@
 import { createClient } from "../supabase/server";
 import { createAdminClient } from "../supabase/admin";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 export async function createAssignment(data: FormData) {
   const supabase = await createClient();
@@ -51,16 +52,13 @@ export async function createAssignment(data: FormData) {
 
   if (error) {
     console.error("Error creating assignment:", error);
-    throw new Error(error.message);
+    return { error: error.message };
   }
 
   revalidatePath("/teacher/assignments");
   revalidatePath("/student/assignments");
   
-  // REDIRECT back to the list
-  import("next/navigation").then(({ redirect }) => redirect("/teacher/assignments"));
-  
-  return assignment;
+  redirect("/teacher/assignments");
 }
 
 export async function getTeacherAssignments(classId?: string) {

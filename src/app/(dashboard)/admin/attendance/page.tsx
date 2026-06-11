@@ -30,6 +30,8 @@ export default function AdminAttendancePage() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'present' | 'rejected'>('all');
   const [classFilter, setClassFilter] = useState<string>('all');
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [holidayMessage, setHolidayMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
+  const [isAddingHoliday, setIsAddingHoliday] = useState(false);
 
   // Holiday Form State
   const [newHoliday, setNewHoliday] = useState({
@@ -71,11 +73,17 @@ export default function AdminAttendancePage() {
 
   const handleAddHoliday = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsAddingHoliday(true);
+    setHolidayMessage(null);
     const res = await addHoliday(newHoliday);
     if (res.success) {
       setNewHoliday({ ...newHoliday, title: '' });
+      setHolidayMessage({ type: 'success', text: `Holiday "${newHoliday.title}" scheduled for ${newHoliday.date}` });
       fetchData();
+    } else {
+      setHolidayMessage({ type: 'error', text: res.error || 'Failed to schedule holiday' });
     }
+    setIsAddingHoliday(false);
   };
 
   const handleDeleteHoliday = async (id: string) => {
@@ -303,9 +311,19 @@ export default function AdminAttendancePage() {
                 </div>
               </div>
 
-              <Button type="submit" className="w-full h-12 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl shadow-lg shadow-emerald-500/20">
+              <Button type="submit" isLoading={isAddingHoliday} className="w-full h-12 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl shadow-lg shadow-emerald-500/20">
                 <Plus className="h-4 w-4 mr-2" /> Schedule Off-Day
               </Button>
+
+              {holidayMessage && (
+                <div className={cn(
+                  "p-3 rounded-xl text-xs font-bold flex items-center gap-2 mt-3",
+                  holidayMessage.type === 'success' ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-red-50 text-red-700 border border-red-200"
+                )}>
+                  {holidayMessage.type === 'success' ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+                  {holidayMessage.text}
+                </div>
+              )}
             </form>
 
             <div className="p-4 bg-bg-tertiary rounded-xl border border-border/50">

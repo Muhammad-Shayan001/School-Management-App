@@ -112,10 +112,10 @@ export default async function AssignmentDetailsPage({ params }: { params: { id: 
 
             {assignment.description && (
               <div className="space-y-3">
-                <h4 className="text-[10px] font-black text-text-tertiary uppercase tracking-widest flex items-center gap-2">
+                <h4 className="text-[10px] font-black text-black uppercase tracking-widest flex items-center gap-2">
                     <AlignLeft className="h-3.5 w-3.5" /> Instructions
                 </h4>
-                <div className="p-5 rounded-2xl bg-white border border-border/20 text-sm text-text-secondary font-medium leading-relaxed shadow-inner">
+                <div className="p-5 rounded-2xl bg-white border border-border/20 text-sm text-black font-medium leading-relaxed shadow-inner">
                     {assignment.description}
                 </div>
               </div>

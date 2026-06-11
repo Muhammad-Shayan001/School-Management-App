@@ -27,7 +27,7 @@ export async function addHoliday(params: {
 
   const { error } = await adminClient
     .from('holidays')
-    .upsert({
+    .insert({
       school_id: profile.school_id,
       date: params.date,
       title: params.title,
@@ -35,7 +35,10 @@ export async function addHoliday(params: {
       created_by: user.id
     });
 
-  if (error) return { error: error.message };
+  if (error) {
+    console.error('Holiday insert error:', error);
+    return { error: error.message };
+  }
 
   revalidatePath('/admin/attendance');
   revalidatePath('/teacher/attendance');

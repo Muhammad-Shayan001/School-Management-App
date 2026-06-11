@@ -420,7 +420,7 @@ export async function getStudentFinalResult() {
   // Fetch the subject-wise breakdown using adminClient
   const { data: breakdown } = await adminClient
     .from('results')
-    .select('*, subjects:subject_id(name)')
+    .select('*, subjects(name)')
     .eq('student_id', user.id)
     .eq('exam_name', data.term);
 

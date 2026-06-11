@@ -69,7 +69,7 @@ export default async function TeacherAssignmentsPage() {
                   </div>
 
                   <div>
-                    <h3 className="font-black text-xl text-text-primary line-clamp-1 group-hover:text-accent transition-colors tracking-tight leading-tight">
+                    <h3 className="font-black text-xl text-black line-clamp-1 group-hover:text-accent transition-colors tracking-tight leading-tight">
                       {assignment.title}
                     </h3>
                   </div>

@@ -121,11 +121,11 @@ export default async function StudentAssignmentsPage() {
                   </div>
 
                   <div>
-                    <p className="text-[10px] font-black text-text-tertiary uppercase tracking-[0.2em] mb-1">{assignment.subject?.name || "Academic"}</p>
-                    <h3 className="font-black text-xl text-text-primary line-clamp-2 group-hover:text-accent transition-colors tracking-tight leading-tight mb-4">
+                    <p className="text-[10px] font-black text-black uppercase tracking-[0.2em] mb-1">{assignment.subject?.name || "Academic"}</p>
+                    <h3 className="font-black text-xl text-black line-clamp-2 group-hover:text-accent transition-colors tracking-tight leading-tight mb-4">
                       {assignment.title}
                     </h3>
-                    <p className="text-sm text-text-secondary font-medium line-clamp-2 opacity-80 leading-relaxed">
+                    <p className="text-sm text-black font-medium line-clamp-2 opacity-80 leading-relaxed">
                         {assignment.description || "No specific instructions provided. View details for more information."}
                     </p>
                   </div>
