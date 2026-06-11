@@ -4,7 +4,7 @@ import { getClasses, getSubjects } from "@/app/_lib/actions/timetable";
 import { createAssignment } from "@/app/_lib/actions/assignments";
 import { Button } from "@/app/_components/ui/button";
 import { Badge } from "@/app/_components/ui/badge";
-import { ArrowLeft, FileText } from "lucide-react";
+import { ArrowLeft, Calendar, FileText, Target } from "lucide-react";
 import Link from "next/link";
 import CreateAssignmentForm from "./CreateAssignmentForm";
 
