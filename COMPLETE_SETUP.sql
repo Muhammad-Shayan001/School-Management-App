@@ -156,10 +156,22 @@ CREATE TABLE IF NOT EXISTS public.timetable (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS public.holidays (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  school_id UUID NOT NULL REFERENCES public.schools(id) ON DELETE CASCADE,
+  date DATE NOT NULL,
+  title TEXT NOT NULL,
+  type TEXT NOT NULL DEFAULT 'everyone' CHECK (type IN ('everyone', 'students', 'teachers')),
+  created_by UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(school_id, date)
+);
+
 -- 8. SECURITY (RLS)
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.schools ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.admin_campuses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.holidays ENABLE ROW LEVEL SECURITY;
 
 -- Permissive policies for initial setup
 DROP POLICY IF EXISTS "Public read access for schools" ON public.schools;
@@ -170,6 +182,12 @@ CREATE POLICY "Users can view their own profiles" ON public.profiles FOR SELECT 
 
 DROP POLICY IF EXISTS "Service role full access on admin_campuses" ON public.admin_campuses;
 CREATE POLICY "Service role full access on admin_campuses" ON public.admin_campuses FOR ALL USING (true);
+
+DROP POLICY IF EXISTS "Read holidays" ON public.holidays;
+CREATE POLICY "Read holidays" ON public.holidays FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Write holidays" ON public.holidays;
+CREATE POLICY "Write holidays" ON public.holidays FOR ALL USING (true);
 
 -- 9. NOTIFY PostgREST
 NOTIFY pgrst, 'reload schema';

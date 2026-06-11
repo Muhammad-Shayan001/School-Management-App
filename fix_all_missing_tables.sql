@@ -266,6 +266,8 @@ CREATE POLICY "Read timetable" ON public.timetable FOR SELECT USING (true);
 DROP POLICY IF EXISTS "Write timetable" ON public.timetable;
 CREATE POLICY "Write timetable" ON public.timetable FOR ALL USING (true);
 
+NOTIFY pgrst, 'reload schema';
+
 
 -- ═══════════════════════════════════════════════════════════════════════════════
 -- DONE! All tables the application references now exist.
