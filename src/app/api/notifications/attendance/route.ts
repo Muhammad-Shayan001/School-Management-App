@@ -1,4 +1,5 @@
 import { createClient } from '@/app/_lib/supabase/server';
+import { createAdminClient } from '@/app/_lib/supabase/admin';
 import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -6,10 +7,11 @@ export const dynamic = 'force-dynamic';
 /**
  * GET /api/notifications/attendance
  * Fetch attendance notifications for the current user
- * Query params: limit, offset, unreadOnly
+ * Uses adminClient to bypass RLS, with auth check via server client
  */
 export async function GET(request: NextRequest) {
   try {
+    // Authenticate the user via server client
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -20,14 +22,17 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Use admin client to bypass RLS for fetching notifications
+    const adminClient = createAdminClient();
+
     // Get query parameters
     const searchParams = request.nextUrl.searchParams;
     const limit = parseInt(searchParams.get('limit') || '20', 10);
     const offset = parseInt(searchParams.get('offset') || '0', 10);
     const unreadOnly = searchParams.get('unreadOnly') === 'true';
 
-    // Build query
-    let query = supabase
+    // Build query using admin client
+    let query = adminClient
       .from('notifications')
       .select('*')
       .eq('user_id', user.id)

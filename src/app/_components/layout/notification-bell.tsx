@@ -1,17 +1,16 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useNotificationStore } from '@/app/_lib/store/notification-store';
 import { useAuthStore } from '@/app/_lib/store/auth-store';
-import { createClient } from '@/app/_lib/supabase/client';
 import { formatRelativeTime } from '@/app/_lib/utils/format';
 import { cn } from '@/app/_lib/utils/cn';
 import { Bell, Check, CheckCheck } from 'lucide-react';
-import type { Notification } from '@/app/_lib/types/database';
 
 /**
  * Notification bell icon with unread count badge and dropdown panel.
- * Subscribes to Supabase Realtime for live updates.
+ * Fetches notifications via API routes (which use adminClient to bypass RLS).
+ * Polls every 15 seconds for live updates.
  */
 export function NotificationBell() {
   const { user } = useAuthStore();
@@ -28,47 +27,40 @@ export function NotificationBell() {
   } = useNotificationStore();
 
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Fetch initial notifications
+  // Fetch notifications via API route (bypasses RLS)
+  const fetchNotifications = useCallback(async () => {
+    if (!user) return;
+    try {
+      const res = await fetch('/api/notifications/attendance?limit=20&offset=0', {
+        cache: 'no-store',
+      });
+      if (res.ok) {
+        const { data } = await res.json();
+        if (data) setNotifications(data);
+      }
+    } catch (err) {
+      console.error('Error fetching notifications:', err);
+    }
+  }, [user, setNotifications]);
+
+  // Fetch initial notifications and set up polling
   useEffect(() => {
     if (!user) return;
 
-    const supabase = createClient();
-
-    async function fetchNotifications() {
-      const { data } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_id', user!.id)
-        .order('created_at', { ascending: false })
-        .limit(20);
-
-      if (data) setNotifications(data);
-    }
-
+    // Fetch immediately
     fetchNotifications();
 
-    // Subscribe to realtime notifications
-    const channel = supabase
-      .channel('notifications')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${user.id}`,
-        },
-        (payload) => {
-          addNotification(payload.new as Notification);
-        }
-      )
-      .subscribe();
+    // Poll every 15 seconds for new notifications
+    pollIntervalRef.current = setInterval(fetchNotifications, 15000);
 
     return () => {
-      supabase.removeChannel(channel);
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+      }
     };
-  }, [user, setNotifications, addNotification]);
+  }, [user, fetchNotifications]);
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -81,23 +73,25 @@ export function NotificationBell() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [setOpen]);
 
-  // Handle mark as read
+  // Handle mark as read via API route
   async function handleMarkAsRead(id: string) {
     markAsRead(id);
-    const supabase = createClient();
-    await supabase.from('notifications').update({ is_read: true }).eq('id', id);
+    try {
+      await fetch(`/api/notifications/attendance/${id}`, { method: 'PUT' });
+    } catch (err) {
+      console.error('Error marking notification as read:', err);
+    }
   }
 
-  // Handle mark all as read
+  // Handle mark all as read via API route
   async function handleMarkAllAsRead() {
     if (!user) return;
     markAllAsRead();
-    const supabase = createClient();
-    await supabase
-      .from('notifications')
-      .update({ is_read: true })
-      .eq('user_id', user.id)
-      .eq('is_read', false);
+    try {
+      await fetch('/api/notifications/attendance/mark-all-read', { method: 'PUT' });
+    } catch (err) {
+      console.error('Error marking all as read:', err);
+    }
   }
 
   return (

@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { createClient } from '@/app/_lib/supabase/client';
+import { useEffect, useState, useCallback } from 'react';
 import { formatRelativeTime } from '@/app/_lib/utils/format';
 import { cn } from '@/app/_lib/utils/cn';
 import {
@@ -21,6 +20,7 @@ type FilterBy = 'all' | 'unread' | 'read' | 'present' | 'absent' | 'late';
 
 /**
  * Student Attendance Notification History Page
+ * Fetches via API routes (which use adminClient to bypass RLS)
  */
 export default function AttendanceNotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -30,14 +30,7 @@ export default function AttendanceNotificationsPage() {
   const [filterBy, setFilterBy] = useState<FilterBy>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const supabase = createClient();
-
-  useEffect(() => {
-    fetchNotifications();
-    subscribeToUpdates();
-  }, []);
-
-  async function fetchNotifications() {
+  const fetchNotifications = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -58,33 +51,18 @@ export default function AttendanceNotificationsPage() {
     } finally {
       setIsLoading(false);
     }
-  }
+  }, []);
 
-  function subscribeToUpdates() {
-    const channel = supabase
-      .channel('attendance_notifications_page')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'notifications',
-          filter: 'type=eq.attendance',
-        },
-        () => {
-          fetchNotifications();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }
+  // Fetch initially and poll every 15 seconds for updates
+  useEffect(() => {
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 15000);
+    return () => clearInterval(interval);
+  }, [fetchNotifications]);
 
   async function markAsRead(id: string) {
     try {
-      await fetch(`/api/notifications/attendance/${id}/read`, { method: 'PUT' });
+      await fetch(`/api/notifications/attendance/${id}`, { method: 'PUT' });
       setNotifications((prev) =>
         prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
       );

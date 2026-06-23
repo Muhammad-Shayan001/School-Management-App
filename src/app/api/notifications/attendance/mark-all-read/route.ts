@@ -1,12 +1,17 @@
 import { createClient } from '@/app/_lib/supabase/server';
+import { createAdminClient } from '@/app/_lib/supabase/admin';
 import { NextRequest, NextResponse } from 'next/server';
+
+export const dynamic = 'force-dynamic';
 
 /**
  * PUT /api/notifications/attendance/mark-all-read
  * Mark all attendance notifications as read for current user
+ * Uses adminClient to bypass RLS
  */
 export async function PUT(request: NextRequest) {
   try {
+    // Authenticate the user via server client
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -17,8 +22,11 @@ export async function PUT(request: NextRequest) {
       );
     }
 
+    // Use admin client to bypass RLS
+    const adminClient = createAdminClient();
+
     // Update all unread attendance notifications for this user
-    const { error } = await supabase
+    const { error } = await adminClient
       .from('notifications')
       .update({ is_read: true })
       .eq('user_id', user.id)

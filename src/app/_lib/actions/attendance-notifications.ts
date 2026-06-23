@@ -73,6 +73,7 @@ function formatNotificationMessage(params: AttendanceNotificationParams): {
 /**
  * Create an attendance notification for a student
  * Called automatically when attendance is marked, approved, or updated
+ * Uses adminClient to bypass RLS
  */
 export async function createAttendanceNotification(
   params: AttendanceNotificationParams
@@ -86,7 +87,7 @@ export async function createAttendanceNotification(
     // Format the notification message
     const { title, message } = formatNotificationMessage(params);
 
-    // Create the notification record
+    // Create the notification record using admin client (bypasses RLS)
     const { data: notification, error: insertError } = await adminClient
       .from('notifications')
       .insert({
@@ -122,6 +123,7 @@ export async function createAttendanceNotification(
 
 /**
  * Get attendance notifications for a student
+ * Uses adminClient to bypass RLS, with auth via server client
  */
 export async function getAttendanceNotifications(params?: {
   limit?: number;
@@ -134,10 +136,13 @@ export async function getAttendanceNotifications(params?: {
 
     if (!user) return { data: null, error: 'Unauthorized' };
 
+    // Use admin client to bypass RLS
+    const adminClient = createAdminClient();
+
     const limit = params?.limit || 20;
     const offset = params?.offset || 0;
 
-    let query = supabase
+    let query = adminClient
       .from('notifications')
       .select('*')
       .eq('user_id', user.id)
@@ -165,6 +170,7 @@ export async function getAttendanceNotifications(params?: {
 
 /**
  * Get unread attendance notification count
+ * Uses adminClient to bypass RLS
  */
 export async function getUnreadAttendanceNotificationCount(): Promise<{
   count: number;
@@ -176,7 +182,10 @@ export async function getUnreadAttendanceNotificationCount(): Promise<{
 
     if (!user) return { count: 0, error: 'Unauthorized' };
 
-    const { count, error } = await supabase
+    // Use admin client to bypass RLS
+    const adminClient = createAdminClient();
+
+    const { count, error } = await adminClient
       .from('notifications')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', user.id)
@@ -197,6 +206,7 @@ export async function getUnreadAttendanceNotificationCount(): Promise<{
 
 /**
  * Mark attendance notification as read
+ * Uses adminClient to bypass RLS
  */
 export async function markAttendanceNotificationAsRead(notificationId: string): Promise<{
   success: boolean;
@@ -208,8 +218,10 @@ export async function markAttendanceNotificationAsRead(notificationId: string): 
 
     if (!user) return { success: false, error: 'Unauthorized' };
 
+    const adminClient = createAdminClient();
+
     // Verify the notification belongs to the current user
-    const { data: notification, error: fetchError } = await supabase
+    const { data: notification, error: fetchError } = await adminClient
       .from('notifications')
       .select('id, user_id')
       .eq('id', notificationId)
@@ -220,7 +232,7 @@ export async function markAttendanceNotificationAsRead(notificationId: string): 
     }
 
     // Update the notification
-    const { error: updateError } = await supabase
+    const { error: updateError } = await adminClient
       .from('notifications')
       .update({ is_read: true })
       .eq('id', notificationId);
@@ -239,6 +251,7 @@ export async function markAttendanceNotificationAsRead(notificationId: string): 
 
 /**
  * Mark all attendance notifications as read for current user
+ * Uses adminClient to bypass RLS
  */
 export async function markAllAttendanceNotificationsAsRead(): Promise<{
   success: boolean;
@@ -250,7 +263,9 @@ export async function markAllAttendanceNotificationsAsRead(): Promise<{
 
     if (!user) return { success: false, error: 'Unauthorized' };
 
-    const { error } = await supabase
+    const adminClient = createAdminClient();
+
+    const { error } = await adminClient
       .from('notifications')
       .update({ is_read: true })
       .eq('user_id', user.id)
@@ -271,6 +286,7 @@ export async function markAllAttendanceNotificationsAsRead(): Promise<{
 
 /**
  * Delete an attendance notification
+ * Uses adminClient to bypass RLS
  */
 export async function deleteAttendanceNotification(notificationId: string): Promise<{
   success: boolean;
@@ -282,8 +298,10 @@ export async function deleteAttendanceNotification(notificationId: string): Prom
 
     if (!user) return { success: false, error: 'Unauthorized' };
 
+    const adminClient = createAdminClient();
+
     // Verify the notification belongs to the current user
-    const { data: notification, error: fetchError } = await supabase
+    const { data: notification, error: fetchError } = await adminClient
       .from('notifications')
       .select('id, user_id')
       .eq('id', notificationId)
@@ -294,7 +312,7 @@ export async function deleteAttendanceNotification(notificationId: string): Prom
     }
 
     // Delete the notification
-    const { error: deleteError } = await supabase
+    const { error: deleteError } = await adminClient
       .from('notifications')
       .delete()
       .eq('id', notificationId);

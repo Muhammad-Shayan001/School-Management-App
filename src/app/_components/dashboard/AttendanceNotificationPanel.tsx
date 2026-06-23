@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { createClient } from '@/app/_lib/supabase/client';
+import { useEffect, useState, useCallback } from 'react';
 import { formatRelativeTime } from '@/app/_lib/utils/format';
 import { cn } from '@/app/_lib/utils/cn';
 import { CheckCheck, Trash2, Clock, CheckCircle, AlertCircle } from 'lucide-react';
@@ -15,6 +14,7 @@ interface AttendanceNotificationPanelProps {
 /**
  * Attendance Notification Panel Component
  * Displays attendance notifications with read/unread status management
+ * Fetches via API routes (which use adminClient to bypass RLS)
  */
 export function AttendanceNotificationPanel({
   className = '',
@@ -25,15 +25,8 @@ export function AttendanceNotificationPanel({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const supabase = createClient();
-
-  // Fetch initial notifications
-  useEffect(() => {
-    fetchNotifications();
-    subscribeToNotifications();
-  }, []);
-
-  async function fetchNotifications() {
+  // Fetch notifications via API route (bypasses RLS)
+  const fetchNotifications = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -59,57 +52,23 @@ export function AttendanceNotificationPanel({
     } finally {
       setIsLoading(false);
     }
-  }
+  }, []);
 
-  function subscribeToNotifications() {
-    const channel = supabase
-      .channel('attendance_notifications')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notifications',
-          filter: 'type=eq.attendance',
-        },
-        (payload) => {
-          const newNotification = payload.new as Notification;
-          setNotifications((prev) => [newNotification, ...prev]);
-          if (!newNotification.is_read) {
-            setUnreadCount((prev) => prev + 1);
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'notifications',
-          filter: 'type=eq.attendance',
-        },
-        (payload) => {
-          const updatedNotification = payload.new as Notification;
-          setNotifications((prev) =>
-            prev.map((n) =>
-              n.id === updatedNotification.id ? updatedNotification : n
-            )
-          );
-          // Update unread count
-          const unread = notifications.filter((n) => !n.is_read).length;
-          setUnreadCount(Math.max(0, unread));
-        }
-      )
-      .subscribe();
+  // Fetch initial notifications and poll every 15 seconds
+  useEffect(() => {
+    fetchNotifications();
+
+    // Poll every 15 seconds for new notifications
+    const interval = setInterval(fetchNotifications, 15000);
 
     return () => {
-      supabase.removeChannel(channel);
+      clearInterval(interval);
     };
-  }
+  }, [fetchNotifications]);
 
   async function markAsRead(id: string) {
     try {
-      const response = await fetch(`/api/notifications/attendance/${id}/read`, {
+      const response = await fetch(`/api/notifications/attendance/${id}`, {
         method: 'PUT',
       });
 
@@ -241,7 +200,7 @@ export function AttendanceNotificationPanel({
               <div
                 key={notification.id}
                 className={cn(
-                  'flex items-start gap-4 px-6 py-4 hover:bg-bg-tertiary/30 transition-all duration-300 group',
+                  'flex items-start gap-4 px-6 py-4 hover:bg-bg-tertiary/30 transition-all duration-300 group relative',
                   !notification.is_read && 'bg-accent/5'
                 )}
               >
