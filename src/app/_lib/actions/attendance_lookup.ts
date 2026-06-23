@@ -77,6 +77,14 @@ export async function markAttendanceByUid(uid: string) {
       return { success: false, message: result.error };
     }
 
+    if (result.status === 'already_marked') {
+      return {
+        success: true,
+        status: 'already_marked',
+        message: `Already Marked: ${profile.full_name}`
+      };
+    }
+
     if (result.status === 'pending') {
       return {
         success: true,

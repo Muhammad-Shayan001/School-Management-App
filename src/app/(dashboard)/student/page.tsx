@@ -4,6 +4,7 @@ import { getFullProfile } from '@/app/_lib/actions/profile';
 import { BarChart3, Calendar, Megaphone, FileText, UserCircle, ClipboardList, CreditCard, ShieldCheck, XCircle, AlertCircle, Bell } from 'lucide-react';
 import { AnnouncementWidget } from '@/app/_components/dashboard/AnnouncementWidget';
 import { NextExamWidget } from '@/app/_components/dashboard/NextExamWidget';
+import { AttendanceNotificationPanel } from '@/app/_components/dashboard/AttendanceNotificationPanel';
 
 export default async function StudentDashboard() {
   const { data: user } = await getFullProfile();
@@ -75,13 +76,17 @@ export default async function StudentDashboard() {
            </div>
         </div>
 
-        <div className="lg:col-span-1">
-          <div className="glass-card p-8 bg-white border-none shadow-xl sticky top-8">
+        <div className="lg:col-span-1 space-y-8">
+          <div className="glass-card p-8 bg-white border-none shadow-xl">
             <h2 className="text-xl font-black text-text-primary mb-6 flex items-center justify-between">
               Notice Board
               <Megaphone className="h-5 w-5 text-accent" />
             </h2>
             <AnnouncementWidget role="student" />
+          </div>
+
+          <div className="glass-card p-0 bg-white border-none shadow-xl overflow-hidden">
+            <AttendanceNotificationPanel maxHeight="max-h-[400px]" />
           </div>
         </div>
       </div>

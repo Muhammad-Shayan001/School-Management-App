@@ -91,7 +91,7 @@ export async function markAttendance(params: {
   if (fetchError) return { error: fetchError.message };
 
   if (existing && params.method === 'qr' && existing.status !== 'rejected') {
-    return { error: 'Attendance already marked for today.' };
+    return { success: true, status: 'already_marked', message: 'Attendance already marked for today.' };
   }
 
   const attendanceData = {
@@ -145,6 +145,7 @@ export async function markAttendance(params: {
     });
 
     if (finalStatus === 'pending') {
+      // 1. Notify the teacher (approval needed)
       if (params.classId) {
         const { data: teacherProfile } = await adminClient
           .from('teacher_profiles')
@@ -167,6 +168,19 @@ export async function markAttendance(params: {
           });
         }
       }
+      
+      // 2. Notify the student (scan received, pending approval)
+      await createAttendanceNotification({
+        studentId: params.userId,
+        studentName,
+        attendanceId,
+        attendanceStatus: finalStatus,
+        attendanceDate: attendanceDate,
+        schoolId: callerProfile.school_id,
+        category: 'attendance_marked',
+        method: params.method,
+        time: timeStr,
+      });
     } else {
       await createAttendanceNotification({
         studentId: params.userId,
