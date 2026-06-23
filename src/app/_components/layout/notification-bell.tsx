@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useNotificationStore } from '@/app/_lib/store/notification-store';
 import { useAuthStore } from '@/app/_lib/store/auth-store';
+import Link from 'next/link';
 import { formatRelativeTime } from '@/app/_lib/utils/format';
 import { cn } from '@/app/_lib/utils/cn';
 import { Bell, Check, CheckCheck } from 'lucide-react';
@@ -112,9 +113,9 @@ export function NotificationBell() {
 
       {/* Dropdown panel */}
       {isOpen && (
-        <div className="absolute right-0 mt-3 w-80 sm:w-[400px] glass-card bg-white border border-border/50 shadow-2xl animate-in fade-in slide-in-from-top-2 duration-300 overflow-hidden rounded-3xl z-50">
+        <div className="absolute right-0 mt-3 w-80 sm:w-[400px] bg-white border border-border/50 shadow-2xl animate-in fade-in slide-in-from-top-2 duration-300 overflow-hidden rounded-3xl z-50">
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-border/30 bg-bg-tertiary/20">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50">
             <div className="flex items-center gap-2">
               <h3 className="text-sm font-black text-text-primary uppercase tracking-tight">
                 Notifications
@@ -151,8 +152,8 @@ export function NotificationBell() {
                 <div
                   key={n.id}
                   className={cn(
-                    'flex items-start gap-4 px-6 py-4 border-b border-border/30 hover:bg-bg-tertiary/30 transition-all duration-300 cursor-pointer relative group',
-                    !n.is_read && 'bg-accent/5'
+                    'flex items-start gap-4 px-6 py-4 border-b border-gray-100 hover:bg-blue-50 transition-all duration-300 cursor-pointer relative group',
+                    !n.is_read ? 'bg-blue-50/60' : 'bg-white'
                   )}
                   onClick={() => handleMarkAsRead(n.id)}
                 >
@@ -164,7 +165,7 @@ export function NotificationBell() {
                   <div className="mt-1 flex-shrink-0">
                     <div className={cn(
                       "h-10 w-10 rounded-xl flex items-center justify-center border transition-colors",
-                      !n.is_read ? "bg-white border-accent/20 text-accent shadow-sm" : "bg-bg-tertiary border-border/50 text-text-tertiary"
+                      !n.is_read ? "bg-white border-blue-200 text-blue-600 shadow-sm" : "bg-gray-100 border-gray-200 text-gray-400"
                     )}>
                       <Bell className="h-5 w-5" />
                     </div>
@@ -194,10 +195,10 @@ export function NotificationBell() {
           
           {/* Footer */}
           {notifications.length > 0 && (
-            <div className="px-6 py-3 bg-bg-tertiary/20 text-center border-t border-border/30">
-              <button className="text-[10px] font-black uppercase tracking-widest text-text-tertiary hover:text-accent transition-colors">
+            <div className="px-6 py-3 bg-gray-50 text-center border-t border-gray-100">
+              <Link href="/student/notifications" onClick={() => setOpen(false)} className="text-[10px] font-black uppercase tracking-widest text-text-tertiary hover:text-accent transition-colors block w-full">
                 View All Activity
-              </button>
+              </Link>
             </div>
           )}
         </div>

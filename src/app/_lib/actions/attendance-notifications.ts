@@ -29,19 +29,21 @@ function formatNotificationMessage(params: AttendanceNotificationParams): {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
+    timeZone: 'Asia/Karachi',
   });
 
   const formattedTime = time || new Date().toLocaleTimeString('en-US', {
     hour: '2-digit',
     minute: '2-digit',
     hour12: true,
+    timeZone: 'Asia/Karachi',
   });
 
   switch (category) {
     case 'attendance_marked':
       return {
         title: 'Attendance Marked Successfully',
-        message: `${studentName} has been marked ${attendanceStatus?.charAt(0).toUpperCase()}${attendanceStatus?.slice(1)} on ${formattedDate} at ${formattedTime}.`,
+        message: `${studentName} has been marked ${attendanceStatus?.charAt(0).toUpperCase()}${attendanceStatus?.slice(1)} on ${formattedDate}.`,
       };
 
     case 'attendance_approved':
@@ -53,7 +55,7 @@ function formatNotificationMessage(params: AttendanceNotificationParams): {
     case 'attendance_updated':
       return {
         title: 'Attendance Updated',
-        message: `${studentName}, your attendance status has been updated to ${attendanceStatus?.toUpperCase()} on ${formattedDate} at ${formattedTime}.`,
+        message: `${studentName}, your attendance status has been updated to ${attendanceStatus?.toUpperCase()} on ${formattedDate}.`,
       };
 
     case 'attendance_approval_needed':
@@ -65,7 +67,7 @@ function formatNotificationMessage(params: AttendanceNotificationParams): {
     default:
       return {
         title: 'Attendance Notification',
-        message: `Your attendance was recorded on ${formattedDate} at ${formattedTime}.`,
+        message: `Your attendance was recorded on ${formattedDate}.`,
       };
   }
 }

@@ -165,6 +165,7 @@ export const SIDEBAR_NAV: Record<
     { label: 'Results', href: '/student/results', icon: 'BarChart3' },
     { label: 'Timetable', href: '/student/timetable', icon: 'Calendar' },
     { label: 'Exam Schedule', href: '/student/exam-timetable', icon: 'ClipboardList' },
+    { label: 'Notifications', href: '/student/notifications', icon: 'Bell' },
     { label: 'Syllabus', href: '/student/syllabus', icon: 'BookOpen' },
     { label: 'Announcements', href: '/student/announcements', icon: 'Megaphone' },
     { label: 'Assignments', href: '/student/assignments', icon: 'FileText' },

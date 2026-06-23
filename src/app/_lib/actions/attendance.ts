@@ -142,6 +142,7 @@ export async function markAttendance(params: {
       hour: '2-digit',
       minute: '2-digit',
       hour12: true,
+      timeZone: 'Asia/Karachi',
     });
 
     if (finalStatus === 'pending') {
