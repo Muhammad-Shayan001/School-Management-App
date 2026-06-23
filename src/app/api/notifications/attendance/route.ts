@@ -1,6 +1,8 @@
 import { createClient } from '@/app/_lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/notifications/attendance
  * Fetch attendance notifications for the current user
