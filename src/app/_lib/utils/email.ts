@@ -30,18 +30,23 @@ export async function sendEmail({ to, subject, text, html }: SendEmailOptions) {
     }
 
     // Lazy import to prevent Turbopack MODULE_UNPARSABLE error
-    const nodemailer = await import('nodemailer');
+    const nodemailerImport = await import('nodemailer');
+    const nodemailer = nodemailerImport.default || nodemailerImport;
 
-    // Create transporter with Gmail SMTP
-    const transporter = nodemailer.default.createTransport({
-      host: 'smtp.gmail.com',
-      port: 465,
-      secure: true,
+    const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
+    const smtpPort = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : 465;
+    const smtpSecure = typeof process.env.SMTP_SECURE !== 'undefined'
+      ? process.env.SMTP_SECURE.toLowerCase() === 'true'
+      : smtpPort === 465;
+
+    const transporter = nodemailer.createTransport({
+      host: smtpHost,
+      port: smtpPort,
+      secure: smtpSecure,
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
       },
-      // Add timeout settings
       connectionTimeout: 5000,
       socketTimeout: 10000,
     });
@@ -63,12 +68,13 @@ export async function sendEmail({ to, subject, text, html }: SendEmailOptions) {
     }
 
     // Send email
+    const fromAddress = process.env.SMTP_FROM || `"Skolic - School Management" <${process.env.SMTP_USER}>`;
     const info = await transporter.sendMail({
-      from: `"Skolic - School Management" <${process.env.SMTP_USER}>`,
+      from: fromAddress,
       to,
       subject,
       text,
-      html: html || text, // Fallback to text if html not provided
+      html: html || text,
       headers: {
         'X-Mailer': 'Skolic School Management System',
         'X-Email-Type': 'Transactional',

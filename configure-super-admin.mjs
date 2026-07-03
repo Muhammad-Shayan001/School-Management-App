@@ -8,11 +8,16 @@ const supabase = createClient(
 );
 
 async function run() {
-  const email = 'ayankhan56521@gmail.com';
-  const userId = 'e97a33cc-3572-487e-b30e-f6c751a2fcf5';
-  const password = 'Superadmin123@';
+  const email = process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL;
+  const userId = process.env.SUPER_ADMIN_USER_ID;
+  const password = process.env.SUPER_ADMIN_PASSWORD || 'Superadmin123@';
 
-  console.log(`Setting up super admin for email: ${email}, ID: ${userId}...`);
+  if (!email) {
+    console.error('❌ NEXT_PUBLIC_SUPER_ADMIN_EMAIL is not set in .env.local');
+    return;
+  }
+
+  console.log(`Setting up super admin for email: ${email}${userId ? `, ID: ${userId}` : ''}...`);
 
   // 1. Verify user in Supabase Auth
   const { data: { users }, error: listError } = await supabase.auth.admin.listUsers();
@@ -21,21 +26,26 @@ async function run() {
     return;
   }
 
-  let user = users.find(u => u.id === userId || u.email === email);
+  let user = users.find(u => (userId && u.id === userId) || u.email === email);
 
   if (!user) {
     console.log('⚠️ User not found in Auth by ID or email. Creating user...');
-    const { data: createData, error: createError } = await supabase.auth.admin.createUser({
-      id: userId,
-      email: email,
-      password: password,
+    const createPayload = {
+      email,
+      password,
       email_confirm: true,
       user_metadata: {
         role: 'super_admin',
         status: 'approved',
         full_name: 'Super Admin'
       }
-    });
+    };
+
+    if (userId) {
+      createPayload.id = userId;
+    }
+
+    const { data: createData, error: createError } = await supabase.auth.admin.createUser(createPayload);
 
     if (createError) {
       console.error('❌ Error creating Auth user:', createError.message);

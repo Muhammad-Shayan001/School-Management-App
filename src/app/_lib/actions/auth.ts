@@ -280,16 +280,17 @@ function generateResetToken(): string {
  */
 export async function requestPasswordReset(formData: FormData) {
   try {
-    const email = formData.get('email') as string;
+    const email = (formData.get('email') as string)?.trim();
     if (!email) return { error: 'Email is required.' };
 
+    const normalizedEmail = email.toLowerCase();
     const adminClient = createAdminClient();
     
-    // Find user by email
+    // Find user by email (normalized for lookup)
     const { data: profile } = await adminClient
       .from('profiles')
       .select('id, full_name, email')
-      .eq('email', email.toLowerCase())
+      .eq('email', normalizedEmail)
       .single();
 
     if (!profile) {
@@ -319,7 +320,9 @@ export async function requestPasswordReset(formData: FormData) {
     }
 
     // Build reset URL with token
-    const resetUrl = `https://skolic-schools-management-app.vercel.app/reset-password?token=${resetToken}`;
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '')
+      || (process.env.NEXT_PUBLIC_VERCEL_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : 'http://localhost:3000');
+    const resetUrl = `${appUrl}/reset-password?token=${encodeURIComponent(resetToken)}`;
 
     // Send email with reset link and OTP
     const emailResult = await sendEmail({
