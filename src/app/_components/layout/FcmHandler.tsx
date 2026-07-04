@@ -97,7 +97,13 @@ export default function FcmHandler() {
 
           // Trigger Sonner toast with action button
           toast(newNotification.title, {
-            description: newNotification.message,
+            description: (
+              <div className="flex flex-col gap-1 mt-1">
+                {newNotification.message.split('\n').map((line: string, i: number) => (
+                  <span key={i} className="text-sm opacity-90">{line}</span>
+                ))}
+              </div>
+            ),
             action: newNotification.link
               ? {
                   label: 'View',

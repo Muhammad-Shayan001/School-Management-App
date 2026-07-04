@@ -10,7 +10,7 @@ export interface AttendanceNotificationParams {
   attendanceDate: string;
   schoolId: string;
   category: 'attendance_marked' | 'attendance_approved' | 'attendance_updated' | 'attendance_approval_needed';
-  method?: 'manual' | 'qr' | 'camera' | 'scanner';
+  method?: 'manual' | 'qr' | 'camera' | 'scanner' | 'system' | 'auto';
   time?: string;
 }
 
@@ -42,7 +42,7 @@ function formatNotificationMessage(params: AttendanceNotificationParams): {
     case 'attendance_marked':
       return {
         title: 'Attendance Marked Successfully',
-        message: `${studentName} has been marked ${attendanceStatus?.charAt(0).toUpperCase()}${attendanceStatus?.slice(1)} today at ${formattedTime}.`,
+        message: `Your attendance has been marked successfully.\nDate: ${formattedDate}\nTime: ${formattedTime}`,
       };
 
     case 'attendance_approved':

@@ -639,3 +639,320 @@ export async function finalizeDailyAttendance(date: string) {
   revalidatePath('/teacher/attendance');
   return { success: true };
 }
+
+/**
+ * Admin action to finalize attendance for an entire campus or school.
+ * Marks all unmarked students as 'absent' and converts 'pending' to 'absent'.
+ */
+export async function adminFinalizeCampusAttendance(date: string, campusId?: string) {
+  const supabase = await createClient();
+  const adminClient = createAdminClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { error: 'Unauthorized' };
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role, school_id')
+    .eq('id', user.id)
+    .single();
+
+  if (profile?.role !== 'admin' && profile?.role !== 'super_admin' && profile?.role !== 'principal') {
+    return { error: 'Only admins or principals can finalize campus attendance' };
+  }
+
+  // 1. Get all students in the school/campus
+  let studentQuery = adminClient
+    .from('student_profiles')
+    .select('user_id, class_id')
+    .eq('school_id', profile.school_id);
+
+  if (campusId) {
+    studentQuery = studentQuery.eq('campus_id', campusId);
+  }
+
+  const { data: studentProfiles } = await studentQuery;
+  if (!studentProfiles || studentProfiles.length === 0) return { success: true };
+
+  // 2. Get existing attendance for this school/campus and date
+  let attendanceQuery = adminClient
+    .from('attendance')
+    .select('id, user_id, status')
+    .eq('date', date)
+    .eq('school_id', profile.school_id);
+    
+  if (campusId) {
+    attendanceQuery = attendanceQuery.eq('campus_id', campusId);
+  }
+
+  const { data: existingRecords } = await attendanceQuery;
+  const existingMap = new Map((existingRecords || []).map((r: any) => [r.user_id, r]));
+
+  const updates = [];
+  const inserts = [];
+  const notificationsToCreate: any[] = [];
+
+  for (const sp of studentProfiles) {
+    const studentId = sp.user_id;
+    const record = existingMap.get(studentId);
+    
+    if (!record) {
+      inserts.push({
+        user_id: studentId,
+        role: 'student',
+        status: 'absent',
+        method: 'system',
+        date: date,
+        marked_by: user.id,
+        school_id: profile.school_id,
+        class_id: sp.class_id,
+        campus_id: campusId || null,
+        approved_by: user.id
+      });
+      notificationsToCreate.push({ studentId, finalStatus: 'absent' });
+    } else if (record.status === 'pending') {
+      updates.push(
+        adminClient
+          .from('attendance')
+          .update({ status: 'absent', approved_by: user.id, method: 'system' })
+          .eq('id', record.id)
+      );
+      notificationsToCreate.push({ studentId, finalStatus: 'absent' });
+    }
+  }
+
+  // Execute inserts
+  let insertedIds: string[] = [];
+  if (inserts.length > 0) {
+    // Process in chunks to avoid hitting payload limits
+    const chunkSize = 500;
+    for (let i = 0; i < inserts.length; i += chunkSize) {
+      const chunk = inserts.slice(i, i + chunkSize);
+      const { data: insertedRecords, error: insertError } = await adminClient
+        .from('attendance')
+        .insert(chunk)
+        .select('id, user_id');
+      if (insertError) console.error('Insert chunk error:', insertError);
+      else if (insertedRecords) insertedIds.push(...insertedRecords.map((r: any) => r.id));
+    }
+  }
+
+  // Execute updates
+  if (updates.length > 0) {
+    const chunkSize = 100;
+    for (let i = 0; i < updates.length; i += chunkSize) {
+       await Promise.all(updates.slice(i, i + chunkSize));
+    }
+  }
+
+  // Send notifications asynchronously so we don't block the UI
+  (async () => {
+    try {
+      const studentIds = studentProfiles.map(sp => sp.user_id);
+      const { data: profiles } = await adminClient
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', studentIds);
+      const profileMap = new Map((profiles || []).map((p: any) => [p.id, p.full_name]));
+
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+
+      const notificationPromises = notificationsToCreate.map((req, idx) => {
+        const attendanceId = insertedIds[idx] || existingMap.get(req.studentId)?.id;
+        if (attendanceId) {
+          const studentName = profileMap.get(req.studentId) || 'Student';
+          return createAttendanceNotification({
+            studentId: req.studentId,
+            studentName,
+            attendanceId,
+            attendanceStatus: req.finalStatus as any,
+            attendanceDate: date,
+            schoolId: profile.school_id,
+            category: 'attendance_updated',
+            method: 'system',
+            time: timeStr,
+          });
+        }
+        return Promise.resolve();
+      });
+      
+      const chunkSize = 50;
+      for (let i = 0; i < notificationPromises.length; i += chunkSize) {
+        await Promise.all(notificationPromises.slice(i, i + chunkSize));
+      }
+    } catch (err) {
+      console.error('Error sending auto-absent notifications:', err);
+    }
+  })();
+
+  revalidatePath('/admin/attendance');
+  return { success: true, markedCount: inserts.length + updates.length };
+}
+
+/**
+ * Get monthly attendance register for a specific class
+ */
+export async function getMonthlyAttendanceRegister(classId: string, year: number, month: number) {
+  const supabase = await createClient();
+  const adminClient = createAdminClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { error: 'Unauthorized' };
+
+  // Calculate start and end date of the month
+  const startDate = new Date(year, month - 1, 1).toISOString().split('T')[0];
+  const endDate = new Date(year, month, 0).toISOString().split('T')[0];
+  const daysInMonth = new Date(year, month, 0).getDate();
+
+  // 1. Get all students in the class
+  const { data: studentProfiles } = await adminClient
+    .from('student_profiles')
+    .select('user_id, roll_number')
+    .eq('class_id', classId);
+
+  if (!studentProfiles || studentProfiles.length === 0) {
+    return { data: { students: [], daysInMonth: daysInMonth }, error: null };
+  }
+
+  const studentIds = studentProfiles.map(sp => sp.user_id);
+
+  // 2. Get student profiles (names)
+  const { data: profiles } = await adminClient
+    .from('profiles')
+    .select('id, full_name')
+    .in('id', studentIds)
+    .order('full_name', { ascending: true });
+
+  const profileMap = new Map((profiles || []).map((p: any) => [p.id, p.full_name]));
+
+  // 3. Get attendance records for the month
+  const { data: attendanceRecords } = await adminClient
+    .from('attendance')
+    .select('user_id, date, status')
+    .eq('class_id', classId)
+    .gte('date', startDate)
+    .lte('date', endDate);
+
+  // 4. Get holidays and off days (requires school_id from class)
+  const { data: classData } = await adminClient.from('classes').select('school_id, campus_id').eq('id', classId).single();
+  const schoolId = classData?.school_id;
+  const campusId = classData?.campus_id;
+
+  let holidays: any[] = [];
+  let offDays: any[] = [];
+
+  if (schoolId) {
+    const holidaysQuery = adminClient.from('holidays').select('*').eq('school_id', schoolId).gte('date', startDate).lte('date', endDate);
+    const { data: h } = await holidaysQuery;
+    holidays = h || [];
+
+    const offDaysQuery = adminClient.from('weekly_off_days').select('*').eq('school_id', schoolId);
+    const { data: od } = await offDaysQuery;
+    offDays = od || [];
+  }
+
+  // Determine global day statuses
+  const dayStatuses: Record<number, 'holiday' | 'off_day' | null> = {};
+  for (let day = 1; day <= daysInMonth; day++) {
+    const d = new Date(year, month - 1, day);
+    const dString = d.toISOString().split('T')[0];
+    const dayOfWeek = d.getDay(); // 0-6
+    
+    // Check off days (or implicit Sunday off)
+    const isOffDay = (dayOfWeek === 0) || offDays.some(od => od.day_of_week === dayOfWeek && (!od.campus_id || od.campus_id === campusId));
+    if (isOffDay) {
+      dayStatuses[day] = 'off_day';
+      continue;
+    }
+
+    // Check holidays
+    const isHoliday = holidays.some(h => {
+      // Current schema just has `date`
+      return h.date === dString;
+    });
+
+    if (isHoliday) {
+      dayStatuses[day] = 'holiday';
+    } else {
+      dayStatuses[day] = null;
+    }
+  }
+
+  // 5. Build the register
+  const register = studentProfiles.map(sp => {
+    const name = profileMap.get(sp.user_id) || 'Unknown';
+    const records = (attendanceRecords || []).filter(r => r.user_id === sp.user_id);
+    const recordMap = new Map(records.map(r => [parseInt(r.date.split('-')[2]), r.status]));
+
+    let presentCount = 0;
+    let absentCount = 0;
+    let leaveCount = 0;
+    let validDays = 0; // Days that are not off days or holidays
+
+    const days: any = {};
+    for (let day = 1; day <= daysInMonth; day++) {
+      const globalStatus = dayStatuses[day];
+      if (globalStatus) {
+        days[day] = globalStatus === 'holiday' ? 'H' : 'OD';
+      } else {
+        const status = recordMap.get(day);
+        if (status === 'present') {
+          days[day] = 'P';
+          presentCount++;
+          validDays++;
+        } else if (status === 'absent') {
+          days[day] = 'A';
+          absentCount++;
+          validDays++;
+        } else if (status === 'late') {
+          days[day] = 'Late';
+          presentCount++; // usually late is present
+          validDays++;
+        } else if (status === 'leave') {
+          days[day] = 'L';
+          leaveCount++;
+          validDays++;
+        } else {
+          days[day] = '-';
+          validDays++; // It's a valid school day but unmarked
+        }
+      }
+    }
+
+    const attendancePercentage = validDays > 0 ? Math.round((presentCount / validDays) * 100) : 0;
+
+    return {
+      userId: sp.user_id,
+      rollNumber: sp.roll_number,
+      name,
+      days,
+      stats: {
+        present: presentCount,
+        absent: absentCount,
+        leave: leaveCount,
+        percentage: attendancePercentage
+      }
+    };
+  });
+
+  // Sort by roll number or name
+  register.sort((a, b) => {
+    if (a.rollNumber && b.rollNumber) {
+      const aRoll = parseInt(a.rollNumber);
+      const bRoll = parseInt(b.rollNumber);
+      if (!isNaN(aRoll) && !isNaN(bRoll)) return aRoll - bRoll;
+      return a.rollNumber.localeCompare(b.rollNumber);
+    }
+    return a.name.localeCompare(b.name);
+  });
+
+  return { 
+    data: { 
+      students: register, 
+      daysInMonth,
+      dayStatuses 
+    }, 
+    error: null 
+  };
+}

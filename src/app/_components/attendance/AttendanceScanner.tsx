@@ -227,6 +227,13 @@ export default function AttendanceScanner() {
             gate: selectedGate
           };
           setLogs(prev => [successLog, ...prev].slice(0, 50));
+          
+          // Show popup toast
+          const { toast } = await import('sonner');
+          toast.success('Attendance Marked Successfully', {
+             description: `Your attendance has been marked successfully.\nDate: ${new Date().toLocaleDateString()}\nTime: ${timestamp}`.split('\n').map((l, i) => <div key={i}>{l}</div>),
+             duration: 5000,
+          });
         }
       } else {
         playBeep('error');

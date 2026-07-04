@@ -20,6 +20,12 @@ export default async function StudentAttendancePage() {
   const { data, error } = await getUserAttendance(user.id);
   const attendance = data || [];
 
+  const supabase = await createClient();
+  const { data: holidays } = await supabase.from('holidays').select('date, title').eq('school_id', user.school_id);
+  const { data: offDays } = await supabase.from('weekly_off_days').select('day_of_week').eq('school_id', user.school_id);
+  const holidayMap = new Map((holidays || []).map((h: any) => [h.date, h]));
+  const offDaySet = new Set((offDays || []).map((od: any) => od.day_of_week));
+
   const stats = {
     present: attendance.filter(a => a.status === 'present' || a.status === 'late').length,
     absent: attendance.filter(a => a.status === 'absent' || a.status === 'rejected').length,
@@ -124,6 +130,76 @@ export default async function StudentAttendancePage() {
            </p>
         </div>
       )}
+
+      {/* Monthly Calendar View */}
+      <div className="space-y-6">
+        <div className="flex items-center gap-2 px-2">
+           <CalendarDays className="h-5 w-5 text-accent" />
+           <h2 className="text-xl font-black text-text-primary tracking-tight uppercase">Monthly Calendar</h2>
+        </div>
+        
+        <Card className="p-8 border-none shadow-xl bg-white overflow-hidden">
+           {/* We will render a simple flex/grid calendar representation */}
+           <div className="grid grid-cols-7 gap-2 mb-4 text-center">
+             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+               <div key={day} className="text-[10px] font-black uppercase text-text-tertiary tracking-widest">{day}</div>
+             ))}
+           </div>
+           
+           <div className="grid grid-cols-7 gap-2">
+             {Array.from({ length: new Date(new Date().getFullYear(), new Date().getMonth(), 1).getDay() }).map((_, i) => (
+               <div key={`empty-${i}`} className="p-4" />
+             ))}
+             
+             {Array.from({ length: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate() }).map((_, i) => {
+               const d = i + 1;
+               const dateStr = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+               const dayOfWeek = new Date(new Date().getFullYear(), new Date().getMonth(), d).getDay();
+               
+               const record = attendance.find(a => a.date === dateStr);
+               
+               // Assume Sunday is Off Day if no record
+               const isSunday = dayOfWeek === 0;
+               const isOffDay = isSunday || offDaySet.has(dayOfWeek);
+               const isHoliday = holidayMap.has(dateStr);
+               
+               let status = record?.status;
+               if (!status) {
+                 if (isHoliday) status = 'holiday';
+                 else if (isOffDay) status = 'off_day';
+               }
+               
+               // Simple UI representation
+               let bg = "bg-bg-tertiary/20";
+               let border = "border-border/50";
+               let icon = null;
+               
+               if (status === 'present' || status === 'late') { bg = "bg-emerald-50"; border = "border-emerald-200"; icon = "✅"; }
+               else if (status === 'absent' || status === 'rejected') { bg = "bg-red-50"; border = "border-red-200"; icon = "❌"; }
+               else if (status === 'leave') { bg = "bg-amber-50"; border = "border-amber-200"; icon = "🟡"; }
+               else if (status === 'holiday') { bg = "bg-blue-50"; border = "border-blue-200"; icon = "🔵"; }
+               else if (status === 'off_day') { bg = "bg-purple-50"; border = "border-purple-200"; icon = "🟣"; }
+               else if (status === 'pending') { bg = "bg-amber-50"; border = "border-amber-200"; icon = "⏳"; }
+               
+               return (
+                 <div key={d} className={`p-3 rounded-xl border ${bg} ${border} flex flex-col items-center justify-center min-h-[80px] transition-all hover:scale-105`} title={isHoliday ? holidayMap.get(dateStr)?.title : ''}>
+                   <span className="text-xs font-black text-text-secondary opacity-50 mb-1">{d}</span>
+                   <span className="text-xl">{icon || '-'}</span>
+                 </div>
+               );
+             })}
+           </div>
+           
+           <div className="mt-8 pt-6 border-t border-border flex flex-wrap justify-center gap-6 text-[11px] font-black uppercase tracking-widest text-text-tertiary">
+             <div className="flex items-center gap-2"><span className="text-lg">✅</span> Present</div>
+             <div className="flex items-center gap-2"><span className="text-lg">❌</span> Absent</div>
+             <div className="flex items-center gap-2"><span className="text-lg">🟡</span> Leave</div>
+             <div className="flex items-center gap-2"><span className="text-lg">🔵</span> Holiday</div>
+             <div className="flex items-center gap-2"><span className="text-lg">🟣</span> Off Day</div>
+             <div className="flex items-center gap-2"><span className="text-lg">⏳</span> Pending</div>
+           </div>
+        </Card>
+      </div>
 
       {/* History List */}
       <div className="space-y-6">

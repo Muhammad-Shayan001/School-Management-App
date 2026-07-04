@@ -14,7 +14,7 @@ import {
   Calendar as CalendarIcon, UserCheck, UserX, Scan, ListChecks,
   Search, BarChart3, Clock, GraduationCap, Users, ShieldCheck,
   XCircle, CheckCircle2, History, Filter, Plus, Trash2, CalendarX,
-  Palmtree, Users2, Layers
+  Palmtree, Users2, Layers, AlertCircle
 } from 'lucide-react';
 import { formatDate } from '@/app/_lib/utils/format';
 import { cn } from '@/app/_lib/utils/cn';
@@ -139,6 +139,28 @@ export default function AdminAttendancePage() {
       {activeMainTab === 'daily' ? (
         <>
           {/* Daily Logs UI (Existing) */}
+          <div className="flex justify-end mb-4">
+            <Button
+              onClick={async () => {
+                if (confirm('Are you sure you want to finalize attendance for all students today? Unmarked students will be marked as ABSENT.')) {
+                  setIsLoading(true);
+                  const { adminFinalizeCampusAttendance } = await import('@/app/_lib/actions/attendance');
+                  const res = await adminFinalizeCampusAttendance(date);
+                  if (res.success) {
+                    alert(`Finalized attendance for ${res.markedCount} students.`);
+                    await fetchData();
+                  } else {
+                    alert('Error: ' + res.error);
+                  }
+                  setIsLoading(false);
+                }
+              }}
+              className="bg-red-500 hover:bg-red-600 text-white font-black shadow-lg"
+            >
+              <AlertCircle className="h-4 w-4 mr-2" />
+              Finalize Campus Day
+            </Button>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {[
               { label: 'Pending Approval', value: stats.pending, icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50' },
