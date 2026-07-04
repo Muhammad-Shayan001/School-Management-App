@@ -30,11 +30,11 @@ export function NotificationBell() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Fetch notifications via API route (bypasses RLS)
+  // Fetch notifications via API route
   const fetchNotifications = useCallback(async () => {
     if (!user) return;
     try {
-      const res = await fetch('/api/notifications/attendance?limit=20&offset=0', {
+      const res = await fetch('/api/notifications?limit=20&offset=0', {
         cache: 'no-store',
       });
       if (res.ok) {
@@ -78,7 +78,7 @@ export function NotificationBell() {
   async function handleMarkAsRead(id: string) {
     markAsRead(id);
     try {
-      await fetch(`/api/notifications/attendance/${id}`, { method: 'PUT' });
+      await fetch(`/api/notifications/${id}`, { method: 'PUT' });
     } catch (err) {
       console.error('Error marking notification as read:', err);
     }
@@ -89,11 +89,16 @@ export function NotificationBell() {
     if (!user) return;
     markAllAsRead();
     try {
-      await fetch('/api/notifications/attendance/mark-all-read', { method: 'PUT' });
+      await fetch('/api/notifications', { method: 'PUT' });
     } catch (err) {
       console.error('Error marking all as read:', err);
     }
   }
+
+  // Construct history URL dynamically based on user role
+  const historyUrl = user?.role === 'super_admin'
+    ? '/super-admin/notifications'
+    : `/${user?.role}/notifications`;
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -110,7 +115,7 @@ export function NotificationBell() {
           </span>
         )}
       </button>
-
+ 
       {/* Dropdown panel */}
       {isOpen && (
         <div className="absolute right-0 mt-3 w-80 sm:w-[400px] bg-white border border-border/50 shadow-2xl animate-in fade-in slide-in-from-top-2 duration-300 overflow-hidden rounded-3xl z-50">
@@ -136,7 +141,7 @@ export function NotificationBell() {
               </button>
             )}
           </div>
-
+ 
           {/* Notification list */}
           <div className="max-h-[450px] overflow-y-auto overscroll-contain">
             {notifications.length === 0 ? (
@@ -170,7 +175,7 @@ export function NotificationBell() {
                       <Bell className="h-5 w-5" />
                     </div>
                   </div>
-
+ 
                   {/* Content */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2 mb-1">
@@ -196,7 +201,7 @@ export function NotificationBell() {
           {/* Footer */}
           {notifications.length > 0 && (
             <div className="px-6 py-3 bg-gray-50 text-center border-t border-gray-100">
-              <Link href="/student/notifications" onClick={() => setOpen(false)} className="text-[10px] font-black uppercase tracking-widest text-text-tertiary hover:text-accent transition-colors block w-full">
+              <Link href={historyUrl} onClick={() => setOpen(false)} className="text-[10px] font-black uppercase tracking-widest text-text-tertiary hover:text-accent transition-colors block w-full">
                 View All Activity
               </Link>
             </div>

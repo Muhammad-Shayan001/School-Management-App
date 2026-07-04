@@ -3,6 +3,7 @@ import { AuthProvider } from '@/app/_components/providers/auth-provider';
 import { getCurrentUser } from '@/app/_lib/actions/auth';
 import { Toaster } from 'sonner';
 import { Montserrat } from 'next/font/google';
+import FcmHandler from '@/app/_components/layout/FcmHandler';
 import './globals.css';
 
 const montserrat = Montserrat({
@@ -40,6 +41,7 @@ export default async function RootLayout({
       >
         <AuthProvider initialUser={user}>
           {children}
+          <FcmHandler />
           <Toaster position="top-right" richColors closeButton />
         </AuthProvider>
       </body>

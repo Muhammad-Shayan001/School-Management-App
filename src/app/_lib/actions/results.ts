@@ -3,6 +3,7 @@
 import { createAdminClient } from '@/app/_lib/supabase/admin';
 import { createClient } from '@/app/_lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { createNotification } from './notifications';
 
 // Fetch teacher's assigned subjects and classes
 export async function getTeacherAssignments() {
@@ -240,6 +241,32 @@ export async function saveSubjectResult(formData: FormData) {
     return { error: 'Database error: ' + error.message };
   }
   revalidatePath('/teacher/results');
+
+  // Trigger notification for student
+  (async () => {
+    try {
+      const { data: subject } = await adminClient
+        .from('subjects')
+        .select('name')
+        .eq('id', subjectId)
+        .single();
+        
+      if (subject) {
+        await createNotification({
+          userId: studentId,
+          title: 'New Exam Marks Available 📊',
+          message: `Your marks for "${subject.name}" in ${term} have been updated: ${marksObtained}/${totalMarks} (${grade}).`,
+          type: 'result',
+          priority: 'normal',
+          link: '/student/results',
+          schoolId: profile.school_id,
+        });
+      }
+    } catch (err) {
+      console.error("Error with subject marks notification dispatch:", err);
+    }
+  })();
+
   return { success: true };
 }
 
@@ -373,6 +400,30 @@ export async function publishFinalResults(classId: string, term: string = 'Final
 
   if (error) return { error: error.message };
   revalidatePath('/teacher/results/publish');
+
+  // Trigger bulk notifications for final results publication
+  if (finalResultsToInsert && finalResultsToInsert.length > 0) {
+    (async () => {
+      try {
+        await Promise.all(
+          finalResultsToInsert.map(fr =>
+            createNotification({
+              userId: fr.student_id,
+              title: 'Final Results Published 🏆',
+              message: `Your final results for the ${term} have been published. Final Grade: ${fr.final_grade} (${fr.percentage}%).`,
+              type: 'result',
+              priority: 'high',
+              link: '/student/results',
+              schoolId: profile?.school_id || null,
+            })
+          )
+        );
+      } catch (err) {
+        console.error("Error sending final results notifications:", err);
+      }
+    })();
+  }
+
   return { success: true };
 }
 

@@ -156,12 +156,21 @@ export interface Notification {
   message: string;
   type: string;
   is_read: boolean;
+  read_status?: boolean;
   link: string | null;
   created_at: string;
   attendance_id?: string | null;
   category?: string | null;
   school_id?: string | null;
   attendance_status?: 'present' | 'absent' | 'late' | 'pending' | 'rejected' | null;
+  role?: string | null;
+  student_id?: string | null;
+  teacher_id?: string | null;
+  priority?: 'low' | 'normal' | 'high' | 'urgent' | null;
+  status?: string | null;
+  platform?: string | null;
+  device?: string | null;
+  created_by?: string | null;
 }
 
 // ─── Announcements ──────────────────────────────────────────────────────────

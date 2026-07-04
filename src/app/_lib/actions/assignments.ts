@@ -4,6 +4,7 @@ import { createClient } from "../supabase/server";
 import { createAdminClient } from "../supabase/admin";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { createNotification } from "./notifications";
 
 export async function createAssignment(data: FormData) {
   const supabase = await createClient();
@@ -57,6 +58,34 @@ export async function createAssignment(data: FormData) {
 
   revalidatePath("/teacher/assignments");
   revalidatePath("/student/assignments");
+
+  // Fetch all student user_ids in the class to notify them
+  (async () => {
+    try {
+      const { data: students } = await adminClient
+        .from("student_profiles")
+        .select("user_id")
+        .eq("class_id", class_id);
+        
+      if (students && students.length > 0) {
+        await Promise.all(
+          students.map(student =>
+            createNotification({
+              userId: student.user_id,
+              title: 'New Assignment Assigned 📝',
+              message: `A new assignment "${title}" has been assigned. Deadline: ${new Date(deadline).toLocaleDateString()}.`,
+              type: 'assignment',
+              priority: 'normal',
+              link: '/student/assignments',
+              schoolId: profile?.school_id || null,
+            })
+          )
+        );
+      }
+    } catch (err) {
+      console.error("Error with assignment notification dispatch:", err);
+    }
+  })();
   
   redirect("/teacher/assignments");
 }
@@ -306,6 +335,33 @@ export async function gradeSubmission(submissionId: string, marks: number, feedb
   if (error) {
     console.error("Error grading submission:", error);
     throw new Error(error.message);
+  }
+
+  // Trigger notification for the student
+  if (data) {
+    (async () => {
+      try {
+        const { data: assignment } = await adminClient
+          .from("assignments")
+          .select("title, school_id")
+          .eq("id", data.assignment_id)
+          .single();
+          
+        if (assignment) {
+          await createNotification({
+            userId: data.student_id,
+            title: 'Assignment Graded 🎯',
+            message: `Your submission for "${assignment.title}" has been graded. Marks: ${marks}.`,
+            type: 'assignment',
+            priority: 'normal',
+            link: '/student/assignments',
+            schoolId: assignment.school_id || null,
+          });
+        }
+      } catch (err) {
+        console.error("Error with grading notification dispatch:", err);
+      }
+    })();
   }
 
   return data;

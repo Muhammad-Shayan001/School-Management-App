@@ -3,6 +3,7 @@
 import { createClient } from '@/app/_lib/supabase/server';
 import { createAdminClient } from '@/app/_lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
+import { createNotification } from './notifications';
 
 export async function createAnnouncement(params: {
   title: string;
@@ -50,6 +51,61 @@ export async function createAnnouncement(params: {
       console.error('Database error in createAnnouncement:', error);
       return { error: `Database failure: ${error.message}` };
     }
+
+    // Notify target users (fire-and-forget — don't block response)
+    (async () => {
+      try {
+        let targetUsers: { id: string }[] = [];
+
+        if (params.target_type === 'all') {
+          const { data } = await adminClient
+            .from('profiles')
+            .select('id')
+            .eq('school_id', profile.school_id);
+          targetUsers = data || [];
+        } else if (params.target_type === 'students') {
+          const { data } = await adminClient
+            .from('profiles')
+            .select('id')
+            .eq('school_id', profile.school_id)
+            .eq('role', 'student');
+          targetUsers = data || [];
+        } else if (params.target_type === 'teachers') {
+          const { data } = await adminClient
+            .from('profiles')
+            .select('id')
+            .eq('school_id', profile.school_id)
+            .eq('role', 'teacher');
+          targetUsers = data || [];
+        } else if (params.target_type === 'class' && params.target_id) {
+          const { data } = await adminClient
+            .from('student_profiles')
+            .select('user_id')
+            .eq('class_id', params.target_id);
+          targetUsers = (data || []).map(d => ({ id: d.user_id }));
+        } else if (params.target_type === 'teacher' && params.target_id) {
+          targetUsers = [{ id: params.target_id }];
+        }
+
+        if (targetUsers.length > 0) {
+          await Promise.all(
+            targetUsers.map(u =>
+              createNotification({
+                userId: u.id,
+                title: `Announcement: ${params.title} 📢`,
+                message: params.content,
+                type: 'announcement',
+                priority: params.priority === 'urgent' ? 'high' : 'normal',
+                link: '/student/notifications',
+                schoolId: profile.school_id,
+              })
+            )
+          );
+        }
+      } catch (err) {
+        console.error('Error sending announcement notifications:', err);
+      }
+    })();
 
     revalidatePath('/admin/announcements');
     revalidatePath('/teacher');

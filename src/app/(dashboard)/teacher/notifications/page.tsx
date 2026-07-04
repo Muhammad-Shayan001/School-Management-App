@@ -3,9 +3,9 @@
 import { NotificationCenter } from '@/app/_components/dashboard/NotificationCenter';
 
 /**
- * Student Notifications Page.
+ * Teacher Notifications Page.
  * Renders the generalized premium notification center.
  */
-export default function StudentNotificationsPage() {
-  return <NotificationCenter title="Student Notifications" />;
+export default function TeacherNotificationsPage() {
+  return <NotificationCenter title="Teacher Notifications" />;
 }
