@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
 /**
  * PUT: Mark all notifications as read for current user.
  */
-export async function PUT() {
+export async function PUT(request: NextRequest) {
   try {
     const result = await markAllNotificationsAsRead();
     if (result.error) {

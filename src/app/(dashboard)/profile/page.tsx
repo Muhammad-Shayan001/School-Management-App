@@ -72,13 +72,13 @@ export default async function ProfilePage() {
           </div>
           <div className="flex items-center gap-2">
             <div className={cn(
-              "flex items-center gap-2 px-4 py-1.5 rounded-2xl text-[11px] font-black uppercase tracking-[0.1em] border shadow-sm",
+              "flex items-center gap-2 px-4 py-1.5 rounded-2xl text-[11px] font-black uppercase tracking-widest border shadow-sm",
               isApproved ? "bg-success/10 text-success border-success/20" : "bg-warning/10 text-warning border-warning/20"
             )}>
               {isApproved ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Clock className="h-3.5 w-3.5" />}
               {profile.status || 'Under Review'}
             </div>
-            <div className="px-4 py-1.5 rounded-2xl bg-bg-tertiary text-text-tertiary border border-border/50 text-[11px] font-black uppercase tracking-[0.1em]">
+            <div className="px-4 py-1.5 rounded-2xl bg-bg-tertiary text-text-tertiary border border-border/50 text-[11px] font-black uppercase tracking-widest">
               {role?.replace('_', ' ')}
             </div>
           </div>
@@ -97,9 +97,9 @@ export default async function ProfilePage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
         {/* Profile Card Sidebar */}
         <div className="lg:col-span-4 space-y-8">
-          <Card className="card-standard p-0 overflow-hidden border-none shadow-2xl shadow-black/5 bg-gradient-to-b from-bg-primary to-bg-tertiary/20">
+          <Card className="card-standard p-0 overflow-hidden border border-border/70 shadow-[0_18px_45px_rgba(15,23,42,0.08)] bg-linear-to-b from-white to-slate-50">
             <div className="h-32 bg-accent/10 relative overflow-hidden">
-               <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-accent via-transparent to-transparent scale-150" />
+               <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,var(--tw-gradient-stops))] from-accent via-transparent to-transparent scale-150" />
             </div>
             <div className="px-8 pb-10 flex flex-col items-center -mt-16">
               <div className="relative group">
@@ -141,7 +141,7 @@ export default async function ProfilePage() {
           </Card>
 
           {/* Digital ID Card Display Box */}
-          <Card className="card-standard bg-white border-border/50 shadow-2xl relative overflow-hidden group">
+          <Card className="card-standard bg-white border border-border/70 shadow-[0_18px_45px_rgba(15,23,42,0.08)] relative overflow-hidden group">
              <div className="absolute -top-10 -right-10 w-40 h-40 bg-accent/10 rounded-full blur-3xl group-hover:scale-125 transition-transform duration-700" />
              <div className="relative z-10 space-y-6">
                <div className="flex items-center justify-between">
@@ -178,7 +178,7 @@ export default async function ProfilePage() {
 
         {/* Profile Content Area - Core Information Box */}
         <div className="lg:col-span-8 space-y-8">
-          <Card className="card-standard p-10 border-border/50 shadow-2xl shadow-black/5 bg-white/80 backdrop-blur-xl">
+          <Card className="card-standard p-10 border border-border/70 shadow-[0_18px_45px_rgba(15,23,42,0.08)] bg-white/95 backdrop-blur-xl">
             <div className="flex items-center justify-between mb-12">
               <div className="flex items-center gap-4">
                 <div className="h-12 w-12 rounded-2xl bg-accent/5 flex items-center justify-center text-accent border border-accent/10 shadow-inner">
@@ -291,12 +291,12 @@ export default async function ProfilePage() {
 function IconRow({ icon: Icon, label, value }: { icon: any, label: string, value?: string }) {
   return (
     <div className="flex items-center gap-4 text-left group">
-      <div className="h-11 w-11 rounded-2xl bg-bg-primary flex items-center justify-center text-text-tertiary group-hover:bg-accent/10 group-hover:text-accent transition-all duration-300 shadow-sm border border-border/20">
+      <div className="h-11 w-11 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-700 group-hover:bg-accent/10 group-hover:text-accent transition-all duration-300 shadow-sm border border-border/40">
         <Icon className="h-5 w-5" />
       </div>
       <div className="min-w-0">
-        <p className="text-[10px] text-text-tertiary font-black uppercase tracking-[0.15em] leading-none mb-1">{label}</p>
-        <p className="text-sm font-bold text-text-primary truncate">{value || 'Pending Setup'}</p>
+        <p className="text-[10px] text-slate-600 font-black uppercase tracking-[0.15em] leading-none mb-1">{label}</p>
+        <p className="text-sm font-bold text-slate-900 truncate">{value || 'Pending Setup'}</p>
       </div>
     </div>
   );
@@ -306,13 +306,13 @@ function GridInfo({ label, value, icon: Icon, className }: { label: string, valu
   return (
     <div className={cn("group transition-all duration-300", className)}>
       <div className="flex items-center gap-2 mb-3">
-        <div className="h-6 w-6 rounded-lg bg-accent/5 flex items-center justify-center text-accent/60 group-hover:scale-110 transition-transform">
+        <div className="h-6 w-6 rounded-lg bg-accent/10 flex items-center justify-center text-accent group-hover:scale-110 transition-transform">
           <Icon className="h-3.5 w-3.5" />
         </div>
-        <span className="text-[10px] font-black text-text-tertiary uppercase tracking-[0.2em]">{label}</span>
+        <span className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em]">{label}</span>
       </div>
-      <p className="text-base font-bold text-text-primary pl-8 border-l-2 border-transparent group-hover:border-accent/30 transition-all leading-tight">
-        {value || <span className="text-text-tertiary/30 font-medium italic text-xs tracking-wide uppercase">Record Pending...</span>}
+      <p className="text-base font-bold text-slate-900 pl-8 border-l-2 border-transparent group-hover:border-accent/30 transition-all leading-tight">
+        {value || <span className="text-slate-500 font-medium italic text-xs tracking-wide uppercase">Record Pending...</span>}
       </p>
     </div>
   );

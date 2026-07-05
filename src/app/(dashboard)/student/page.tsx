@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { StatsCard } from '@/app/_components/dashboard/stats-card';
 import { getFullProfile } from '@/app/_lib/actions/profile';
-import { BarChart3, Calendar, Megaphone, FileText, UserCircle, ClipboardList, CreditCard, ShieldCheck, XCircle, AlertCircle, Bell } from 'lucide-react';
+import { BarChart3, Calendar, Megaphone, FileText, UserCircle, ClipboardList, CreditCard, ShieldCheck, XCircle, AlertCircle, Bell, TrendingUp, CheckCircle2, Clock3 } from 'lucide-react';
 import { AnnouncementWidget } from '@/app/_components/dashboard/AnnouncementWidget';
 import { NextExamWidget } from '@/app/_components/dashboard/NextExamWidget';
 import { AttendanceNotificationPanel } from '@/app/_components/dashboard/AttendanceNotificationPanel';
@@ -12,6 +12,12 @@ export default async function StudentDashboard() {
   // Fetch assignments for this student
   const { getStudentAssignments } = await import("@/app/_lib/actions/assignments");
   const assignments = await getStudentAssignments();
+
+  const { getUserAttendance } = await import('@/app/_lib/actions/attendance');
+  const { data: attendanceRecords = [] } = await getUserAttendance(user?.id);
+  const attendanceTotal = attendanceRecords.filter((record: any) => record.status !== 'pending').length;
+  const attendancePresent = attendanceRecords.filter((record: any) => record.status === 'present' || record.status === 'late').length;
+  const attendancePercentage = attendanceTotal > 0 ? Math.round((attendancePresent / attendanceTotal) * 100) : 0;
   
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -28,6 +34,27 @@ export default async function StudentDashboard() {
              </div>
            )}
            <NextExamWidget />
+        </div>
+      </div>
+
+      <div className="rounded-[2rem] border border-emerald-200 bg-gradient-to-r from-emerald-600 via-emerald-500 to-green-500 p-6 text-white shadow-[0_20px_50px_rgba(16,185,129,0.24)]">
+        <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-start gap-4">
+            <div className="h-12 w-12 rounded-2xl bg-white/15 flex items-center justify-center border border-white/25">
+              <TrendingUp className="h-6 w-6" />
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.25em] text-emerald-50/90">Attendance Ratio</p>
+              <div className="flex items-end gap-3 mt-1">
+                <span className="text-4xl font-black leading-none">{attendancePercentage}%</span>
+                <span className="text-sm font-semibold text-emerald-50/90">{attendancePresent}/{attendanceTotal} verified</span>
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-3 text-sm font-semibold">
+            <div className="rounded-2xl bg-white/15 px-3 py-2 border border-white/20">Present: {attendancePresent}</div>
+            <div className="rounded-2xl bg-white/15 px-3 py-2 border border-white/20">Pending: {attendanceRecords.filter((record: any) => record.status === 'pending').length}</div>
+          </div>
         </div>
       </div>
 

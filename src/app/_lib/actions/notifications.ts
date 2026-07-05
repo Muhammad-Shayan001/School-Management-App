@@ -124,32 +124,37 @@ export async function createNotification(
           },
         };
 
-        const response = await messaging.sendEachForMulticast(payload);
-        console.log(`📤 FCM Multicast send results: ${response.successCount} success, ${response.failureCount} failure`);
+        // Fire and forget FCM sending to prevent blocking the API response
+        Promise.resolve().then(async () => {
+          const response = await messaging.sendEachForMulticast(payload);
+          console.log(`📤 FCM Multicast send results: ${response.successCount} success, ${response.failureCount} failure`);
 
-        // 4. Cleanup expired/invalid tokens from the database
-        if (response.failureCount > 0) {
-          const tokensToDelete: string[] = [];
-          response.responses.forEach((resp: any, idx: number) => {
-            if (!resp.success) {
-              const errorCode = resp.error?.code;
-              if (
-                errorCode === 'messaging/invalid-registration-token' ||
-                errorCode === 'messaging/registration-token-not-registered'
-              ) {
-                tokensToDelete.push(tokens[idx]);
+          // 4. Cleanup expired/invalid tokens from the database
+          if (response.failureCount > 0) {
+            const tokensToDelete: string[] = [];
+            response.responses.forEach((resp: any, idx: number) => {
+              if (!resp.success) {
+                const errorCode = resp.error?.code;
+                if (
+                  errorCode === 'messaging/invalid-registration-token' ||
+                  errorCode === 'messaging/registration-token-not-registered'
+                ) {
+                  tokensToDelete.push(tokens[idx]);
+                }
               }
-            }
-          });
+            });
 
-          if (tokensToDelete.length > 0) {
-            console.log(`🧹 Removing ${tokensToDelete.length} stale FCM tokens`);
-            await adminClient
-              .from('fcm_tokens')
-              .delete()
-              .in('token', tokensToDelete);
+            if (tokensToDelete.length > 0) {
+              console.log(`🧹 Removing ${tokensToDelete.length} stale FCM tokens`);
+              await adminClient
+                .from('fcm_tokens')
+                .delete()
+                .in('token', tokensToDelete);
+            }
           }
-        }
+        }).catch(err => {
+          console.error('❌ Failed to send FCM push notification in background:', err);
+        });
       } catch (fcmError) {
         console.error('❌ Failed to send FCM push notification:', fcmError);
       }
