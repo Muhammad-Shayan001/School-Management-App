@@ -13,11 +13,13 @@ import {
   Search, Filter, ChevronRight, X, Sparkles, Clock,
   Building2
 } from 'lucide-react';
+import { useTerminology } from '@/app/_lib/context/InstitutionContext';
 import { useCampusStore } from '@/app/_lib/store/campus-store';
 import { formatDate } from '@/app/_lib/utils/format';
 import { cn } from '@/app/_lib/utils/cn';
 
 export default function AdminAnnouncementsPage() {
+  const { t } = useTerminology();
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [classes, setClasses] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -289,20 +291,20 @@ export default function AdminAnnouncementsPage() {
                      <option value="all">Everyone (School-wide)</option>
                      <option value="teachers">Only Teachers</option>
                      <option value="students">Only Students</option>
-                     <option value="class">Specific Class</option>
+                     <option value="class">Specific {t('unit')}</option>
                    </select>
                  </div>
 
                  {formData.target_type === 'class' && (
                    <div className="space-y-1 animate-in slide-in-from-top-2">
-                     <label className="text-[10px] font-black uppercase text-text-tertiary tracking-widest">Select Class</label>
+                     <label className="text-[10px] font-black uppercase text-text-tertiary tracking-widest">{t('selectUnit')}</label>
                      <select 
                        required
                        value={formData.target_id}
                        onChange={(e) => setFormData({ ...formData, target_id: e.target.value })}
                        className="w-full px-4 py-3 bg-bg-tertiary border border-border rounded-xl font-bold outline-none focus:border-accent"
                      >
-                       <option value="">— Select Class —</option>
+                       <option value="">— {t('selectUnit')} —</option>
                        {classes.map((c) => (
                          <option key={c.id} value={c.id}>{c.name}</option>
                        ))}

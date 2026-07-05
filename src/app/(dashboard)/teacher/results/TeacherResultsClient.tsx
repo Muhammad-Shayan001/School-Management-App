@@ -8,6 +8,7 @@ import {
   saveSubjectResult, 
   getSubjectResults 
 } from '@/app/_lib/actions/results';
+import { useTerminology } from '@/app/_lib/context/InstitutionContext';
 import { Card } from '@/app/_components/ui/card';
 import { Input } from '@/app/_components/ui/input';
 import { Button } from '@/app/_components/ui/button';
@@ -30,6 +31,7 @@ import { cn } from '@/app/_lib/utils/cn';
 import Link from 'next/link';
 
 export default function TeacherResultsClient() {
+  const { t } = useTerminology();
   // Data State
   const [classes, setClasses] = useState<any[]>([]);
   const [subjects, setSubjects] = useState<any[]>([]);
@@ -204,14 +206,14 @@ export default function TeacherResultsClient() {
           {/* Class Selection */}
           <div className="space-y-3">
             <label className="text-[10px] font-black uppercase tracking-[0.2em] text-text-tertiary flex items-center gap-2">
-              <GraduationCap className="h-3 w-3" /> Select Class
+              <GraduationCap className="h-3 w-3" /> {t('selectUnit')}
             </label>
             <select 
               value={selectedClassId}
               onChange={(e) => setSelectedClassId(e.target.value)}
               className="w-full h-14 bg-bg-tertiary/50 border-2 border-transparent focus:border-accent/30 focus:bg-white transition-all rounded-2xl px-5 font-bold text-text-primary outline-none appearance-none"
             >
-              <option value="">Choose a class...</option>
+              <option value="">Choose a {t('unit').toLowerCase()}...</option>
               {classes.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}{c.section && c.section.toUpperCase() !== 'A' ? ` - ${c.section}` : ''}</option>
               ))}

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { useTerminology } from '@/app/_lib/context/InstitutionContext';
 import { Button } from "@/app/_components/ui/button";
 import { Upload, AlignLeft, Target, GraduationCap, BookOpen, Calendar } from "lucide-react";
 import Link from "next/link";
@@ -16,6 +17,7 @@ export default function CreateAssignmentForm({
   availableSubjects: any[];
 }) {
   const router = useRouter();
+  const { t } = useTerminology();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit(formData: FormData) {
@@ -71,7 +73,7 @@ export default function CreateAssignmentForm({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Class */}
             <div className="space-y-3">
-                <label htmlFor="class_id" className="text-xs font-black text-text-tertiary uppercase tracking-widest ml-1">Target Class *</label>
+                <label htmlFor="class_id" className="text-xs font-black text-text-tertiary uppercase tracking-widest ml-1">Target {t('unit')} *</label>
                 <div className="relative group">
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-text-tertiary group-focus-within:text-accent transition-colors">
                         <GraduationCap className="h-5 w-5" />
@@ -82,7 +84,7 @@ export default function CreateAssignmentForm({
                         required
                         className="w-full bg-bg-tertiary/40 border border-border/40 rounded-2xl py-4 pl-12 pr-4 text-sm font-bold text-text-primary focus:outline-none focus:border-accent/40 focus:bg-white transition-all shadow-sm appearance-none cursor-pointer"
                     >
-                        <option value="">Select Class</option>
+                        <option value="">{t('selectUnit')}</option>
                         {availableClasses.map((cls) => (
                             <option key={cls.id} value={cls.id}>
                                 {cls.name}{cls.section && cls.section.toUpperCase() !== 'A' ? ` - ${cls.section}` : ''}

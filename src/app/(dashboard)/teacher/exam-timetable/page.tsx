@@ -11,11 +11,13 @@ import {
   Calendar, Clock, MapPin, Trash2, Plus, 
   GraduationCap, BookOpen, AlertCircle, Sparkles, CheckCircle2 
 } from 'lucide-react';
+import { useTerminology } from '@/app/_lib/context/InstitutionContext';
 import { formatDate } from '@/app/_lib/utils/format';
 import { PageSpinner } from '@/app/_components/ui/spinner';
 import { cn } from '@/app/_lib/utils/cn';
 
 export default function ExamSchedulePage() {
+  const { t } = useTerminology();
   const [exams, setExams] = useState<any[]>([]);
   const [teacherProfile, setTeacherProfile] = useState<any>(null);
   const [assignments, setAssignments] = useState<any[]>([]);
@@ -204,7 +206,7 @@ export default function ExamSchedulePage() {
 
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black uppercase text-text-tertiary tracking-widest">Select Class</label>
+                <label className="text-[10px] font-black uppercase text-text-tertiary tracking-widest">{t('selectUnit')}</label>
                 <select
                   required
                   value={selectedClassId}

@@ -11,10 +11,12 @@ import {
   Printer, Calendar as CalendarIcon, ChevronLeft, GraduationCap,
   Users, BarChart3, AlertCircle, BookOpen, ArrowLeft
 } from 'lucide-react';
+import { useTerminology } from '@/app/_lib/context/InstitutionContext';
 import { cn } from '@/app/_lib/utils/cn';
 import Link from 'next/link';
 
 export default function AdminMonthlyRegisterPage() {
+  const { t } = useTerminology();
   const [classes, setClasses] = useState<any[]>([]);
   const [selectedClassId, setSelectedClassId] = useState<string>('');
   const [selectedClassName, setSelectedClassName] = useState<string>('');
@@ -93,7 +95,7 @@ export default function AdminMonthlyRegisterPage() {
             </Link>
           </div>
           <h1 className="text-4xl font-black text-text-primary tracking-tighter">Monthly Attendance Register</h1>
-          <p className="text-text-secondary font-medium">Select a class to view the complete monthly attendance sheet for all 30/31 days</p>
+          <p className="text-text-secondary font-medium">Select a {t('unit').toLowerCase()} to view the complete monthly attendance sheet for all 30/31 days</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
@@ -103,7 +105,7 @@ export default function AdminMonthlyRegisterPage() {
             onChange={(e) => handleClassSelect(e.target.value)}
             className="px-4 py-2.5 bg-white border border-border rounded-xl text-sm font-black outline-none min-w-[180px] focus:border-accent transition-colors"
           >
-            <option value="">— Select Class —</option>
+            <option value="">— {t('selectUnit')} —</option>
             {classes.map((cls) => (
               <option key={cls.id} value={cls.id}>
                 {cls.name}{cls.section && cls.section.toUpperCase() !== 'A' ? ` - ${cls.section}` : ''}

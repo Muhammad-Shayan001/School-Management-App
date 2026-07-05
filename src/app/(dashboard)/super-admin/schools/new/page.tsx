@@ -113,6 +113,19 @@ export default function AddSchoolPage() {
             <Input name="campus_code" label="School Code" placeholder="e.g. LHS-001 (Auto-generated if left blank)" />
             
             <div className="space-y-1">
+              <label className="text-xs font-bold text-text-tertiary uppercase tracking-wider pl-1">Institution Type</label>
+              <Select 
+                name="institution_type" 
+                required 
+                options={[
+                  { value: "school", label: "School" },
+                  { value: "college", label: "College" },
+                  { value: "university", label: "University" },
+                  { value: "academy", label: "Academy" }
+                ]} 
+              />
+            </div>
+            <div className="space-y-1">
               <label className="text-xs font-bold text-text-tertiary uppercase tracking-wider pl-1">School Type</label>
               <Select 
                 name="school_type" 

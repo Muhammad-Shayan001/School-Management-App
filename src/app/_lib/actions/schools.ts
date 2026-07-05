@@ -28,6 +28,7 @@ export async function createNewSchool(formData: FormData) {
   const name = formData.get('name') as string;
   const short_name = formData.get('short_name') as string;
   const code = (formData.get('campus_code') as string) || `SCH-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+  const institution_type = formData.get('institution_type') as string || 'school';
   const school_type = formData.get('school_type') as string;
   const education_board = formData.get('education_board') as string;
   const established_year = formData.get('established_year') ? parseInt(formData.get('established_year') as string) : null;
@@ -107,7 +108,7 @@ export async function createNewSchool(formData: FormData) {
   const { data: school, error: schoolError } = await adminClient
     .from('schools')
     .insert({
-      name, short_name: short_name || null, code, school_type: school_type || null,
+      name, short_name: short_name || null, code, institution_type, school_type: school_type || null,
       education_board: education_board || null, established_year, registration_number: registration_number || null,
       ntn_number: ntn_number || null, school_motto: school_motto || null, description: description || null,
       primary_color: primary_color || null, secondary_color: secondary_color || null, accent_color: accent_color || null,
@@ -339,10 +340,26 @@ export async function getPublicClasses(schoolId: string) {
 
   if (error) return { data: null, error: error.message };
 
-  // Ensure Class 1-10 exist
-  const { CLASS_NAMES } = await import('@/app/_lib/utils/constants');
+  // Fetch school to know institution_type
+  const { data: schoolDetails } = await adminClient
+    .from('schools')
+    .select('institution_type')
+    .eq('id', schoolId)
+    .single();
+    
+  const type = schoolDetails?.institution_type || 'school';
+
+  let seedNames: string[] = [];
+  if (type === 'school') {
+    seedNames = ['Play Group', 'Nursery', 'KG', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10'];
+  } else if (type === 'college') {
+    seedNames = ['1st Year', '2nd Year', 'Intermediate Part-I', 'Intermediate Part-II', '11th', '12th'];
+  } else if (type === 'university') {
+    seedNames = ['BS', 'BSCS', 'BSIT', 'BBA', 'BCom', 'MS', 'MPhil', 'PhD'];
+  }
+
   const existingNames = new Set(existingClasses?.map(c => c.name));
-  const missingNames = CLASS_NAMES.filter(name => !existingNames.has(name));
+  const missingNames = seedNames.filter(name => !existingNames.has(name));
 
   if (missingNames.length > 0) {
     const newClasses = missingNames.map(name => ({
@@ -398,10 +415,28 @@ export async function getClasses(schoolId?: string) {
 
   if (error) return { data: [], error: error.message };
 
-  // Ensure Class 1-10 exist
-  const { CLASS_NAMES } = await import('@/app/_lib/utils/constants');
+  // Fetch school to determine institution_type for dynamic seeding
+  const { data: schoolInfo } = await adminClient
+    .from('schools')
+    .select('institution_type')
+    .eq('id', finalSchoolId)
+    .single();
+
+  const institutionType = schoolInfo?.institution_type || 'school';
+
+  let seedNames: string[] = [];
+  if (institutionType === 'school') {
+    seedNames = ['Play Group', 'Nursery', 'KG', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10'];
+  } else if (institutionType === 'college') {
+    seedNames = ['1st Year', '2nd Year', 'Intermediate Part-I', 'Intermediate Part-II', '11th', '12th'];
+  } else if (institutionType === 'university') {
+    seedNames = ['BS', 'BSCS', 'BSIT', 'BBA', 'BCom', 'MS', 'MPhil', 'PhD'];
+  } else if (institutionType === 'academy') {
+    seedNames = []; // Academies: Admin creates courses manually
+  }
+
   const existingNames = new Set(existingClasses?.map(c => c.name));
-  const missingNames = CLASS_NAMES.filter(name => !existingNames.has(name));
+  const missingNames = seedNames.filter(name => !existingNames.has(name));
 
   if (missingNames.length > 0) {
     const newClasses = missingNames.map(name => ({

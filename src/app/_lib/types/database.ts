@@ -28,6 +28,7 @@ export interface School {
   email: string | null;
   logo_url: string | null;
   admin_id: string | null;
+  institution_type?: 'school' | 'college' | 'university' | 'academy';
   created_at: string;
 }
 
@@ -38,6 +39,18 @@ export interface Class {
   section: string | null;
   school_id: string;
   class_teacher_id: string | null;
+  
+  // Academy Course Specific Fields (Optional)
+  course_code?: string;
+  course_duration?: string;
+  course_fee?: number;
+  course_description?: string;
+  max_students?: number;
+  status?: 'active' | 'archived' | 'draft';
+  start_date?: string;
+  end_date?: string;
+  thumbnail_url?: string;
+
   created_at: string;
 }
 
