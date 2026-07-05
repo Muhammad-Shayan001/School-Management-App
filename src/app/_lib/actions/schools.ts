@@ -325,6 +325,26 @@ export const getPublicSchools = unstable_cache(
   { revalidate: 3600, tags: ['schools'] }
 );
 
+function getDefaultClassSeeds(institutionType?: string): string[] {
+  switch (institutionType) {
+    case 'college':
+      return ['1st Year', '2nd Year', 'Intermediate Part-I', 'Intermediate Part-II', '11th', '12th'];
+    case 'university':
+      return ['BS', 'BSCS', 'BSIT', 'BBA', 'BCom', 'MS', 'MPhil', 'PhD'];
+    case 'academy':
+      return ['Batch A', 'Batch B', 'Morning Batch', 'Evening Batch', 'Weekend Batch'];
+    default:
+      return ['Play Group', 'Nursery', 'KG', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10'];
+  }
+}
+
+function getDefaultCourseSeeds(institutionType?: string): string[] {
+  if (institutionType === 'academy') {
+    return ['Web Development', 'Graphic Design', 'Digital Marketing', 'Data Science', 'Programming Fundamentals', 'UI/UX Design'];
+  }
+  return [];
+}
+
 /**
  * Get basic class info for public signup page by school.
  */
@@ -348,15 +368,7 @@ export async function getPublicClasses(schoolId: string) {
     .single();
     
   const type = schoolDetails?.institution_type || 'school';
-
-  let seedNames: string[] = [];
-  if (type === 'school') {
-    seedNames = ['Play Group', 'Nursery', 'KG', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10'];
-  } else if (type === 'college') {
-    seedNames = ['1st Year', '2nd Year', 'Intermediate Part-I', 'Intermediate Part-II', '11th', '12th'];
-  } else if (type === 'university') {
-    seedNames = ['BS', 'BSCS', 'BSIT', 'BBA', 'BCom', 'MS', 'MPhil', 'PhD'];
-  }
+  const seedNames = getDefaultClassSeeds(type);
 
   const existingNames = new Set(existingClasses?.map(c => c.name));
   const missingNames = seedNames.filter(name => !existingNames.has(name));
@@ -423,17 +435,7 @@ export async function getClasses(schoolId?: string) {
     .single();
 
   const institutionType = schoolInfo?.institution_type || 'school';
-
-  let seedNames: string[] = [];
-  if (institutionType === 'school') {
-    seedNames = ['Play Group', 'Nursery', 'KG', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10'];
-  } else if (institutionType === 'college') {
-    seedNames = ['1st Year', '2nd Year', 'Intermediate Part-I', 'Intermediate Part-II', '11th', '12th'];
-  } else if (institutionType === 'university') {
-    seedNames = ['BS', 'BSCS', 'BSIT', 'BBA', 'BCom', 'MS', 'MPhil', 'PhD'];
-  } else if (institutionType === 'academy') {
-    seedNames = []; // Academies: Admin creates courses manually
-  }
+  const seedNames = getDefaultClassSeeds(institutionType);
 
   const existingNames = new Set(existingClasses?.map(c => c.name));
   const missingNames = seedNames.filter(name => !existingNames.has(name));
@@ -489,14 +491,44 @@ export async function getSubjects() {
 
   if (!profile?.school_id) return { data: [], error: 'No school found' };
 
-  const { data, error } = await adminClient
+  const { data: existingSubjects, error } = await adminClient
     .from('subjects')
     .select('*')
     .eq('school_id', profile.school_id)
     .order('name');
 
   if (error) return { data: [], error: error.message };
-  return { data };
+
+  const { data: schoolInfo } = await adminClient
+    .from('schools')
+    .select('institution_type')
+    .eq('id', profile.school_id)
+    .single();
+
+  const institutionType = schoolInfo?.institution_type || 'school';
+  const seedNames = getDefaultCourseSeeds(institutionType);
+  const existingNames = new Set((existingSubjects || []).map((subject: any) => subject.name));
+  const missingNames = seedNames.filter((name) => !existingNames.has(name));
+
+  if (missingNames.length > 0) {
+    await adminClient.from('subjects').insert(
+      missingNames.map((name) => ({
+        name,
+        school_id: profile.school_id,
+      }))
+    );
+
+    const { data: updatedSubjects, error: updateError } = await adminClient
+      .from('subjects')
+      .select('*')
+      .eq('school_id', profile.school_id)
+      .order('name');
+
+    if (updateError) return { data: [], error: updateError.message };
+    return { data: updatedSubjects };
+  }
+
+  return { data: existingSubjects };
 }
 
 /**

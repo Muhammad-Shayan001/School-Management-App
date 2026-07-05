@@ -3,6 +3,7 @@
 import { createClient } from '@/app/_lib/supabase/server';
 import { createAdminClient } from '@/app/_lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
+import { getDefaultClassSeeds, getDefaultCourseSeeds } from '@/app/_lib/utils/institution-defaults';
 
 export async function getTeacherAssignments() {
   const supabase = await createClient();
@@ -60,10 +61,16 @@ export async function getClasses() {
 
   if (error) return { data: [], error: error.message };
 
-  // Ensure Class 1-10 exist
-  const { CLASS_NAMES } = await import('@/app/_lib/utils/constants');
+  const { data: schoolInfo } = await adminClient
+    .from('schools')
+    .select('institution_type')
+    .eq('id', profile.school_id)
+    .single();
+
+  const institutionType = schoolInfo?.institution_type || 'school';
+  const seedNames = getDefaultClassSeeds(institutionType);
   const existingNames = new Set(existingClasses?.map(c => c.name));
-  const missingNames = CLASS_NAMES.filter(name => !existingNames.has(name));
+  const missingNames = seedNames.filter(name => !existingNames.has(name));
 
   if (missingNames.length > 0) {
     const newClasses = missingNames.map(name => ({
@@ -94,13 +101,41 @@ export async function getSubjects() {
 
   const { data: profile } = await adminClient.from('profiles').select('school_id').eq('id', user.id).single();
   
-  const { data, error } = await adminClient
+  const { data: existingSubjects, error } = await adminClient
     .from('subjects')
     .select('*')
     .eq('school_id', profile?.school_id)
     .order('name');
-  
-  return { data: data || [], error: error?.message };
+
+  const { data: schoolInfo } = await adminClient
+    .from('schools')
+    .select('institution_type')
+    .eq('id', profile?.school_id)
+    .single();
+
+  const institutionType = schoolInfo?.institution_type || 'school';
+  const seedNames = getDefaultCourseSeeds(institutionType);
+  const existingNames = new Set((existingSubjects || []).map((subject: any) => subject.name));
+  const missingNames = seedNames.filter((name) => !existingNames.has(name));
+
+  if (missingNames.length > 0) {
+    await adminClient.from('subjects').insert(
+      missingNames.map((name) => ({
+        name,
+        school_id: profile?.school_id,
+      }))
+    );
+
+    const { data: updatedSubjects } = await adminClient
+      .from('subjects')
+      .select('*')
+      .eq('school_id', profile?.school_id)
+      .order('name');
+
+    return { data: updatedSubjects || [], error: null };
+  }
+
+  return { data: existingSubjects || [], error: error?.message };
 }
 
 export async function getTeacherSyllabi() {
