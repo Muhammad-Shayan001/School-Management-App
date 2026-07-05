@@ -43,8 +43,8 @@ ADD COLUMN IF NOT EXISTS banner_url TEXT,
 ADD COLUMN IF NOT EXISTS principal_name TEXT,
 ADD COLUMN IF NOT EXISTS address TEXT;
 
--- 4. Reload PostgREST so the API immediately recognises all the new columns
-NOTIFY pgrst, 'reload schema';
+-- 4. The schema cache refresh is handled automatically by Supabase after the migration completes.
+-- If the dashboard still shows old columns, refresh the page or run the migration again.
 
 -- 5. Verify the column exists (should return rows with institution_type visible)
 SELECT id, name, institution_type FROM public.schools LIMIT 5;

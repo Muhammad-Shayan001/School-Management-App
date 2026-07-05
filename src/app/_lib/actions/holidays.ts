@@ -3,6 +3,7 @@
 import { createClient } from '@/app/_lib/supabase/server';
 import { createAdminClient } from '@/app/_lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
+import { getPakistanDayOfWeek } from '@/app/_lib/utils/format';
 
 function isMissingHolidayTableError(error: { message?: string } | null | undefined) {
   return Boolean(error?.message?.includes("public.holidays") || error?.message?.includes('schema cache'));
@@ -107,10 +108,10 @@ export async function getHolidays() {
  * Check if a date is a holiday or Sunday for a specific role
  */
 export async function checkOffDay(dateStr: string, role: 'student' | 'teacher', schoolId: string) {
-  const date = new Date(dateStr);
-  
-  // 1. Check if it's Sunday (0 = Sunday)
-  if (date.getUTCDay() === 0) {
+  // Use Pakistan timezone so Sunday/Monday logic matches the actual school day in Karachi
+  const dayOfWeek = getPakistanDayOfWeek(dateStr);
+
+  if (dayOfWeek === 0) {
     return { isOff: true, reason: 'Sunday' };
   }
 

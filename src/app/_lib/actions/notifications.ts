@@ -8,14 +8,14 @@ export interface CreateNotificationParams {
   userId: string;
   title: string;
   message: string;
-  type: string; // 'attendance' | 'assignment' | 'result' | 'fee' | 'exam' | 'holiday' | 'announcement' | 'system' | 'profile'
+  type: string;
   role?: string;
   studentId?: string;
   teacherId?: string;
   priority?: 'normal' | 'high';
   link?: string;
   schoolId?: string;
-  category?: string; // e.g., 'attendance_marked', 'attendance_approved', etc.
+  category?: string;
   attendanceId?: string;
   attendanceStatus?: string;
   device?: string;
@@ -25,6 +25,7 @@ export interface CreateNotificationParams {
 
 /**
  * Creates a notification in the database and sends a push notification via FCM.
+ * FCM is fired in a non-blocking background promise so it never delays attendance marking.
  * Gracefully degrades if Firebase is not configured or fails.
  */
 export async function createNotification(
@@ -41,7 +42,7 @@ export async function createNotification(
       timeZone: 'Asia/Karachi',
     });
 
-    // 1. Insert notification into Supabase database (bypasses RLS)
+    // 1. Insert notification into Supabase database (uses service role to bypass RLS)
     const { data: notification, error: insertError } = await adminClient
       .from('notifications')
       .insert({
@@ -80,85 +81,78 @@ export async function createNotification(
       return { success: false, error: 'Database insert returned empty result.' };
     }
 
-    // 2. Send Push Notification via Firebase if service is initialized
+    // 2. Fire-and-forget: Send FCM push notification in background (never blocks the caller)
     if (messaging) {
-      const { data: tokenRecords, error: tokenError } = await adminClient
-        .from('fcm_tokens')
-        .select('token')
-        .eq('user_id', params.userId);
+      Promise.resolve()
+        .then(async () => {
+          const { data: tokenRecords } = await adminClient
+            .from('fcm_tokens')
+            .select('token')
+            .eq('user_id', params.userId);
 
-      if (tokenError) {
-        console.error('⚠️ Error fetching user FCM tokens:', tokenError.message);
-      }
+          const tokens = tokenRecords?.map((t: any) => t.token) || [];
+          if (tokens.length === 0) return;
 
-      const tokens = tokenRecords?.map((t) => t.token) || [];
-
-      if (tokens.length > 0) {
-        try {
           const payload = {
             tokens,
             notification: {
-            title: params.title,
-            body: params.message,
-          },
-          data: {
-            link: params.link || '',
-            type: params.type || 'general',
-            notificationId: notification.id,
-          },
-          android: {
-            priority: (params.priority === 'high' ? 'high' : 'normal') as any,
-            notification: {
-              sound: 'default',
-              priority: (params.priority === 'high' ? 'high' : 'default') as any,
-              channelId: 'school_notifications',
-              icon: 'ic_stat_notification', // Custom notification icon
+              title: params.title,
+              body: params.message,
             },
-          },
-          webpush: {
-            notification: {
-              icon: '/favicon.ico',
-              badge: '/favicon.ico',
-              click_action: params.link || '/',
+            data: {
+              link: params.link || '',
+              type: params.type || 'general',
+              notificationId: notification.id,
             },
-          },
-        };
+            android: {
+              priority: (params.priority === 'high' ? 'high' : 'normal') as any,
+              notification: {
+                sound: 'default',
+                channelId: 'school_notifications',
+                icon: 'ic_stat_notification',
+              },
+            },
+            webpush: {
+              notification: {
+                icon: '/favicon.ico',
+                badge: '/favicon.ico',
+              },
+              fcmOptions: {
+                link: params.link || '/',
+              },
+            },
+          };
 
-        // Fire and forget FCM sending to prevent blocking the API response
-        Promise.resolve().then(async () => {
           const response = await messaging.sendEachForMulticast(payload);
-          console.log(`📤 FCM Multicast send results: ${response.successCount} success, ${response.failureCount} failure`);
+          console.log(
+            `📤 FCM: ${response.successCount} sent, ${response.failureCount} failed`
+          );
 
-          // 4. Cleanup expired/invalid tokens from the database
+          // Remove stale tokens
           if (response.failureCount > 0) {
             const tokensToDelete: string[] = [];
             response.responses.forEach((resp: any, idx: number) => {
               if (!resp.success) {
-                const errorCode = resp.error?.code;
+                const code = resp.error?.code;
                 if (
-                  errorCode === 'messaging/invalid-registration-token' ||
-                  errorCode === 'messaging/registration-token-not-registered'
+                  code === 'messaging/invalid-registration-token' ||
+                  code === 'messaging/registration-token-not-registered'
                 ) {
                   tokensToDelete.push(tokens[idx]);
                 }
               }
             });
-
             if (tokensToDelete.length > 0) {
-              console.log(`🧹 Removing ${tokensToDelete.length} stale FCM tokens`);
               await adminClient
                 .from('fcm_tokens')
                 .delete()
                 .in('token', tokensToDelete);
             }
           }
-        }).catch(err => {
-          console.error('❌ Failed to send FCM push notification in background:', err);
-        });
-      } catch (fcmError) {
-        console.error('❌ Failed to send FCM push notification:', fcmError);
-      }
-      }
+        })
+        .catch((err) =>
+          console.error('❌ Background FCM send failed:', err)
+        );
     }
 
     return { success: true, notificationId: notification.id };
@@ -184,7 +178,6 @@ export async function registerFcmToken(
 
     const adminClient = createAdminClient();
 
-    // Use upsert or insert with conflict resolution on token
     const { error } = await adminClient
       .from('fcm_tokens')
       .upsert(
@@ -213,7 +206,9 @@ export async function registerFcmToken(
 /**
  * Unregisters (deletes) an FCM token. Typically called on logout.
  */
-export async function unregisterFcmToken(token: string): Promise<{ success: boolean; error?: string }> {
+export async function unregisterFcmToken(
+  token: string
+): Promise<{ success: boolean; error?: string }> {
   try {
     const adminClient = createAdminClient();
     const { error } = await adminClient
@@ -234,7 +229,7 @@ export async function unregisterFcmToken(token: string): Promise<{ success: bool
 }
 
 /**
- * Fetch general notifications for the current authenticated user with pagination and filtering.
+ * Fetch notifications for the current authenticated user with pagination and filtering.
  */
 export async function getNotifications(params?: {
   limit?: number;
@@ -284,7 +279,10 @@ export async function getNotifications(params?: {
 /**
  * Fetch total count of unread notifications for the current authenticated user.
  */
-export async function getUnreadNotificationCount(): Promise<{ count: number; error?: string }> {
+export async function getUnreadNotificationCount(): Promise<{
+  count: number;
+  error?: string;
+}> {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -314,7 +312,9 @@ export async function getUnreadNotificationCount(): Promise<{ count: number; err
 /**
  * Mark a single notification as read.
  */
-export async function markNotificationAsRead(id: string): Promise<{ success: boolean; error?: string }> {
+export async function markNotificationAsRead(
+  id: string
+): Promise<{ success: boolean; error?: string }> {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -324,13 +324,13 @@ export async function markNotificationAsRead(id: string): Promise<{ success: boo
     const adminClient = createAdminClient();
 
     // Verify ownership before updating
-    const { data: notification } = await adminClient
+    const { data: notif } = await adminClient
       .from('notifications')
       .select('user_id')
       .eq('id', id)
       .single();
 
-    if (!notification || notification.user_id !== user.id) {
+    if (!notif || notif.user_id !== user.id) {
       return { success: false, error: 'Notification not found or access denied' };
     }
 
@@ -352,9 +352,12 @@ export async function markNotificationAsRead(id: string): Promise<{ success: boo
 }
 
 /**
- * Mark all unread notifications for the current authenticated user as read.
+ * Mark ALL unread notifications for the current user as read.
  */
-export async function markAllNotificationsAsRead(): Promise<{ success: boolean; error?: string }> {
+export async function markAllNotificationsAsRead(): Promise<{
+  success: boolean;
+  error?: string;
+}> {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -384,7 +387,9 @@ export async function markAllNotificationsAsRead(): Promise<{ success: boolean; 
 /**
  * Delete a single notification.
  */
-export async function deleteNotification(id: string): Promise<{ success: boolean; error?: string }> {
+export async function deleteNotification(
+  id: string
+): Promise<{ success: boolean; error?: string }> {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -394,13 +399,13 @@ export async function deleteNotification(id: string): Promise<{ success: boolean
     const adminClient = createAdminClient();
 
     // Verify ownership before deleting
-    const { data: notification } = await adminClient
+    const { data: notif } = await adminClient
       .from('notifications')
       .select('user_id')
       .eq('id', id)
       .single();
 
-    if (!notification || notification.user_id !== user.id) {
+    if (!notif || notif.user_id !== user.id) {
       return { success: false, error: 'Notification not found or access denied' };
     }
 

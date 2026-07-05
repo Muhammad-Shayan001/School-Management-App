@@ -3,11 +3,51 @@
  */
 
 /**
- * Format a date to a human-readable string.
+ * Format a date to a human-readable string using Pakistan time.
  */
+const PAKISTAN_TIMEZONE = 'Asia/Karachi';
+
+export function getPakistanDateString(date: string | Date = new Date()): string {
+  const d = typeof date === 'string' ? new Date(date) : date;
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: PAKISTAN_TIMEZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+
+  const parts = formatter.formatToParts(d);
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${values.year}-${values.month}-${values.day}`;
+}
+
+export function getPakistanTimeString(date: string | Date = new Date(), options?: Intl.DateTimeFormatOptions): string {
+  const d = typeof date === 'string' ? new Date(date) : date;
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: PAKISTAN_TIMEZONE,
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true,
+    ...options,
+  }).format(d);
+}
+
+export function getPakistanDayOfWeek(date: string | Date = new Date()): number {
+  const d = typeof date === 'string' ? new Date(date) : date;
+  const weekday = new Intl.DateTimeFormat('en-US', {
+    timeZone: PAKISTAN_TIMEZONE,
+    weekday: 'short',
+  }).format(d).toLowerCase();
+
+  const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+  return days.indexOf(weekday);
+}
+
 export function formatDate(date: string | Date, options?: Intl.DateTimeFormatOptions): string {
   const d = typeof date === 'string' ? new Date(date) : date;
   return d.toLocaleDateString('en-US', {
+    timeZone: PAKISTAN_TIMEZONE,
     year: 'numeric',
     month: 'short',
     day: 'numeric',

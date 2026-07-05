@@ -9,6 +9,7 @@ import {
   MapPin, Keyboard, Camera, SwitchCamera, ScanLine, Clock
 } from 'lucide-react';
 import { cn } from '@/app/_lib/utils/cn';
+import { getPakistanDateString, getPakistanTimeString } from '@/app/_lib/utils/format';
 
 interface ScanLog {
   id: string;
@@ -80,7 +81,7 @@ export default function AttendanceScanner() {
 
   // Off-day checking on mount
   useEffect(() => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getPakistanDateString();
     if (user?.school_id) {
       checkOffDay(today, 'student', user.school_id)
         .then(res => {
@@ -154,7 +155,7 @@ export default function AttendanceScanner() {
 
       const duplicateLog: ScanLog = {
         id: Math.random().toString(36).substring(7),
-        timestamp: new Date().toLocaleTimeString(),
+        timestamp: getPakistanTimeString(new Date(), { hour: '2-digit', minute: '2-digit', hour12: true }),
         scannedId,
         status: 'duplicate',
         message: 'Duplicate scan blocked (3s debounce constraint)',
@@ -173,7 +174,7 @@ export default function AttendanceScanner() {
       const { markAttendanceByUid } = await import('@/app/_lib/actions/attendance_lookup');
       const result = await markAttendanceByUid(scannedId);
 
-      const timestamp = new Date().toLocaleTimeString();
+      const timestamp = getPakistanTimeString(new Date(), { hour: '2-digit', minute: '2-digit', hour12: true });
 
       if (result.success) {
         if (result.status === 'pending') {
@@ -231,7 +232,7 @@ export default function AttendanceScanner() {
           // Show popup toast
           const { toast } = await import('sonner');
           toast.success('Attendance Marked Successfully', {
-             description: `Your attendance has been marked successfully.\nDate: ${new Date().toLocaleDateString()}\nTime: ${timestamp}`.split('\n').map((l, i) => <div key={i}>{l}</div>),
+             description: `Your attendance has been marked successfully.\nDate: ${getPakistanDateString()}\nTime: ${timestamp}`.split('\n').map((l, i) => <div key={i}>{l}</div>),
              duration: 5000,
           });
         }

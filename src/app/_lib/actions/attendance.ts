@@ -4,6 +4,7 @@ import { createClient } from '@/app/_lib/supabase/server';
 import { createAdminClient } from '@/app/_lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import { createAttendanceNotification } from './attendance-notifications';
+import { getPakistanDateString } from '@/app/_lib/utils/format';
 
 /**
  * Creates an attendance record. 
@@ -73,7 +74,7 @@ export async function markAttendance(params: {
     }
   }
 
-  const attendanceDate = params.date || new Date().toISOString().split('T')[0];
+  const attendanceDate = params.date || getPakistanDateString();
 
   // Manual attendance is also 'present' by default if not set
   if (!finalStatus) {

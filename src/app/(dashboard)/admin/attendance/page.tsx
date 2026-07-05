@@ -17,7 +17,7 @@ import {
   XCircle, CheckCircle2, History, Filter, Plus, Trash2, CalendarX,
   Palmtree, Users2, Layers, AlertCircle
 } from 'lucide-react';
-import { formatDate } from '@/app/_lib/utils/format';
+import { formatDate, getPakistanDateString } from '@/app/_lib/utils/format';
 import { cn } from '@/app/_lib/utils/cn';
 
 export default function AdminAttendancePage() {
@@ -25,7 +25,7 @@ export default function AdminAttendancePage() {
   const [attendance, setAttendance] = useState<any[]>([]);
   const [holidays, setHolidays] = useState<any[]>([]);
   const [classes, setClasses] = useState<any[]>([]);
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(getPakistanDateString());
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'present' | 'rejected'>('all');
@@ -36,7 +36,7 @@ export default function AdminAttendancePage() {
 
   // Holiday Form State
   const [newHoliday, setNewHoliday] = useState({
-    date: new Date().toISOString().split('T')[0],
+    date: getPakistanDateString(),
     title: '',
     type: 'everyone' as 'everyone' | 'students' | 'teachers'
   });

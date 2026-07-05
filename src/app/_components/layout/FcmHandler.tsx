@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { useEffect, useRef } from 'react';
 import { messaging } from '@/app/_lib/firebase/client';
 import { getToken, onMessage } from 'firebase/messaging';
@@ -9,8 +10,13 @@ import { createClient } from '@/app/_lib/supabase/client';
 import { toast } from 'sonner';
 
 /**
- * Global component that handles FCM token generation, registration,
- * background/foreground notification integration, and the Android JS bridge.
+ * Global handler for all notification delivery channels:
+ *  1. Supabase Realtime → instant in-app toast when DB row is inserted (works WITHOUT Firebase)
+ *  2. Firebase FCM Web Push → background/foreground browser notifications (needs VAPID key)
+ *  3. Android JS Bridge → token handoff from native app WebView
+ *
+ * Always sets up Supabase Realtime first so in-app notifications work even
+ * when Firebase is not configured. FCM is an optional enhancement.
  */
 export default function FcmHandler() {
   const { user } = useAuthStore();
@@ -22,37 +28,18 @@ export default function FcmHandler() {
       hasRegisteredRef.current = false;
       return;
     }
-
     if (hasRegisteredRef.current) return;
     hasRegisteredRef.current = true;
 
-    // 1. Android Bidirectional Javascript Bridge
-    if (typeof window !== 'undefined') {
-      // Callback for Android App to send new token
-      (window as any).onAndroidFcmToken = (token: string) => {
-        console.log('📱 Received FCM token from Android App callback:', token);
-        registerTokenOnServer(token, 'android', 'Android App Device');
-      };
-
-      // Pull token from Android App if bridge exists
-      const bridge = (window as any).AndroidNotificationBridge || (window as any).AndroidDownloadBridge;
-      if (bridge && typeof bridge.getFcmToken === 'function') {
-        try {
-          const token = bridge.getFcmToken();
-          if (token) {
-            console.log('📱 Pulled FCM token from Android App Bridge:', token);
-            registerTokenOnServer(token, 'android', 'Android App Device');
-          }
-        } catch (err) {
-          console.error('❌ Failed to pull token from Android App Bridge:', err);
-        }
-      }
-    }
-
-    // Supabase Realtime Fallback (Instantly triggers toasts when DB updates, even if FCM is missing)
+    // ── Cleanup refs so we can properly tear down on unmount ────────
+    let unsubscribeOnMessage: (() => void) | undefined;
     const supabase = createClient();
-    const realtimeSubscription = supabase
-      .channel('public:notifications')
+
+    // ── 1. Supabase Realtime subscription ───────────────────────────
+    // This fires INSTANTLY when any notification row is inserted for this user.
+    // Works completely independently of Firebase - no keys needed.
+    const channel = supabase
+      .channel(`notifications:${user.id}`)
       .on(
         'postgres_changes',
         {
@@ -62,130 +49,163 @@ export default function FcmHandler() {
           filter: `user_id=eq.${user.id}`,
         },
         (payload) => {
-          console.log('⚡ Supabase Realtime Notification Received:', payload);
-          const newNotification = payload.new;
-          addNotification(newNotification as any);
-          
-          toast(newNotification.title, {
+          console.log('⚡ Realtime notification received:', payload.new);
+          const n = payload.new as any;
+
+          // Add to Zustand store → updates bell badge count instantly
+          addNotification(n);
+
+          // Show toast popup inside the website
+          toast(n.title || 'New Notification', {
             description: (
-              <div className="flex flex-col gap-1 mt-1">
-                {newNotification.message.split('\n').map((line: string, i: number) => (
+              <div className="flex flex-col gap-0.5 mt-1">
+                {(n.message || '').split('\n').map((line: string, i: number) => (
                   <span key={i} className="text-sm opacity-90">{line}</span>
                 ))}
               </div>
             ),
-            action: newNotification.link
-              ? { label: 'View', onClick: () => { window.location.href = newNotification.link; } }
+            action: n.link
+              ? {
+                  label: 'View',
+                  onClick: () => { window.location.href = n.link; },
+                }
               : undefined,
-            duration: 7000,
+            duration: 8000,
           });
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log(`🔔 Supabase Realtime channel status: ${status}`);
+      });
 
-    // 2. Standard Web Browser FCM Registration
-    if (!messaging) return;
+    // ── 2. Android Bidirectional JS Bridge ──────────────────────────
+    if (typeof window !== 'undefined') {
+      (window as any).onAndroidFcmToken = (token: string) => {
+        console.log('📱 Android FCM token received:', token);
+        registerTokenWithServer(token, 'android', 'Android App');
+      };
 
-    let unsubscribeOnMessage: (() => void) | undefined;
+      const bridge =
+        (window as any).AndroidNotificationBridge ||
+        (window as any).AndroidDownloadBridge;
 
-    const setupFCM = async () => {
-      try {
-        // Request browser permission
-        const permission = await Notification.requestPermission();
-        if (permission !== 'granted') {
-          console.log('⚠️ Browser notification permission denied.');
-          return;
+      if (bridge && typeof bridge.getFcmToken === 'function') {
+        try {
+          const token = bridge.getFcmToken();
+          if (token) {
+            console.log('📱 Pulled FCM token from Android bridge');
+            registerTokenWithServer(token, 'android', 'Android App');
+          }
+        } catch (err) {
+          console.error('❌ Android bridge error:', err);
         }
+      }
+    }
 
-        // Register the background service worker
-        const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-        
-        // Retrieve browser push registration token
-        const token = await getToken(messaging, {
-          vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
-          serviceWorkerRegistration: registration,
-        });
+    // ── 3. Web Push FCM (optional — only if Firebase is configured) ─
+    if (messaging) {
+      const setupWebPush = async () => {
+        try {
+          const permission = await Notification.requestPermission();
+          if (permission !== 'granted') {
+            console.log('⚠️ Browser notification permission denied');
+            return;
+          }
 
-        if (token) {
-          console.log('🌐 Web FCM registration token:', token);
-          await registerTokenOnServer(token, 'web', navigator.userAgent);
-        }
+          const swReg = await navigator.serviceWorker.register(
+            '/firebase-messaging-sw.js'
+          );
 
-        // Setup listener for foreground notifications
-        unsubscribeOnMessage = onMessage(messaging, (payload) => {
-          console.log('🔔 Foreground push notification received:', payload);
+          const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
+          if (!vapidKey) {
+            console.warn('⚠️ NEXT_PUBLIC_FIREBASE_VAPID_KEY missing — web push disabled');
+            return;
+          }
 
-          const newNotification = {
-            id: payload.data?.notificationId || Math.random().toString(),
-            user_id: user.id,
-            title: payload.notification?.title || 'Notification',
-            message: payload.notification?.body || '',
-            type: payload.data?.type || 'general',
-            is_read: false,
-            read_status: false,
-            link: payload.data?.link || null,
-            created_at: new Date().toISOString(),
-          };
-
-          // Append to client Zustan store to dynamically refresh unread badge and dropdown list
-          addNotification(newNotification as any);
-
-          // Trigger Sonner toast with action button
-          toast(newNotification.title, {
-            description: (
-              <div className="flex flex-col gap-1 mt-1">
-                {newNotification.message.split('\n').map((line: string, i: number) => (
-                  <span key={i} className="text-sm opacity-90">{line}</span>
-                ))}
-              </div>
-            ),
-            action: newNotification.link
-              ? {
-                  label: 'View',
-                  onClick: () => {
-                    if (newNotification.link) {
-                      window.location.href = newNotification.link;
-                    }
-                  },
-                }
-              : undefined,
-            duration: 7000,
+          const token = await getToken(messaging, {
+            vapidKey,
+            serviceWorkerRegistration: swReg,
           });
-        });
-      } catch (err) {
-        console.error('❌ Error initializing browser FCM:', err);
-      }
-    };
 
-    setupFCM();
+          if (token) {
+            console.log('🌐 Web FCM token obtained');
+            await registerTokenWithServer(token, 'web', navigator.userAgent);
+          }
 
+          // Foreground push listener
+          unsubscribeOnMessage = onMessage(messaging, (payload) => {
+            console.log('🔔 Foreground FCM push received:', payload);
+            const n = {
+              id: payload.data?.notificationId || Math.random().toString(),
+              user_id: user.id,
+              title: payload.notification?.title || 'Notification',
+              message: payload.notification?.body || '',
+              type: payload.data?.type || 'general',
+              is_read: false,
+              read_status: false,
+              link: payload.data?.link || null,
+              created_at: new Date().toISOString(),
+            };
+
+            addNotification(n as any);
+
+            toast(n.title, {
+              description: (
+                <div className="flex flex-col gap-0.5 mt-1">
+                  {n.message.split('\n').map((line: string, i: number) => (
+                    <span key={i} className="text-sm opacity-90">{line}</span>
+                  ))}
+                </div>
+              ),
+              action: n.link
+                ? {
+                    label: 'View',
+                    onClick: () => { if (n.link) window.location.href = n.link; },
+                  }
+                : undefined,
+              duration: 8000,
+            });
+          });
+        } catch (err) {
+          console.error('❌ Web push setup error:', err);
+        }
+      };
+
+      setupWebPush();
+    } else {
+      console.log('ℹ️ Firebase messaging not configured — using Supabase Realtime only');
+    }
+
+    // ── Cleanup on unmount / user change ────────────────────────────
     return () => {
-      if (unsubscribeOnMessage) {
-        unsubscribeOnMessage();
-      }
-      supabase.removeChannel(realtimeSubscription);
+      hasRegisteredRef.current = false;
+      if (unsubscribeOnMessage) unsubscribeOnMessage();
+      supabase.removeChannel(channel);
     };
   }, [user, addNotification]);
 
-  // Server API call to store token in public.fcm_tokens
-  async function registerTokenOnServer(
-    token: string,
-    deviceType: 'web' | 'android' | 'ios',
-    deviceName: string
-  ) {
-    try {
-      const res = await fetch('/api/notifications/register-token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, deviceType, deviceName }),
-      });
-      if (!res.ok) {
-        console.error('❌ Server registration response error:', res.statusText);
-      }
-    } catch (err) {
-      console.error('❌ Failed to register FCM token with server API:', err);
-    }
-  }
-
   return null;
+}
+
+/** POST the FCM token to our server API so we can send targeted pushes */
+async function registerTokenWithServer(
+  token: string,
+  deviceType: 'web' | 'android' | 'ios',
+  deviceName: string
+) {
+  try {
+    const res = await fetch('/api/notifications/register-token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, deviceType, deviceName }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      console.error('❌ Token registration failed:', err);
+    } else {
+      console.log('✅ FCM token registered with server');
+    }
+  } catch (err) {
+    console.error('❌ Token registration request failed:', err);
+  }
 }

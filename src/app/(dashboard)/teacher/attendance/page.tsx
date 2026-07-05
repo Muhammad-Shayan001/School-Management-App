@@ -16,7 +16,7 @@ import {
 import { Avatar } from '@/app/_components/ui/avatar';
 import { PageSpinner } from '@/app/_components/ui/spinner';
 import { cn } from '@/app/_lib/utils/cn';
-import { formatDate } from '@/app/_lib/utils/format';
+import { formatDate, getPakistanDateString } from '@/app/_lib/utils/format';
 
 export default function TeacherAttendancePage() {
   const [students, setStudents] = useState<any[]>([]);
@@ -27,7 +27,7 @@ export default function TeacherAttendancePage() {
   const [isProcessingApproval, setIsProcessingApproval] = useState<string | null>(null);
   const [isFinalizing, setIsFinalizing] = useState(false);
   const [teacherProfile, setTeacherProfile] = useState<any>(null);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState(getPakistanDateString());
   const [activeTab, setActiveTab] = useState<'approvals' | 'manual' | 'personal'>('personal');
 
   const loadData = async () => {
@@ -205,13 +205,15 @@ export default function TeacherAttendancePage() {
         <div className="space-y-8">
           {/* Overview Dashboard */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <Card className="p-8 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-none shadow-xl relative overflow-hidden group">
-              <TrendingUp className="absolute -top-4 -right-4 h-32 w-32 opacity-10 group-hover:scale-110 transition-transform duration-500" />
+            <Card className="relative overflow-hidden border border-emerald-200 bg-gradient-to-br from-emerald-600 via-emerald-500 to-teal-500 p-8 text-white shadow-[0_20px_45px_rgba(16,185,129,0.25)] group">
+              <div className="absolute -right-4 -top-4 h-32 w-32 rounded-full bg-white/15 blur-2xl" />
+              <TrendingUp className="absolute -top-4 -right-4 h-32 w-32 opacity-20 transition-transform duration-500 group-hover:scale-110" />
               <div className="relative z-10">
-                <p className="text-[10px] font-black uppercase tracking-widest opacity-80 mb-3">Attendance Rate</p>
+                <p className="mb-3 text-[10px] font-black uppercase tracking-[0.35em] text-white/90">Attendance Rate</p>
                 <div className="flex items-end gap-2">
-                  <span className="text-5xl font-black">{stats.percentage}%</span>
+                  <span className="text-5xl font-black tracking-tight text-white">{stats.percentage}%</span>
                 </div>
+                <p className="mt-3 text-sm font-semibold text-emerald-50/95">Clear and easy to read</p>
               </div>
             </Card>
 

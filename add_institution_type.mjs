@@ -20,8 +20,6 @@ async function runMigration() {
     // 2. Add constraint for allowed values
     `ALTER TABLE public.schools DROP CONSTRAINT IF EXISTS schools_institution_type_check`,
     `ALTER TABLE public.schools ADD CONSTRAINT schools_institution_type_check CHECK (institution_type IN ('school', 'college', 'university', 'academy'))`,
-    // 3. Reload PostgREST schema cache
-    `NOTIFY pgrst, 'reload schema'`,
   ];
 
   // Try via REST API SQL endpoint (Supabase Management API)
@@ -93,8 +91,7 @@ ADD COLUMN IF NOT EXISTS instagram_url TEXT,
 ADD COLUMN IF NOT EXISTS youtube_url TEXT,
 ADD COLUMN IF NOT EXISTS website_url TEXT;
 
--- Reload the PostgREST schema cache so the API recognises new columns immediately
-NOTIFY pgrst, 'reload schema';`);
+-- Schema refresh is handled automatically after the migration completes.`);
     console.log('\n=================================================================\n');
   } else {
     // Verify the column now exists

@@ -53,8 +53,8 @@ export function NotificationBell() {
     // Fetch immediately
     fetchNotifications();
 
-    // Poll every 15 seconds for new notifications
-    pollIntervalRef.current = setInterval(fetchNotifications, 15000);
+    // Poll every 5 seconds for new notifications (fast refresh)
+    pollIntervalRef.current = setInterval(fetchNotifications, 5000);
 
     return () => {
       if (pollIntervalRef.current) {
@@ -96,9 +96,10 @@ export function NotificationBell() {
   }
 
   // Construct history URL dynamically based on user role
-  const historyUrl = user?.role === 'super_admin'
-    ? '/super-admin/notifications'
-    : `/${user?.role}/notifications`;
+  const historyUrl =
+    user?.role === 'super_admin'
+      ? '/super-admin/notifications'
+      : `/${user?.role}/notifications`;
 
   return (
     <div className="relative" ref={dropdownRef}>
