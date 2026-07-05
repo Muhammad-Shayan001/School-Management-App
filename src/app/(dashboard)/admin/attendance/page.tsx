@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { getSchoolAttendance, approveAttendance, rejectAttendance } from '@/app/_lib/actions/attendance';
 import { getHolidays, addHoliday, deleteHoliday } from '@/app/_lib/actions/holidays';
 import { getClasses } from '@/app/_lib/actions/schools';
@@ -20,7 +21,7 @@ import { formatDate } from '@/app/_lib/utils/format';
 import { cn } from '@/app/_lib/utils/cn';
 
 export default function AdminAttendancePage() {
-  const [activeMainTab, setActiveMainTab] = useState<'daily' | 'holidays'>('daily');
+  const [activeMainTab, setActiveMainTab] = useState<'daily' | 'holidays' | 'register'>('daily');
   const [attendance, setAttendance] = useState<any[]>([]);
   const [holidays, setHolidays] = useState<any[]>([]);
   const [classes, setClasses] = useState<any[]>([]);
@@ -133,6 +134,15 @@ export default function AdminAttendancePage() {
           >
             <CalendarX className="h-4 w-4" /> Holiday Manager
           </button>
+          <Link
+            href="/admin/attendance/register"
+            className={cn(
+              "px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2",
+              activeMainTab === 'register' ? "bg-accent text-white" : "text-text-tertiary hover:text-text-secondary"
+            )}
+          >
+            <BarChart3 className="h-4 w-4" /> Monthly Register
+          </Link>
         </div>
       </div>
 

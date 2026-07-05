@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { getUsers } from '@/app/_lib/actions/users';
 import { markAttendance, getSchoolAttendance, approveAttendance, rejectAttendance, getUserAttendance, getAttendanceStudents, finalizeDailyAttendance } from '@/app/_lib/actions/attendance';
 import { getFullProfile } from '@/app/_lib/actions/profile';
@@ -10,7 +11,7 @@ import { Card } from '@/app/_components/ui/card';
 import { 
   Check, X, Clock, Users, Search, Calendar as CalendarIcon, 
   CheckCircle2, AlertCircle, Save, Filter, ShieldCheck, XCircle, 
-  ListChecks, User, History, Sparkles, MapPin, TrendingUp, CalendarDays, PieChart
+  ListChecks, User, History, Sparkles, MapPin, TrendingUp, CalendarDays, PieChart, BarChart3
 } from 'lucide-react';
 import { Avatar } from '@/app/_components/ui/avatar';
 import { PageSpinner } from '@/app/_components/ui/spinner';
@@ -188,6 +189,15 @@ export default function TeacherAttendancePage() {
           <User className="h-4 w-4" />
           My Attendance
         </button>
+        {isClassTeacher && (
+          <Link
+            href="/teacher/attendance/register"
+            className="px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 text-text-tertiary hover:text-text-secondary hover:bg-white/50"
+          >
+            <BarChart3 className="h-4 w-4" />
+            Monthly Register
+          </Link>
+        )}
       </div>
 
       {/* CONTENT SECTIONS */}

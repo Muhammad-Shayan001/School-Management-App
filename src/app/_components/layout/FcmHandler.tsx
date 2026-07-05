@@ -5,6 +5,7 @@ import { messaging } from '@/app/_lib/firebase/client';
 import { getToken, onMessage } from 'firebase/messaging';
 import { useAuthStore } from '@/app/_lib/store/auth-store';
 import { useNotificationStore } from '@/app/_lib/store/notification-store';
+import { createClient } from '@/app/_lib/supabase/client';
 import { toast } from 'sonner';
 
 /**
@@ -47,6 +48,40 @@ export default function FcmHandler() {
         }
       }
     }
+
+    // Supabase Realtime Fallback (Instantly triggers toasts when DB updates, even if FCM is missing)
+    const supabase = createClient();
+    const realtimeSubscription = supabase
+      .channel('public:notifications')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log('⚡ Supabase Realtime Notification Received:', payload);
+          const newNotification = payload.new;
+          addNotification(newNotification as any);
+          
+          toast(newNotification.title, {
+            description: (
+              <div className="flex flex-col gap-1 mt-1">
+                {newNotification.message.split('\n').map((line: string, i: number) => (
+                  <span key={i} className="text-sm opacity-90">{line}</span>
+                ))}
+              </div>
+            ),
+            action: newNotification.link
+              ? { label: 'View', onClick: () => { window.location.href = newNotification.link; } }
+              : undefined,
+            duration: 7000,
+          });
+        }
+      )
+      .subscribe();
 
     // 2. Standard Web Browser FCM Registration
     if (!messaging) return;
@@ -128,6 +163,7 @@ export default function FcmHandler() {
       if (unsubscribeOnMessage) {
         unsubscribeOnMessage();
       }
+      supabase.removeChannel(realtimeSubscription);
     };
   }, [user, addNotification]);
 
