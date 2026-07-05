@@ -156,7 +156,7 @@ export async function markAttendance(params: {
           .single();
 
         if (teacherProfile?.user_id) {
-          await createAttendanceNotification({
+          createAttendanceNotification({
             studentId: teacherProfile.user_id,
             studentName: studentName,
             attendanceId,
@@ -166,12 +166,12 @@ export async function markAttendance(params: {
             category: 'attendance_approval_needed',
             method: params.method,
             time: timeStr,
-          });
+          }).catch(console.error);
         }
       }
       
       // 2. Notify the student (scan received, pending approval)
-      await createAttendanceNotification({
+      createAttendanceNotification({
         studentId: params.userId,
         studentName,
         attendanceId,
@@ -181,9 +181,9 @@ export async function markAttendance(params: {
         category: 'attendance_marked',
         method: params.method,
         time: timeStr,
-      });
+      }).catch(console.error);
     } else {
-      await createAttendanceNotification({
+      createAttendanceNotification({
         studentId: params.userId,
         studentName,
         attendanceId,
@@ -193,7 +193,7 @@ export async function markAttendance(params: {
         category: 'attendance_marked',
         method: params.method,
         time: timeStr,
-      });
+      }).catch(console.error);
     }
   }
 

@@ -80,24 +80,24 @@ export async function createNotification(
       return { success: false, error: 'Database insert returned empty result.' };
     }
 
-    // 2. Fetch the target user's active FCM tokens
-    const { data: tokenRecords, error: tokenError } = await adminClient
-      .from('fcm_tokens')
-      .select('token')
-      .eq('user_id', params.userId);
+    // 2. Send Push Notification via Firebase if service is initialized
+    if (messaging) {
+      const { data: tokenRecords, error: tokenError } = await adminClient
+        .from('fcm_tokens')
+        .select('token')
+        .eq('user_id', params.userId);
 
-    if (tokenError) {
-      console.error('⚠️ Error fetching user FCM tokens:', tokenError.message);
-    }
+      if (tokenError) {
+        console.error('⚠️ Error fetching user FCM tokens:', tokenError.message);
+      }
 
-    const tokens = tokenRecords?.map((t) => t.token) || [];
+      const tokens = tokenRecords?.map((t) => t.token) || [];
 
-    // 3. Send Push Notification via Firebase if service is initialized and tokens exist
-    if (messaging && tokens.length > 0) {
-      try {
-        const payload = {
-          tokens,
-          notification: {
+      if (tokens.length > 0) {
+        try {
+          const payload = {
+            tokens,
+            notification: {
             title: params.title,
             body: params.message,
           },
@@ -157,6 +157,7 @@ export async function createNotification(
         });
       } catch (fcmError) {
         console.error('❌ Failed to send FCM push notification:', fcmError);
+      }
       }
     }
 
