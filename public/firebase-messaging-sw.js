@@ -6,39 +6,40 @@
 importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js');
 
-// Dynamically fetch Firebase client credentials from the server
-fetch('/api/notifications/config')
-  .then((response) => response.json())
-  .then((config) => {
-    if (config && config.apiKey) {
-      firebase.initializeApp(config);
-      const messaging = firebase.messaging();
+// Parse Firebase client credentials from the Service Worker URL parameters
+const urlParams = new URLSearchParams(self.location.search);
+const config = {
+  apiKey: urlParams.get('apiKey'),
+  projectId: urlParams.get('projectId'),
+  messagingSenderId: urlParams.get('messagingSenderId'),
+  appId: urlParams.get('appId'),
+};
 
-      // Implement background message listener
-      messaging.onBackgroundMessage((payload) => {
-        console.log('[firebase-messaging-sw.js] Received background message:', payload);
+if (config.apiKey && config.projectId) {
+  firebase.initializeApp(config);
+  const messaging = firebase.messaging();
 
-        const notificationTitle = payload.notification?.title || 'Skolic Notification';
-        const notificationOptions = {
-          body: payload.notification?.body || '',
-          icon: payload.data?.icon || '/favicon.ico',
-          badge: '/favicon.ico',
-          data: {
-            link: payload.data?.link || '/',
-          },
-          tag: 'skolic-notification',
-          renotify: true,
-        };
+  // Implement background message listener
+  messaging.onBackgroundMessage((payload) => {
+    console.log('[firebase-messaging-sw.js] Received background message:', payload);
 
-        return self.registration.showNotification(notificationTitle, notificationOptions);
-      });
-    } else {
-      console.warn('[firebase-messaging-sw.js] Firebase API Key is not configured on the server.');
-    }
-  })
-  .catch((err) => {
-    console.error('[firebase-messaging-sw.js] Failed to fetch Firebase configuration:', err);
+    const notificationTitle = payload.notification?.title || 'Skolic Notification';
+    const notificationOptions = {
+      body: payload.notification?.body || '',
+      icon: payload.data?.icon || '/favicon.ico',
+      badge: '/favicon.ico',
+      data: {
+        link: payload.data?.link || '/',
+      },
+      tag: 'skolic-notification',
+      renotify: true,
+    };
+
+    return self.registration.showNotification(notificationTitle, notificationOptions);
   });
+} else {
+  console.warn('[firebase-messaging-sw.js] Firebase API Key is not provided in URL parameters.');
+}
 
 // Handle notification click action (Opens app and redirects user to the targeted page)
 self.addEventListener('notificationclick', (event) => {

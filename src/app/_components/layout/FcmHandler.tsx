@@ -72,6 +72,16 @@ export default function FcmHandler() {
               : undefined,
             duration: 8000,
           });
+
+          // If hosting Android bridge exists, ask native app to show its own popup
+          try {
+            const bridge = (window as any).AndroidNotificationBridge;
+            if (bridge && typeof bridge.showNotification === 'function') {
+              bridge.showNotification(n.title || 'Notification', n.message || '', n.link || '');
+            }
+          } catch (e) {
+            console.error('❌ Android bridge showNotification failed:', e);
+          }
         }
       )
       .subscribe((status) => {
@@ -83,6 +93,58 @@ export default function FcmHandler() {
       (window as any).onAndroidFcmToken = (token: string) => {
         console.log('📱 Android FCM token received:', token);
         registerTokenWithServer(token, 'android', 'Android App');
+      };
+
+      // Handler for native Android app to forward push payloads into the WebView
+      // Native code can call `window.onAndroidNotification(JSON.stringify(payload))`
+      (window as any).onAndroidNotification = (payload: any) => {
+        try {
+          const parsed = typeof payload === 'string' ? JSON.parse(payload) : payload;
+          console.log('📱 Android notification forwarded to WebView:', parsed);
+
+          const n = {
+            id: parsed.notificationId || Math.random().toString(),
+            user_id: user.id,
+            title: parsed.title || parsed.notification?.title || 'Notification',
+            message: parsed.body || parsed.notification?.body || parsed.message || '',
+            type: parsed.type || parsed.data?.type || 'general',
+            is_read: false,
+            read_status: false,
+            link: parsed.data?.link || parsed.link || null,
+            created_at: new Date().toISOString(),
+          };
+
+          // Add to Zustand store and show in-app toast
+          addNotification(n as any);
+
+          toast(n.title, {
+            description: (
+              <div className="flex flex-col gap-0.5 mt-1">
+                {n.message.split('\n').map((line: string, i: number) => (
+                  <span key={i} className="text-sm opacity-90">{line}</span>
+                ))}
+              </div>
+            ),
+            action: n.link
+              ? {
+                  label: 'View',
+                  onClick: () => { if (n.link) window.location.href = n.link; },
+                }
+              : undefined,
+            duration: 8000,
+          });
+          // Also notify native bridge if available
+          try {
+            const bridge = (window as any).AndroidNotificationBridge;
+            if (bridge && typeof bridge.showNotification === 'function') {
+              bridge.showNotification(n.title || 'Notification', n.message || '', n.link || '');
+            }
+          } catch (e) {
+            console.error('❌ Android bridge showNotification failed:', e);
+          }
+        } catch (e) {
+          console.error('❌ Failed to parse Android notification payload:', e);
+        }
       };
 
       const bridge =
@@ -112,8 +174,15 @@ export default function FcmHandler() {
             return;
           }
 
+          const configParams = new URLSearchParams({
+            apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || '',
+            projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || '',
+            messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '',
+            appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || '',
+          }).toString();
+
           const swReg = await navigator.serviceWorker.register(
-            '/firebase-messaging-sw.js'
+            `/firebase-messaging-sw.js?${configParams}`
           );
 
           const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
@@ -165,6 +234,15 @@ export default function FcmHandler() {
                 : undefined,
               duration: 8000,
             });
+            // Also ask native to show a notification when web FCM arrives
+            try {
+              const bridge = (window as any).AndroidNotificationBridge;
+              if (bridge && typeof bridge.showNotification === 'function') {
+                bridge.showNotification(n.title || 'Notification', n.message || '', n.link || '');
+              }
+            } catch (e) {
+              console.error('❌ Android bridge showNotification failed:', e);
+            }
           });
         } catch (err) {
           console.error('❌ Web push setup error:', err);
