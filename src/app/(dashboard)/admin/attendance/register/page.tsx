@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useTerminology } from '@/app/_lib/context/InstitutionContext';
 import { cn } from '@/app/_lib/utils/cn';
+import { interceptWebViewDownload } from '@/app/_lib/utils/webview-download';
 import Link from 'next/link';
 
 export default function AdminMonthlyRegisterPage() {
@@ -38,6 +39,27 @@ export default function AdminMonthlyRegisterPage() {
     load();
   }, []);
 
+  // If opened via the Android app's WebView redirect (open_external=true), auto-trigger print/download
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('open_external') === 'true') {
+        // Remove the param from the URL to keep things clean
+        const url = new URL(window.location.href);
+        url.searchParams.delete('open_external');
+        window.history.replaceState({}, document.title, url.toString());
+
+        // Small delay to allow page render, then trigger print which mobile browsers expose as Save as PDF
+        setTimeout(() => {
+          window.print();
+        }, 600);
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, []);
+
   // Load register when class/month/year changes
   useEffect(() => {
     if (!selectedClassId) {
@@ -60,6 +82,8 @@ export default function AdminMonthlyRegisterPage() {
   };
 
   const handlePrint = () => {
+    // If inside Android WebView, let interceptWebViewDownload open external browser
+    if (interceptWebViewDownload()) return;
     window.print();
   };
 
