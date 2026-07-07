@@ -1,6 +1,6 @@
 import { getCurrentUser } from '@/app/_lib/actions/auth';
 import { getStudentProfiles } from '@/app/_lib/actions/users';
-import { getClasses, getSchoolInfo } from '@/app/_lib/actions/schools';
+import { getClasses, getSchoolInfo, getCourses, getSchoolInfoForAdmin } from '@/app/_lib/actions/schools';
 import { StudentManagement } from '@/app/_components/dashboard/student-management';
 import { Badge } from '@/app/_components/ui/badge';
 import { GraduationCap } from 'lucide-react';
@@ -11,11 +11,16 @@ export default async function AdminStudentsPage() {
 
   if (!schoolId) return null;
 
-  const [studentsResult, classesResult, schoolResult] = await Promise.all([
+  const [studentsResult, classesResult, schoolResult, schoolInfoResult] = await Promise.all([
     getStudentProfiles(),
     getClasses(),
-    getSchoolInfo()
+    getSchoolInfo(),
+    getSchoolInfoForAdmin()
   ]);
+
+  // Only fetch courses if it's an academy
+  const isAcademy = schoolInfoResult.data?.institution_type === 'academy';
+  const coursesResult = isAcademy ? await getCourses() : { data: [] };
 
   return (
     <div className="space-y-8">
@@ -39,6 +44,8 @@ export default async function AdminStudentsPage() {
         students={studentsResult.data || []} 
         classes={classesResult.data || []} 
         school={schoolResult.data}
+        schoolInfo={schoolInfoResult.data}
+        courses={coursesResult.data || []}
       />
     </div>
   );

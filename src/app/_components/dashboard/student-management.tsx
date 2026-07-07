@@ -26,9 +26,11 @@ interface StudentManagementProps {
   students: any[];
   classes: any[];
   school?: any;
+  schoolInfo?: any;
+  courses?: any[];
 }
 
-export function StudentManagement({ students, classes, school }: StudentManagementProps) {
+export function StudentManagement({ students, classes, school, schoolInfo, courses = [] }: StudentManagementProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [classFilter, setClassFilter] = useState('all');
   const [selectedCampusId, setSelectedCampusId] = useState('all');
@@ -251,6 +253,9 @@ export function StudentManagement({ students, classes, school }: StudentManageme
                     <div className="flex flex-col">
                       <span className="text-sm font-black text-text-primary leading-tight">{student.classes?.name || 'Pending'}</span>
                       <span className="text-[10px] font-black text-text-tertiary uppercase tracking-widest mt-1 opacity-60">Section {student.classes?.section || '---'}</span>
+                      {student.batch?.name && (
+                        <span className="text-[10px] font-black text-accent uppercase tracking-wider mt-1">{student.batch.name}</span>
+                      )}
                     </div>
                   </td>
                   <td className="px-6 py-5">
@@ -399,6 +404,12 @@ export function StudentManagement({ students, classes, school }: StudentManageme
                          <span className="opacity-50 flex-shrink-0">•</span> 
                          <span className="truncate">Section {selectedStudent.classes?.section || '---'}</span>
                       </div>
+                      {selectedStudent.batch?.name && (
+                         <div className="flex items-center gap-3 flex-shrink-0">
+                            <div className="h-2 w-2 rounded-full bg-purple-500" /> 
+                            <span className="font-black text-purple-600 tracking-widest uppercase">{selectedStudent.batch.name}</span>
+                         </div>
+                       )}
                       <div className="flex items-center gap-3 flex-shrink-0">
                          <div className="h-2 w-2 rounded-full bg-emerald-500" /> 
                          <span className="font-black text-text-primary tracking-widest uppercase">Roll {selectedStudent.roll_number || 'N/A'}</span>
@@ -679,6 +690,8 @@ export function StudentManagement({ students, classes, school }: StudentManageme
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         classes={classes}
+        courses={courses}
+        schoolInfo={schoolInfo}
         onSuccess={(creds) => setShowCredentials(creds)}
       />
 
@@ -686,6 +699,8 @@ export function StudentManagement({ students, classes, school }: StudentManageme
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         classes={classes}
+        courses={courses}
+        schoolInfo={schoolInfo}
         editStudent={selectedStudent}
         onSuccess={(creds) => setShowCredentials(creds)}
       />

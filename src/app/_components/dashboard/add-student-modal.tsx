@@ -21,11 +21,14 @@ interface AddStudentModalProps {
   isOpen: boolean;
   onClose: () => void;
   classes: any[];
+  courses?: any[];      // For academies: list of subjects/courses
+  schoolInfo?: any;     // Contains institution_type
   onSuccess: (credentials: any) => void;
   editStudent?: any | null;
 }
 
-export function AddStudentModal({ isOpen, onClose, classes, onSuccess, editStudent }: AddStudentModalProps) {
+export function AddStudentModal({ isOpen, onClose, classes, courses = [], schoolInfo, onSuccess, editStudent }: AddStudentModalProps) {
+  const isAcademy = schoolInfo?.institution_type === 'academy';
   const { user } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
@@ -92,6 +95,9 @@ export function AddStudentModal({ isOpen, onClose, classes, onSuccess, editStude
     shift: 'morning',
     group: 'General',
     session_year: new Date().getFullYear().toString(),
+
+    // Academy-only
+    batch_id: '',
   });
 
   const selectedClass = classes.find(c => c.id === formData.class_id);
@@ -161,12 +167,13 @@ export function AddStudentModal({ isOpen, onClose, classes, onSuccess, editStude
         shift: editStudent.shift || 'morning',
         group: editStudent.group || 'General',
         session_year: editStudent.session_year || new Date().getFullYear().toString(),
+        batch_id: editStudent.batch_id || '',
       });
       setPreviewImage(editStudent.profiles?.avatar_url || null);
       setStep(1);
     } else if (isOpen && !editStudent) {
       setFormData({
-        full_name: '', email: '', phone: '', registration_no: '', admission_date: new Date().toISOString().split('T')[0], class_id: '', roll_number: '', fee_discount: '0', sms_phone: '', avatar_url: '', password: '', dob: '', birth_form_id: '', is_orphan: 'false', gender: 'male', student_cast: '', is_osc: 'false', id_mark: '', previous_school: '', religion: 'Islam', blood_group: '', family_id: '', disease: '', additional_note: '', total_siblings: '0', address: '', cnic: '', father_name: '', father_cnic: '', father_occupation: '', father_education: '', father_phone: '', father_profession: '', father_income: '', mother_name: '', mother_cnic: '', mother_occupation: '', mother_education: '', mother_phone: '', mother_profession: '', mother_income: '', section: '', shift: 'morning', group: 'General', session_year: new Date().getFullYear().toString()
+        full_name: '', email: '', phone: '', registration_no: '', admission_date: new Date().toISOString().split('T')[0], class_id: '', roll_number: '', fee_discount: '0', sms_phone: '', avatar_url: '', password: '', dob: '', birth_form_id: '', is_orphan: 'false', gender: 'male', student_cast: '', is_osc: 'false', id_mark: '', previous_school: '', religion: 'Islam', blood_group: '', family_id: '', disease: '', additional_note: '', total_siblings: '0', address: '', cnic: '', father_name: '', father_cnic: '', father_occupation: '', father_education: '', father_phone: '', father_profession: '', father_income: '', mother_name: '', mother_cnic: '', mother_occupation: '', mother_education: '', mother_phone: '', mother_profession: '', mother_income: '', section: '', shift: 'morning', group: 'General', session_year: new Date().getFullYear().toString(), batch_id: ''
       });
       setPreviewImage(null);
       setStep(1);
@@ -330,6 +337,19 @@ export function AddStudentModal({ isOpen, onClose, classes, onSuccess, editStude
                         ]}
                         className="h-14 bg-bg-tertiary/30"
                       />
+                      {/* Academy: Batch / Course selector */}
+                      {isAcademy && (
+                        <Select
+                          label="Select Batch / Course"
+                          value={formData.batch_id}
+                          onChange={(e) => setFormData(prev => ({ ...prev, batch_id: e.target.value }))}
+                          options={[
+                            { label: 'No specific batch', value: '' },
+                            ...courses.map(c => ({ label: c.name, value: c.id }))
+                          ]}
+                          className="h-14 bg-bg-tertiary/30"
+                        />
+                      )}
                       {showGroupField && (
                         <Select 
                           label="Select Group *"

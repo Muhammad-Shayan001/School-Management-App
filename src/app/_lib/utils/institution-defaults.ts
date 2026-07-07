@@ -1,13 +1,20 @@
 export function getDefaultClassSeeds(institutionType?: string): string[] {
   switch (institutionType) {
     case 'college':
-      return ['1st Year', '2nd Year', 'Intermediate Part-I', 'Intermediate Part-II', '11th', '12th'];
+      return ['Class 11', 'Class 12'];
     case 'university':
-      return ['BS', 'BSCS', 'BSIT', 'BBA', 'BCom', 'MS', 'MPhil', 'PhD'];
+      return ['BS', 'MS'];
     case 'academy':
-      return ['Batch A', 'Batch B', 'Morning Batch', 'Evening Batch', 'Weekend Batch'];
+      return [
+        'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5',
+        'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10',
+        'Class 11', 'Class 12'
+      ];
     default:
-      return ['Play Group', 'Nursery', 'KG', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10'];
+      return [
+        'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5',
+        'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10'
+      ];
   }
 }
 

@@ -276,7 +276,8 @@ export async function getStudentProfiles(filters?: { class_id?: string; query?: 
     .select(`
       *,
       profiles(id, full_name, email, avatar_url, phone, status),
-      classes(name, section)
+      classes(name, section),
+      batch:subjects!batch_id(id, name)
     `)
     .eq('school_id', caller.school_id);
 
@@ -524,14 +525,74 @@ export async function createManualStudent(formData: any) {
       mother_income: formData.mother_income,
       shift: formData.shift,
       group: formData.group,
-      session_year: formData.session_year || new Date().getFullYear().toString()
+      session_year: formData.session_year || new Date().getFullYear().toString(),
+      ...(formData.batch_id ? { batch_id: formData.batch_id } : {}),
     });
 
   if (studentErr) {
-    console.error('Error inserting student_profiles, rolling back auth account and profile:', studentErr);
-    await adminClient.from('profiles').delete().eq('id', studentUserId);
-    await adminClient.auth.admin.deleteUser(studentUserId);
-    return { error: 'Failed to save student details: ' + studentErr.message };
+    // If batch_id column doesn't exist yet (migration not applied), retry without it
+    if (studentErr.message?.includes('batch_id') || studentErr.code === '42703') {
+      const { error: retryErr } = await adminClient
+        .from('student_profiles')
+        .insert({
+          user_id: studentUserId,
+          school_id: caller.school_id,
+          campus_id: formData.campus_id || null,
+          student_id: studentId,
+          roll_number: rollNumber,
+          cnic: formData.cnic,
+          class_id: formData.class_id || null,
+          section: formData.section,
+          dob: formData.dob || null,
+          gender: formData.gender,
+          phone: formData.phone,
+          fee_status: 'unpaid',
+          registration_no: formData.registration_no,
+          admission_date: formData.admission_date || new Date().toISOString().split('T')[0],
+          fee_discount: parseFloat(formData.fee_discount || '0'),
+          sms_phone: formData.sms_phone,
+          birth_form_id: formData.birth_form_id,
+          is_orphan: formData.is_orphan === 'true',
+          student_cast: formData.student_cast,
+          is_osc: formData.is_osc === 'true',
+          id_mark: formData.id_mark,
+          previous_school: formData.previous_school,
+          religion: formData.religion,
+          blood_group: formData.blood_group,
+          family_id: formData.family_id,
+          disease: formData.disease,
+          additional_note: formData.additional_note,
+          total_siblings: parseInt(formData.total_siblings || '0'),
+          address: formData.address,
+          father_name: formData.father_name,
+          father_cnic: formData.father_cnic,
+          father_occupation: formData.father_occupation,
+          father_education: formData.father_education,
+          father_phone: formData.father_phone,
+          father_profession: formData.father_profession,
+          father_income: formData.father_income,
+          mother_name: formData.mother_name,
+          mother_cnic: formData.mother_cnic,
+          mother_occupation: formData.mother_occupation,
+          mother_education: formData.mother_education,
+          mother_phone: formData.mother_phone,
+          mother_profession: formData.mother_profession,
+          mother_income: formData.mother_income,
+          shift: formData.shift,
+          group: formData.group,
+          session_year: formData.session_year || new Date().getFullYear().toString(),
+        });
+      if (retryErr) {
+        await adminClient.from('profiles').delete().eq('id', studentUserId);
+        await adminClient.auth.admin.deleteUser(studentUserId);
+        return { error: 'Failed to save student details: ' + retryErr.message };
+      }
+    } else {
+      console.error('Error inserting student_profiles, rolling back auth account and profile:', studentErr);
+      await adminClient.from('profiles').delete().eq('id', studentUserId);
+      await adminClient.auth.admin.deleteUser(studentUserId);
+      return { error: 'Failed to save student details: ' + studentErr.message };
+    }
   }
 
   revalidatePath('/admin/students');
@@ -1213,11 +1274,66 @@ export async function updateManualStudentData(userId: string, formData: any) {
       mother_income: formData.mother_income,
       shift: formData.shift,
       group: formData.group,
-      session_year: formData.session_year || new Date().getFullYear().toString()
+      session_year: formData.session_year || new Date().getFullYear().toString(),
+      ...(formData.batch_id !== undefined ? { batch_id: formData.batch_id || null } : {}),
     })
     .eq('user_id', userId);
 
-  if (studentErr) return { error: 'Failed to update student details: ' + studentErr.message };
+  if (studentErr) {
+    // Retry without batch_id if column doesn't exist yet
+    if (studentErr.message?.includes('batch_id') || studentErr.code === '42703') {
+      const { error: retryErr } = await adminClient
+        .from('student_profiles')
+        .update({
+          campus_id: formData.campus_id || null,
+          roll_number: formData.roll_number,
+          cnic: formData.cnic,
+          class_id: formData.class_id || null,
+          section: formData.section,
+          dob: formData.dob || null,
+          gender: formData.gender,
+          phone: formData.phone,
+          registration_no: formData.registration_no,
+          admission_date: formData.admission_date || null,
+          fee_discount: parseFloat(formData.fee_discount || '0'),
+          sms_phone: formData.sms_phone,
+          birth_form_id: formData.birth_form_id,
+          is_orphan: formData.is_orphan === 'true',
+          student_cast: formData.student_cast,
+          is_osc: formData.is_osc === 'true',
+          id_mark: formData.id_mark,
+          previous_school: formData.previous_school,
+          religion: formData.religion,
+          blood_group: formData.blood_group,
+          family_id: formData.family_id,
+          disease: formData.disease,
+          additional_note: formData.additional_note,
+          total_siblings: parseInt(formData.total_siblings || '0'),
+          address: formData.address,
+          father_name: formData.father_name,
+          father_cnic: formData.father_cnic,
+          father_occupation: formData.father_occupation,
+          father_education: formData.father_education,
+          father_phone: formData.father_phone,
+          father_profession: formData.father_profession,
+          father_income: formData.father_income,
+          mother_name: formData.mother_name,
+          mother_cnic: formData.mother_cnic,
+          mother_occupation: formData.mother_occupation,
+          mother_education: formData.mother_education,
+          mother_phone: formData.mother_phone,
+          mother_profession: formData.mother_profession,
+          mother_income: formData.mother_income,
+          shift: formData.shift,
+          group: formData.group,
+          session_year: formData.session_year || new Date().getFullYear().toString(),
+        })
+        .eq('user_id', userId);
+      if (retryErr) return { error: 'Failed to update student details: ' + retryErr.message };
+    } else {
+      return { error: 'Failed to update student details: ' + studentErr.message };
+    }
+  }
 
   revalidatePath('/admin/students');
   return { success: true };
