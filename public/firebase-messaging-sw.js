@@ -6,17 +6,11 @@
 importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js');
 
-// Parse Firebase client credentials from the Service Worker URL parameters
-const urlParams = new URLSearchParams(self.location.search);
-const config = {
-  apiKey: urlParams.get('apiKey'),
-  projectId: urlParams.get('projectId'),
-  messagingSenderId: urlParams.get('messagingSenderId'),
-  appId: urlParams.get('appId'),
-};
+// Import dynamically generated configuration script synchronously
+importScripts('/api/notifications/sw-env');
 
-if (config.apiKey && config.projectId) {
-  firebase.initializeApp(config);
+if (self.firebaseConfig && self.firebaseConfig.apiKey) {
+  firebase.initializeApp(self.firebaseConfig);
   const messaging = firebase.messaging();
 
   // Implement background message listener
@@ -38,7 +32,7 @@ if (config.apiKey && config.projectId) {
     return self.registration.showNotification(notificationTitle, notificationOptions);
   });
 } else {
-  console.warn('[firebase-messaging-sw.js] Firebase API Key is not provided in URL parameters.');
+  console.warn('[firebase-messaging-sw.js] Firebase Configuration is missing.');
 }
 
 // Handle notification click action (Opens app and redirects user to the targeted page)

@@ -133,6 +133,7 @@ export const SIDEBAR_NAV: Record<
     { label: 'Dashboard', href: '/admin', icon: 'LayoutDashboard' },
     { label: 'Approvals', href: '/admin/approvals', icon: 'UserCheck' },
     { label: 'Campuses', href: '/admin/campuses', icon: 'Building2' },
+    { label: 'Classrooms', href: '/admin/classrooms', icon: 'BookOpen' },
     { label: 'Attendance', href: '/admin/attendance', icon: 'ClipboardCheck' },
     { label: 'Teachers', href: '/admin/teachers', icon: 'GraduationCap' },
     { label: 'Students', href: '/admin/students', icon: 'Users' },

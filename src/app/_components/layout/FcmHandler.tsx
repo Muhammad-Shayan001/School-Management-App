@@ -174,15 +174,8 @@ export default function FcmHandler() {
             return;
           }
 
-          const configParams = new URLSearchParams({
-            apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || '',
-            projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || '',
-            messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '',
-            appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || '',
-          }).toString();
-
           const swReg = await navigator.serviceWorker.register(
-            `/firebase-messaging-sw.js?${configParams}`
+            '/firebase-messaging-sw.js'
           );
 
           const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;

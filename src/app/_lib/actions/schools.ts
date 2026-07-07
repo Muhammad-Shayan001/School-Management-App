@@ -328,17 +328,30 @@ export const getPublicSchools = unstable_cache(
 function getDefaultClassSeeds(institutionType?: string): string[] {
   switch (institutionType) {
     case 'college':
-      return ['1st Year', '2nd Year', 'Intermediate Part-I', 'Intermediate Part-II', '11th', '12th'];
+      // College: only Class 11 and Class 12
+      return ['Class 11', 'Class 12'];
     case 'university':
-      return ['BS', 'BSCS', 'BSIT', 'BBA', 'BCom', 'MS', 'MPhil', 'PhD'];
+      // University: BS and MS programs
+      return ['BS', 'MS'];
     case 'academy':
-      return ['Batch A', 'Batch B', 'Morning Batch', 'Evening Batch', 'Weekend Batch'];
+      // Academy: all 12 classes (so students can be enrolled in a class)
+      return [
+        'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5',
+        'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10',
+        'Class 11', 'Class 12'
+      ];
     default:
-      return ['Play Group', 'Nursery', 'KG', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10'];
+      // School: Class 1 to Class 10 only
+      return [
+        'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5',
+        'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10'
+      ];
   }
 }
 
 function getDefaultCourseSeeds(institutionType?: string): string[] {
+  // Courses are stored as subjects with is_course = true
+  // Only auto-seed for academy
   if (institutionType === 'academy') {
     return ['Web Development', 'Graphic Design', 'Digital Marketing', 'Data Science', 'Programming Fundamentals', 'UI/UX Design'];
   }
@@ -646,3 +659,234 @@ export async function deleteSchool(schoolId: string) {
   }
 }
 
+// ─── Class Management Actions ────────────────────────────────────────────────
+
+/**
+ * Add a new class to the current admin's school.
+ */
+export async function addClass(name: string, section: string = 'A') {
+  const adminClient = createAdminClient();
+  const { createClient } = await import('@/app/_lib/supabase/server');
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'Unauthorized' };
+
+  const { data: profile } = await adminClient
+    .from('profiles')
+    .select('school_id')
+    .eq('id', user.id)
+    .single();
+
+  if (!profile?.school_id) return { error: 'No school found' };
+
+  // Check if class with same name+section already exists
+  const { data: existing } = await adminClient
+    .from('classes')
+    .select('id')
+    .eq('school_id', profile.school_id)
+    .eq('name', name.trim())
+    .eq('section', section.trim() || 'A')
+    .single();
+
+  if (existing) return { error: 'A class with this name and section already exists.' };
+
+  const { data, error } = await adminClient
+    .from('classes')
+    .insert({ name: name.trim(), section: section.trim() || 'A', school_id: profile.school_id })
+    .select()
+    .single();
+
+  if (error) return { error: error.message };
+
+  revalidatePath('/admin/classrooms');
+  revalidatePath('/admin/students');
+  return { data, error: null };
+}
+
+/**
+ * Delete a class from the current admin's school.
+ */
+export async function deleteClass(classId: string) {
+  const adminClient = createAdminClient();
+  const { createClient } = await import('@/app/_lib/supabase/server');
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'Unauthorized' };
+
+  // Verify ownership
+  const { data: profile } = await adminClient
+    .from('profiles')
+    .select('school_id')
+    .eq('id', user.id)
+    .single();
+
+  const { data: cls } = await adminClient
+    .from('classes')
+    .select('school_id')
+    .eq('id', classId)
+    .single();
+
+  if (!cls || cls.school_id !== profile?.school_id) {
+    return { error: 'Unauthorized or class not found.' };
+  }
+
+  const { error } = await adminClient.from('classes').delete().eq('id', classId);
+  if (error) return { error: error.message };
+
+  revalidatePath('/admin/classrooms');
+  revalidatePath('/admin/students');
+  return { error: null };
+}
+
+/**
+ * Get all courses (subjects with is_course=true) for the current school.
+ * Falls back to all subjects if is_course column does not exist.
+ */
+export async function getCourses() {
+  const adminClient = createAdminClient();
+  const { createClient } = await import('@/app/_lib/supabase/server');
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { data: [], error: 'Unauthorized' };
+
+  const { data: profile } = await adminClient
+    .from('profiles')
+    .select('school_id')
+    .eq('id', user.id)
+    .single();
+
+  if (!profile?.school_id) return { data: [], error: 'No school found' };
+
+  // Try fetching with is_course filter first
+  const { data, error } = await adminClient
+    .from('subjects')
+    .select('*')
+    .eq('school_id', profile.school_id)
+    .eq('is_course', true)
+    .order('name');
+
+  // If is_course column doesn't exist, fall back to all subjects
+  if (error && error.message?.includes('is_course')) {
+    const { data: allSubjects, error: subErr } = await adminClient
+      .from('subjects')
+      .select('*')
+      .eq('school_id', profile.school_id)
+      .order('name');
+    if (subErr) return { data: [], error: subErr.message };
+    return { data: allSubjects || [], error: null };
+  }
+
+  if (error) return { data: [], error: error.message };
+  return { data: data || [], error: null };
+}
+
+/**
+ * Add a new course (stored as a subject with is_course=true).
+ */
+export async function addCourse(name: string, description: string = '') {
+  const adminClient = createAdminClient();
+  const { createClient } = await import('@/app/_lib/supabase/server');
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'Unauthorized' };
+
+  const { data: profile } = await adminClient
+    .from('profiles')
+    .select('school_id')
+    .eq('id', user.id)
+    .single();
+
+  if (!profile?.school_id) return { error: 'No school found' };
+
+  // Try inserting with is_course flag
+  const insertPayload: any = {
+    name: name.trim(),
+    school_id: profile.school_id,
+    description: description.trim() || null,
+    is_course: true,
+  };
+
+  const { data, error } = await adminClient
+    .from('subjects')
+    .insert(insertPayload)
+    .select()
+    .single();
+
+  // If is_course column doesn't exist, insert without it
+  if (error && error.message?.includes('is_course')) {
+    const { data: d2, error: e2 } = await adminClient
+      .from('subjects')
+      .insert({ name: name.trim(), school_id: profile.school_id })
+      .select()
+      .single();
+    if (e2) return { error: e2.message };
+    revalidatePath('/admin/classrooms');
+    return { data: d2, error: null };
+  }
+
+  if (error) return { error: error.message };
+
+  revalidatePath('/admin/classrooms');
+  return { data, error: null };
+}
+
+/**
+ * Delete a course from the current admin's school.
+ */
+export async function deleteCourse(courseId: string) {
+  const adminClient = createAdminClient();
+  const { createClient } = await import('@/app/_lib/supabase/server');
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'Unauthorized' };
+
+  const { data: profile } = await adminClient
+    .from('profiles')
+    .select('school_id')
+    .eq('id', user.id)
+    .single();
+
+  const { data: subject } = await adminClient
+    .from('subjects')
+    .select('school_id')
+    .eq('id', courseId)
+    .single();
+
+  if (!subject || subject.school_id !== profile?.school_id) {
+    return { error: 'Unauthorized or course not found.' };
+  }
+
+  const { error } = await adminClient.from('subjects').delete().eq('id', courseId);
+  if (error) return { error: error.message };
+
+  revalidatePath('/admin/classrooms');
+  return { error: null };
+}
+
+/**
+ * Get school info including institution_type for the current logged-in admin.
+ */
+export async function getSchoolInfoForAdmin() {
+  const adminClient = createAdminClient();
+  const { createClient } = await import('@/app/_lib/supabase/server');
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { data: null, error: 'Unauthorized' };
+
+  const { data: profile } = await adminClient
+    .from('profiles')
+    .select('school_id')
+    .eq('id', user.id)
+    .single();
+
+  if (!profile?.school_id) return { data: null, error: 'No school found' };
+
+  const { data, error } = await adminClient
+    .from('schools')
+    .select('id, name, institution_type, logo_url, primary_color')
+    .eq('id', profile.school_id)
+    .single();
+
+  if (error) return { data: null, error: error.message };
+  return { data, error: null };
+}
