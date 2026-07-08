@@ -329,14 +329,82 @@ export async function getStudentProfiles(filters?: { class_id?: string; query?: 
     data = initialData;
   }
 
-  let result = data;
+  // If initial query returned no student_profiles for this school, it's possible
+  // that student_profiles.school_id was not set when records were created. In that
+  // case, fall back to finding student user profiles (profiles.role = 'student')
+  // for this school and then fetch any matching student_profiles by user_id.
+  if ((!data || data.length === 0) && caller.role !== 'teacher') {
+    const { data: studentAccounts } = await adminClient
+      .from('profiles')
+      .select('id, full_name, email, avatar_url, phone, status')
+      .eq('role', 'student')
+      .eq('school_id', caller.school_id);
+
+    if (studentAccounts && studentAccounts.length > 0) {
+      const userIds = studentAccounts.map((p: any) => p.id);
+
+      // Try to fetch student_profiles for these user_ids (without relying on student_profiles.school_id)
+      let spQuery = adminClient
+        .from('student_profiles')
+        .select(`${baseSelect}, batch:subjects!batch_id(id, name)`)
+        .in('user_id', userIds);
+
+      if (filters?.class_id) {
+        if (allowedClassIds && !allowedClassIds.includes(filters.class_id)) {
+          return { data: [], error: 'Unauthorized class access' };
+        }
+        spQuery = spQuery.eq('class_id', filters.class_id);
+      } else if (allowedClassIds) {
+        spQuery = spQuery.in('class_id', allowedClassIds);
+      }
+
+      if (filters?.campus_id) {
+        spQuery = spQuery.eq('campus_id', filters.campus_id);
+      }
+
+      const { data: spData, error: spErr } = await spQuery;
+      let studentProfilesById: Record<string, any> = {};
+
+      if (spErr) {
+        // Fallback without batch join
+        const { data: spFallback, error: spFallbackErr } = await adminClient
+          .from('student_profiles')
+          .select(baseSelect)
+          .in('user_id', userIds);
+        if (spFallbackErr) return { data: null, error: spFallbackErr.message };
+        (spFallback || []).forEach((s: any) => { studentProfilesById[s.user_id] = s; });
+      } else {
+        (spData || []).forEach((s: any) => { studentProfilesById[s.user_id] = s; });
+      }
+
+      // Build combined list: prefer student_profiles entries but include placeholder
+      // entries for accounts that don't have a student_profiles row.
+      const combined = studentAccounts.map((p: any) => {
+        const sp = studentProfilesById[p.id];
+        if (sp) return sp;
+        return {
+          user_id: p.id,
+          school_id: caller.school_id,
+          roll_number: null,
+          class_id: null,
+          campus_id: null,
+          profiles: p,
+        };
+      });
+
+      data = combined;
+    }
+  }
+
+  let result = data || [];
+
   if (filters?.query) {
     const q = filters.query.toLowerCase();
     result = result.filter((s: any) => 
-      s.profiles?.full_name?.toLowerCase().includes(q) ||
-      s.roll_number?.toLowerCase().includes(q) ||
-      s.classes?.name?.toLowerCase().includes(q) ||
-      s.classes?.section?.toLowerCase().includes(q)
+      (s.profiles?.full_name || '').toLowerCase().includes(q) ||
+      (s.roll_number || '').toString().toLowerCase().includes(q) ||
+      (s.classes?.name || '').toLowerCase().includes(q) ||
+      (s.classes?.section || '').toLowerCase().includes(q)
     );
   }
 
