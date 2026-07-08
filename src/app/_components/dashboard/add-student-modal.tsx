@@ -27,6 +27,15 @@ interface AddStudentModalProps {
   editStudent?: any | null;
 }
 
+const isAcademyClass = (value: string | null | undefined) => {
+  const normalized = String(value || '').trim().toLowerCase().replace(/\s+/g, '');
+  const match = normalized.match(/class(\d{1,2})/);
+  if (!match) return false;
+
+  const classNumber = parseInt(match[1], 10);
+  return classNumber >= 1 && classNumber <= 12;
+};
+
 export function AddStudentModal({ isOpen, onClose, classes, courses = [], schoolInfo, onSuccess, editStudent }: AddStudentModalProps) {
   const isAcademy = schoolInfo?.institution_type === 'academy';
   const { user } = useAuthStore();
@@ -97,13 +106,16 @@ export function AddStudentModal({ isOpen, onClose, classes, courses = [], school
     session_year: new Date().getFullYear().toString(),
 
     // Academy-only
+    enable_course_enrollment: 'false',
     batch_id: '',
     course_slot: '',
   });
 
-  const selectedClass = classes.find(c => c.id === formData.class_id);
+  const visibleClasses = isAcademy ? classes.filter(c => isAcademyClass(c?.name)) : classes;
+  const selectedClass = visibleClasses.find(c => c.id === formData.class_id);
   const selectedCourse = courses.find(c => c.id === formData.batch_id);
   const courseSlots = selectedCourse?.course_details?.slots || [];
+  const academyCourseEnabled = isAcademy && formData.enable_course_enrollment === 'true';
   const showGroupField = selectedClass?.name === 'Class 11' || selectedClass?.name === 'Class 12';
 
   // Fetch dynamic groups from database
@@ -170,6 +182,7 @@ export function AddStudentModal({ isOpen, onClose, classes, courses = [], school
         shift: editStudent.shift || 'morning',
         group: editStudent.group || 'General',
         session_year: editStudent.session_year || new Date().getFullYear().toString(),
+        enable_course_enrollment: editStudent.batch_id || editStudent.course_slot ? 'true' : 'false',
         batch_id: editStudent.batch_id || '',
         course_slot: editStudent.course_slot || '',
       });
@@ -177,7 +190,7 @@ export function AddStudentModal({ isOpen, onClose, classes, courses = [], school
       setStep(1);
     } else if (isOpen && !editStudent) {
       setFormData({
-        full_name: '', email: '', phone: '', registration_no: '', admission_date: new Date().toISOString().split('T')[0], class_id: '', roll_number: '', fee_discount: '0', sms_phone: '', avatar_url: '', password: '', dob: '', birth_form_id: '', is_orphan: 'false', gender: 'male', student_cast: '', is_osc: 'false', id_mark: '', previous_school: '', religion: 'Islam', blood_group: '', family_id: '', disease: '', additional_note: '', total_siblings: '0', address: '', cnic: '', father_name: '', father_cnic: '', father_occupation: '', father_education: '', father_phone: '', father_profession: '', father_income: '', mother_name: '', mother_cnic: '', mother_occupation: '', mother_education: '', mother_phone: '', mother_profession: '', mother_income: '', section: '', shift: 'morning', group: 'General', session_year: new Date().getFullYear().toString(), batch_id: '', course_slot: ''
+        full_name: '', email: '', phone: '', registration_no: '', admission_date: new Date().toISOString().split('T')[0], class_id: '', roll_number: '', fee_discount: '0', sms_phone: '', avatar_url: '', password: '', dob: '', birth_form_id: '', is_orphan: 'false', gender: 'male', student_cast: '', is_osc: 'false', id_mark: '', previous_school: '', religion: 'Islam', blood_group: '', family_id: '', disease: '', additional_note: '', total_siblings: '0', address: '', cnic: '', father_name: '', father_cnic: '', father_occupation: '', father_education: '', father_phone: '', father_profession: '', father_income: '', mother_name: '', mother_cnic: '', mother_occupation: '', mother_education: '', mother_phone: '', mother_profession: '', mother_income: '', section: '', shift: 'morning', group: 'General', session_year: new Date().getFullYear().toString(), enable_course_enrollment: 'false', batch_id: '', course_slot: ''
       });
       setPreviewImage(null);
       setStep(1);
@@ -186,7 +199,14 @@ export function AddStudentModal({ isOpen, onClose, classes, courses = [], school
 
   const handleChange = (e: any) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => {
+      const next = { ...prev, [name]: value };
+      if (name === 'enable_course_enrollment' && value !== 'true') {
+        next.batch_id = '';
+        next.course_slot = '';
+      }
+      return next;
+    });
   };
 
   const handleImageChange = (e: any) => {
@@ -322,12 +342,28 @@ export function AddStudentModal({ isOpen, onClose, classes, courses = [], school
                           className="h-14 bg-bg-tertiary/30 border-transparent focus:bg-white"
                         />
                       </div>
+                      {isAcademy && (
+                        <div className="md:col-span-2 rounded-[1.5rem] border border-border/20 bg-bg-tertiary/10 p-4">
+                          <label className="flex items-start gap-3 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={formData.enable_course_enrollment === 'true'}
+                              onChange={(e) => handleChange({ target: { name: 'enable_course_enrollment', value: e.target.checked ? 'true' : 'false' } })}
+                              className="mt-1 h-5 w-5 rounded border-border/60 text-accent focus:ring-accent"
+                            />
+                            <span className="space-y-1">
+                              <span className="block text-sm font-black text-text-primary">Enroll this student in an academy course / batch</span>
+                              <span className="block text-xs font-semibold text-text-secondary">When enabled, the student can be linked to a course and a preferred time slot. When disabled, the student stays only in the class list.</span>
+                            </span>
+                          </label>
+                        </div>
+                      )}
                       <Select 
-                        label="Select Class *"
+                        label={isAcademy ? 'Select Class (1-12) *' : 'Select Class *'}
                         value={formData.class_id}
                         onChange={(e) => {
                           const classId = e.target.value;
-                          const cls = classes.find(c => c.id === classId);
+                          const cls = visibleClasses.find(c => c.id === classId);
                           const isHighSchool = cls?.name === 'Class 11' || cls?.name === 'Class 12';
                           setFormData(prev => ({
                             ...prev,
@@ -336,13 +372,13 @@ export function AddStudentModal({ isOpen, onClose, classes, courses = [], school
                           }));
                         }}
                         options={[
-                          { label: 'Choose Classroom', value: '' },
-                          ...classes.map(c => ({ label: `${c.name}${c.section && c.section.toUpperCase() !== 'A' ? ` - ${c.section}` : ''}`, value: c.id }))
+                          { label: isAcademy ? 'Choose Class (1-12)' : 'Choose Classroom', value: '' },
+                          ...visibleClasses.map(c => ({ label: `${c.name}${c.section && c.section.toUpperCase() !== 'A' ? ` - ${c.section}` : ''}`, value: c.id }))
                         ]}
                         className="h-14 bg-bg-tertiary/30"
                       />
                       {/* Academy: Batch / Course selector */}
-                      {isAcademy && (
+                      {isAcademy && academyCourseEnabled && (
                         <>
                           <Select
                             label="Select Batch / Course"
