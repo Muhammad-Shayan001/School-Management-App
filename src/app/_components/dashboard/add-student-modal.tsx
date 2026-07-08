@@ -105,8 +105,8 @@ export function AddStudentModal({ isOpen, onClose, classes, courses = [], school
     group: 'General',
     session_year: new Date().getFullYear().toString(),
 
-    // Academy-only
-    enable_course_enrollment: 'false',
+    // Enrollment mode for academy students
+    enrollment_mode: 'class',
     batch_id: '',
     course_slot: '',
   });
@@ -115,7 +115,9 @@ export function AddStudentModal({ isOpen, onClose, classes, courses = [], school
   const selectedClass = visibleClasses.find(c => c.id === formData.class_id);
   const selectedCourse = courses.find(c => c.id === formData.batch_id);
   const courseSlots = selectedCourse?.course_details?.slots || [];
-  const academyCourseEnabled = isAcademy && formData.enable_course_enrollment === 'true';
+  const enrollmentMode = formData.enrollment_mode;
+  const showClassField = enrollmentMode === 'class' || enrollmentMode === 'both';
+  const showCourseField = isAcademy && (enrollmentMode === 'course' || enrollmentMode === 'both');
   const showGroupField = selectedClass?.name === 'Class 11' || selectedClass?.name === 'Class 12';
 
   // Fetch dynamic groups from database
@@ -182,7 +184,7 @@ export function AddStudentModal({ isOpen, onClose, classes, courses = [], school
         shift: editStudent.shift || 'morning',
         group: editStudent.group || 'General',
         session_year: editStudent.session_year || new Date().getFullYear().toString(),
-        enable_course_enrollment: editStudent.batch_id || editStudent.course_slot ? 'true' : 'false',
+        enrollment_mode: editStudent.batch_id && editStudent.class_id ? 'both' : editStudent.batch_id ? 'course' : 'class',
         batch_id: editStudent.batch_id || '',
         course_slot: editStudent.course_slot || '',
       });
@@ -190,7 +192,7 @@ export function AddStudentModal({ isOpen, onClose, classes, courses = [], school
       setStep(1);
     } else if (isOpen && !editStudent) {
       setFormData({
-        full_name: '', email: '', phone: '', registration_no: '', admission_date: new Date().toISOString().split('T')[0], class_id: '', roll_number: '', fee_discount: '0', sms_phone: '', avatar_url: '', password: '', dob: '', birth_form_id: '', is_orphan: 'false', gender: 'male', student_cast: '', is_osc: 'false', id_mark: '', previous_school: '', religion: 'Islam', blood_group: '', family_id: '', disease: '', additional_note: '', total_siblings: '0', address: '', cnic: '', father_name: '', father_cnic: '', father_occupation: '', father_education: '', father_phone: '', father_profession: '', father_income: '', mother_name: '', mother_cnic: '', mother_occupation: '', mother_education: '', mother_phone: '', mother_profession: '', mother_income: '', section: '', shift: 'morning', group: 'General', session_year: new Date().getFullYear().toString(), enable_course_enrollment: 'false', batch_id: '', course_slot: ''
+        full_name: '', email: '', phone: '', registration_no: '', admission_date: new Date().toISOString().split('T')[0], class_id: '', roll_number: '', fee_discount: '0', sms_phone: '', avatar_url: '', password: '', dob: '', birth_form_id: '', is_orphan: 'false', gender: 'male', student_cast: '', is_osc: 'false', id_mark: '', previous_school: '', religion: 'Islam', blood_group: '', family_id: '', disease: '', additional_note: '', total_siblings: '0', address: '', cnic: '', father_name: '', father_cnic: '', father_occupation: '', father_education: '', father_phone: '', father_profession: '', father_income: '', mother_name: '', mother_cnic: '', mother_occupation: '', mother_education: '', mother_phone: '', mother_profession: '', mother_income: '', section: '', shift: 'morning', group: 'General', session_year: new Date().getFullYear().toString(), enrollment_mode: 'class', batch_id: '', course_slot: ''
       });
       setPreviewImage(null);
       setStep(1);
@@ -201,9 +203,14 @@ export function AddStudentModal({ isOpen, onClose, classes, courses = [], school
     const { name, value } = e.target;
     setFormData(prev => {
       const next = { ...prev, [name]: value };
-      if (name === 'enable_course_enrollment' && value !== 'true') {
-        next.batch_id = '';
-        next.course_slot = '';
+      if (name === 'enrollment_mode') {
+        if (value === 'class') {
+          next.batch_id = '';
+          next.course_slot = '';
+        }
+        if (value === 'course') {
+          next.class_id = '';
+        }
       }
       return next;
     });
@@ -222,8 +229,14 @@ export function AddStudentModal({ isOpen, onClose, classes, courses = [], school
   };
 
   const handleSubmit = async () => {
-    if (!formData.full_name || !formData.email || !formData.class_id) {
-      toast.error('Please fill in all required fields (Name, Email, Class)');
+    const needsClass = formData.enrollment_mode === 'class' || formData.enrollment_mode === 'both';
+    const needsCourse = formData.enrollment_mode === 'course' || formData.enrollment_mode === 'both';
+    if (!formData.full_name || !formData.email || (needsClass && !formData.class_id) || (needsCourse && !formData.batch_id)) {
+      toast.error('Please fill in all required fields: Name, Email, ' +
+        (needsClass ? 'Class' : '') +
+        (needsClass && needsCourse ? ' and ' : '') +
+        (needsCourse ? 'Course' : '')
+      );
       return;
     }
 
@@ -343,49 +356,61 @@ export function AddStudentModal({ isOpen, onClose, classes, courses = [], school
                         />
                       </div>
                       {isAcademy && (
-                        <div className="md:col-span-2 rounded-[1.5rem] border border-border/20 bg-bg-tertiary/10 p-4">
-                          <label className="flex items-start gap-3 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={formData.enable_course_enrollment === 'true'}
-                              onChange={(e) => handleChange({ target: { name: 'enable_course_enrollment', value: e.target.checked ? 'true' : 'false' } })}
-                              className="mt-1 h-5 w-5 rounded border-border/60 text-accent focus:ring-accent"
-                            />
-                            <span className="space-y-1">
-                              <span className="block text-sm font-black text-text-primary">Enroll this student in an academy course / batch</span>
-                              <span className="block text-xs font-semibold text-text-secondary">When enabled, the student can be linked to a course and a preferred time slot. When disabled, the student stays only in the class list.</span>
-                            </span>
-                          </label>
+                        <div className="md:col-span-2 rounded-[1.5rem] border border-border/20 bg-bg-tertiary/10 p-4 space-y-4">
+                          <p className="text-xs font-black uppercase tracking-[0.2em] text-text-tertiary">Enrollment type</p>
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            {[
+                              { value: 'class', label: 'Classes only' },
+                              { value: 'course', label: 'Course only' },
+                              { value: 'both', label: 'Both' }
+                            ].map((option) => (
+                              <button
+                                key={option.value}
+                                type="button"
+                                onClick={() => handleChange({ target: { name: 'enrollment_mode', value: option.value } })}
+                                className={cn(
+                                  'h-14 rounded-2xl border text-sm font-black uppercase tracking-[0.2em] transition-all',
+                                  formData.enrollment_mode === option.value
+                                    ? 'border-accent bg-accent/10 text-accent'
+                                    : 'border-border/50 bg-transparent text-text-secondary hover:border-accent/70 hover:text-text-primary'
+                                )}
+                              >
+                                {option.label}
+                              </button>
+                            ))}
+                          </div>
+                          <p className="text-[11px] text-text-tertiary">Choose whether this student should be enrolled in classes, courses, or both. The form will show only the required fields.</p>
                         </div>
                       )}
-                      <Select 
-                        label={isAcademy ? 'Select Class (1-12) *' : 'Select Class *'}
-                        value={formData.class_id}
-                        onChange={(e) => {
-                          const classId = e.target.value;
-                          const cls = visibleClasses.find(c => c.id === classId);
-                          const isHighSchool = cls?.name === 'Class 11' || cls?.name === 'Class 12';
-                          setFormData(prev => ({
-                            ...prev,
-                            class_id: classId,
-                            group: isHighSchool ? (prev.group === 'General' ? 'Science' : prev.group) : 'General'
-                          }));
-                        }}
-                        options={[
-                          { label: isAcademy ? 'Choose Class (1-12)' : 'Choose Classroom', value: '' },
-                          ...visibleClasses.map(c => ({ label: `${c.name}${c.section && c.section.toUpperCase() !== 'A' ? ` - ${c.section}` : ''}`, value: c.id }))
-                        ]}
-                        className="h-14 bg-bg-tertiary/30"
-                      />
-                      {/* Academy: Batch / Course selector */}
-                      {isAcademy && academyCourseEnabled && (
+                      {showClassField && (
+                        <Select 
+                          label={isAcademy ? 'Select Class (1-12)' : 'Select Class'}
+                          value={formData.class_id}
+                          onChange={(e) => {
+                            const classId = e.target.value;
+                            const cls = visibleClasses.find(c => c.id === classId);
+                            const isHighSchool = cls?.name === 'Class 11' || cls?.name === 'Class 12';
+                            setFormData(prev => ({
+                              ...prev,
+                              class_id: classId,
+                              group: isHighSchool ? (prev.group === 'General' ? 'Science' : prev.group) : 'General'
+                            }));
+                          }}
+                          options={[
+                            { label: isAcademy ? 'Choose Class (1-12)' : 'Choose Classroom', value: '' },
+                            ...visibleClasses.map(c => ({ label: `${c.name}${c.section && c.section.toUpperCase() !== 'A' ? ` - ${c.section}` : ''}`, value: c.id }))
+                          ]}
+                          className="h-14 bg-bg-tertiary/30"
+                        />
+                      )}
+                      {showCourseField && (
                         <>
                           <Select
                             label="Select Batch / Course"
                             value={formData.batch_id}
                             onChange={(e) => setFormData(prev => ({ ...prev, batch_id: e.target.value, course_slot: '' }))}
                             options={[
-                              { label: 'No specific batch', value: '' },
+                              { label: 'Choose course or batch', value: '' },
                               ...courses.map(c => ({ label: c.name, value: c.id }))
                             ]}
                             className="h-14 bg-bg-tertiary/30"

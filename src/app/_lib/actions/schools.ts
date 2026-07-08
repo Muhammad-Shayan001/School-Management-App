@@ -894,8 +894,18 @@ export async function addCourse(name: string, description: string = '', metadata
   if (metadata.end_date) insertPayload.course_end_date = metadata.end_date;
   if (metadata.duration_weeks) insertPayload.course_duration_weeks = Number(metadata.duration_weeks);
   if (metadata.days) insertPayload.course_days = metadata.days;
-  if (metadata.slots?.length) insertPayload.course_slots = metadata.slots;
   if (metadata.level) insertPayload.course_level = metadata.level;
+
+  const slotList = Array.isArray(metadata.slots)
+    ? metadata.slots.filter(Boolean)
+    : (typeof metadata.course_slots === 'string'
+      ? metadata.course_slots
+          .split('\n')
+          .map((item: string) => item.trim())
+          .filter(Boolean)
+      : []);
+
+  if (slotList.length) insertPayload.course_slots = slotList;
 
   const { data, error } = await adminClient
     .from('subjects')
@@ -904,13 +914,19 @@ export async function addCourse(name: string, description: string = '', metadata
     .single();
 
   if (error && (error.message?.includes('is_course') || error.message?.includes('course_') || error.code === '42703')) {
+    const fallbackPayload: any = {
+      name: name.trim(),
+      school_id: profile.school_id,
+      description: serializedDetails,
+    };
+
+    if (!error.message?.includes('is_course')) {
+      fallbackPayload.is_course = true;
+    }
+
     const { data: d2, error: e2 } = await adminClient
       .from('subjects')
-      .insert({
-        name: name.trim(),
-        school_id: profile.school_id,
-        description: serializedDetails,
-      })
+      .insert(fallbackPayload)
       .select()
       .single();
     if (e2) return { error: e2.message };
