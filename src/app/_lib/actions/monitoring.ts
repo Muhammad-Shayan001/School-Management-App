@@ -35,12 +35,38 @@ export const getAdminAnalytics = unstable_cache(
     ]);
 
     // Fetch fee status counts (assuming fee_status is in student_profiles)
-    const { data: feeData } = await adminClient
-      .from('student_profiles')
-      .select('fee_status')
-      .eq('school_id', schoolId);
+    let feesPending = 0;
+    try {
+      const { data: feeData, error: feeErr } = await adminClient
+        .from('student_profiles')
+        .select('fee_status')
+        .eq('school_id', schoolId);
 
-    const feesPending = feeData?.filter(s => s.fee_status !== 'paid').length || 0;
+      if (!feeErr && feeData && feeData.length > 0) {
+        feesPending = feeData.filter(s => s.fee_status !== 'paid').length || 0;
+      } else {
+        // Fallback: if student_profiles rows aren't present or don't have school_id,
+        // derive from profiles.role='student' for this school and then fetch student_profiles by user_id
+        const { data: studentAccounts } = await adminClient
+          .from('profiles')
+          .select('id')
+          .eq('role', 'student')
+          .eq('school_id', schoolId);
+
+        const userIds = (studentAccounts || []).map((p: any) => p.id);
+        if (userIds.length > 0) {
+          const { data: spData } = await adminClient
+            .from('student_profiles')
+            .select('fee_status')
+            .in('user_id', userIds);
+          feesPending = (spData || []).filter((s: any) => s.fee_status !== 'paid').length || 0;
+        } else {
+          feesPending = 0;
+        }
+      }
+    } catch (e) {
+      feesPending = 0;
+    }
 
     return {
       totalStudents: totalStudents || 0,

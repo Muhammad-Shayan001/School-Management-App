@@ -63,12 +63,45 @@ export async function getStudentsWithFees(filters?: { class_id?: string; query?:
   const { data, error } = await query;
   if (error) return { data: null, error: error.message };
 
-  let result = data;
+  let result = data || [];
+
+  // If no rows found (possible schema drift or missing school_id on student_profiles),
+  // fall back to profiles.role='student' for this school and join by user_id.
+  if ((!result || result.length === 0) && caller.school_id) {
+    const { data: studentAccounts } = await adminClient
+      .from('profiles')
+      .select('id, full_name, email, avatar_url, phone, status')
+      .eq('role', 'student')
+      .eq('school_id', caller.school_id);
+
+    const userIds = (studentAccounts || []).map((p: any) => p.id);
+    if (userIds.length > 0) {
+      // fetch student_profiles for these user ids
+      const { data: spData, error: spErr } = await adminClient
+        .from('student_profiles')
+        .select('user_id, roll_number, fee_status, class_id, campus_id, section')
+        .in('user_id', userIds);
+
+      let spMap: Record<string, any> = {};
+      if (!spErr && spData) {
+        spData.forEach((s: any) => { spMap[s.user_id] = s; });
+      }
+
+      result = (studentAccounts || []).map((p: any) => ({
+        user_id: p.id,
+        roll_number: spMap[p.id]?.roll_number || null,
+        fee_status: spMap[p.id]?.fee_status || 'unpaid',
+        profiles: { full_name: p.full_name, email: p.email },
+        classes: spMap[p.id]?.class_id ? { id: spMap[p.id].class_id } : null,
+      }));
+    }
+  }
+
   if (filters?.query) {
     const q = filters.query.toLowerCase();
     result = result.filter((s: any) => 
-      s.profiles?.full_name?.toLowerCase().includes(q) ||
-      s.roll_number?.toLowerCase().includes(q)
+      (s.profiles?.full_name || '').toLowerCase().includes(q) ||
+      (s.roll_number || '').toString().toLowerCase().includes(q)
     );
   }
 
