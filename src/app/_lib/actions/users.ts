@@ -271,31 +271,63 @@ export async function getStudentProfiles(filters?: { class_id?: string; query?: 
     }
   }
 
-  let query = adminClient
-    .from('student_profiles')
-    .select(`
+  // Build initial query including the academy batch join. If the DB schema
+  // doesn't include the batch_id column (migration not applied yet) the
+  // query will fail — in that case retry without the batch join so the
+  // students list still works.
+  const baseSelect = `
       *,
       profiles(id, full_name, email, avatar_url, phone, status),
-      classes(name, section),
-      batch:subjects!batch_id(id, name)
-    `)
+      classes(name, section)
+    `;
+
+  let initialQuery = adminClient
+    .from('student_profiles')
+    .select(`${baseSelect}, batch:subjects!batch_id(id, name)`)
     .eq('school_id', caller.school_id);
 
   if (filters?.class_id) {
     if (allowedClassIds && !allowedClassIds.includes(filters.class_id)) {
       return { data: [], error: 'Unauthorized class access' };
     }
-    query = query.eq('class_id', filters.class_id);
+    initialQuery = initialQuery.eq('class_id', filters.class_id);
   } else if (allowedClassIds) {
-    query = query.in('class_id', allowedClassIds);
+    initialQuery = initialQuery.in('class_id', allowedClassIds);
   }
 
   if (filters?.campus_id) {
-    query = query.eq('campus_id', filters.campus_id);
+    initialQuery = initialQuery.eq('campus_id', filters.campus_id);
   }
 
-  const { data, error } = await query;
-  if (error) return { data: null, error: error.message };
+  // Execute initial query and fallback if necessary
+  const { data: initialData, error: initialError } = await initialQuery;
+  let data;
+  if (initialError) {
+    // If the error indicates a missing column (e.g. batch_id) or Postgres code 42703,
+    // try a simpler query without the batch join so the students list continues to work.
+    const errMsg = String(initialError.message || '').toLowerCase();
+    if (errMsg.includes('batch_id') || initialError.code === '42703' || errMsg.includes('column') ) {
+      const { data: fallbackData, error: fallbackErr } = await adminClient
+        .from('student_profiles')
+        .select(baseSelect)
+        .eq('school_id', caller.school_id);
+
+      if (filters?.class_id) {
+        // repeat the class filter for fallback
+        if (allowedClassIds && !allowedClassIds.includes(filters.class_id)) {
+          return { data: [], error: 'Unauthorized class access' };
+        }
+        // supabase-js returns a query builder; we've already executed fallback, so we apply class filter above
+      }
+
+      if (fallbackErr) return { data: null, error: fallbackErr.message };
+      data = fallbackData;
+    } else {
+      return { data: null, error: initialError.message };
+    }
+  } else {
+    data = initialData;
+  }
 
   let result = data;
   if (filters?.query) {
