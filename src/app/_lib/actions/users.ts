@@ -527,11 +527,12 @@ export async function createManualStudent(formData: any) {
       group: formData.group,
       session_year: formData.session_year || new Date().getFullYear().toString(),
       ...(formData.batch_id ? { batch_id: formData.batch_id } : {}),
+      ...(formData.course_slot ? { course_slot: formData.course_slot } : {}),
     });
 
   if (studentErr) {
-    // If batch_id column doesn't exist yet (migration not applied), retry without it
-    if (studentErr.message?.includes('batch_id') || studentErr.code === '42703') {
+    // If batch_id/course_slot columns do not exist yet (migration not applied), retry without them
+    if (studentErr.message?.includes('batch_id') || studentErr.message?.includes('course_slot') || studentErr.code === '42703') {
       const { error: retryErr } = await adminClient
         .from('student_profiles')
         .insert({
@@ -1276,12 +1277,13 @@ export async function updateManualStudentData(userId: string, formData: any) {
       group: formData.group,
       session_year: formData.session_year || new Date().getFullYear().toString(),
       ...(formData.batch_id !== undefined ? { batch_id: formData.batch_id || null } : {}),
+      ...(formData.course_slot !== undefined ? { course_slot: formData.course_slot || null } : {}),
     })
     .eq('user_id', userId);
 
   if (studentErr) {
-    // Retry without batch_id if column doesn't exist yet
-    if (studentErr.message?.includes('batch_id') || studentErr.code === '42703') {
+    // Retry without batch_id/course_slot if columns do not exist yet
+    if (studentErr.message?.includes('batch_id') || studentErr.message?.includes('course_slot') || studentErr.code === '42703') {
       const { error: retryErr } = await adminClient
         .from('student_profiles')
         .update({

@@ -31,6 +31,12 @@ export default function ClassroomsPage() {
   const [classSection, setClassSection] = useState('A');
   const [courseName, setCourseName] = useState('');
   const [courseDesc, setCourseDesc] = useState('');
+  const [courseStartDate, setCourseStartDate] = useState('');
+  const [courseEndDate, setCourseEndDate] = useState('');
+  const [courseDuration, setCourseDuration] = useState('');
+  const [courseDays, setCourseDays] = useState('');
+  const [courseSlots, setCourseSlots] = useState('');
+  const [courseLevel, setCourseLevel] = useState('');
 
   useEffect(() => {
     loadData();
@@ -80,7 +86,14 @@ export default function ClassroomsPage() {
     if (!courseName.trim()) return;
     
     setIsSubmitting(true);
-    const result = await addCourse(courseName, courseDesc);
+    const result = await addCourse(courseName, courseDesc, {
+      start_date: courseStartDate,
+      end_date: courseEndDate,
+      duration_weeks: courseDuration,
+      days: courseDays,
+      course_slots: courseSlots,
+      level: courseLevel,
+    });
     
     if (result.error) {
       toast.error(result.error);
@@ -89,6 +102,12 @@ export default function ClassroomsPage() {
       setIsAddCourseModalOpen(false);
       setCourseName('');
       setCourseDesc('');
+      setCourseStartDate('');
+      setCourseEndDate('');
+      setCourseDuration('');
+      setCourseDays('');
+      setCourseSlots('');
+      setCourseLevel('');
       await loadData();
     }
     setIsSubmitting(false);
@@ -245,6 +264,15 @@ export default function ClassroomsPage() {
                     {course.description}
                   </p>
                 )}
+                {(course.course_details?.start_date || course.course_details?.end_date || course.course_details?.duration_weeks || course.course_details?.days) && (
+                  <div className="mt-3 space-y-1 text-xs font-semibold text-text-secondary">
+                    {course.course_details?.start_date && <p>Start: {course.course_details.start_date}</p>}
+                    {course.course_details?.end_date && <p>End: {course.course_details.end_date}</p>}
+                    {course.course_details?.duration_weeks && <p>Duration: {course.course_details.duration_weeks} weeks</p>}
+                    {course.course_details?.days && <p>Days: {course.course_details.days}</p>}
+                    {course.course_details?.slots?.length > 0 && <p>Slots: {course.course_details.slots.length}</p>}
+                  </div>
+                )}
               </div>
             ))
           )}
@@ -319,6 +347,40 @@ export default function ClassroomsPage() {
                   onChange={(e) => setCourseDesc(e.target.value)}
                   placeholder="Short description about the course..."
                   rows={3}
+                  className="w-full bg-bg-tertiary/50 border border-border/30 rounded-2xl py-3 px-4 text-sm font-bold text-text-primary focus:outline-none focus:border-accent/40 focus:bg-white transition-all resize-none"
+                />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-black text-text-tertiary uppercase tracking-widest ml-1 mb-1 block">Start Date</label>
+                  <Input type="date" value={courseStartDate} onChange={(e) => setCourseStartDate(e.target.value)} className="bg-bg-tertiary/50" />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black text-text-tertiary uppercase tracking-widest ml-1 mb-1 block">End Date</label>
+                  <Input type="date" value={courseEndDate} onChange={(e) => setCourseEndDate(e.target.value)} className="bg-bg-tertiary/50" />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-black text-text-tertiary uppercase tracking-widest ml-1 mb-1 block">Duration (weeks)</label>
+                  <Input type="number" min="1" value={courseDuration} onChange={(e) => setCourseDuration(e.target.value)} placeholder="8" className="bg-bg-tertiary/50" />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black text-text-tertiary uppercase tracking-widest ml-1 mb-1 block">Class Level</label>
+                  <Input value={courseLevel} onChange={(e) => setCourseLevel(e.target.value)} placeholder="Class 1-10" className="bg-bg-tertiary/50" />
+                </div>
+              </div>
+              <div>
+                <label className="text-[10px] font-black text-text-tertiary uppercase tracking-widest ml-1 mb-1 block">Days / Weekly Schedule</label>
+                <Input value={courseDays} onChange={(e) => setCourseDays(e.target.value)} placeholder="Mon, Wed, Fri" className="bg-bg-tertiary/50" />
+              </div>
+              <div>
+                <label className="text-[10px] font-black text-text-tertiary uppercase tracking-widest ml-1 mb-1 block">Time Slots (one per line)</label>
+                <textarea
+                  value={courseSlots}
+                  onChange={(e) => setCourseSlots(e.target.value)}
+                  placeholder="Morning 08:00-10:00&#10;Evening 18:00-20:00"
+                  rows={4}
                   className="w-full bg-bg-tertiary/50 border border-border/30 rounded-2xl py-3 px-4 text-sm font-bold text-text-primary focus:outline-none focus:border-accent/40 focus:bg-white transition-all resize-none"
                 />
               </div>

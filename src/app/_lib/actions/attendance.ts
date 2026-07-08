@@ -95,6 +95,16 @@ export async function markAttendance(params: {
     return { success: true, status: 'already_marked', message: 'Attendance already marked for today.' };
   }
 
+  let courseSlot: string | null = null;
+  if (params.role === 'student') {
+    const { data: studentProfile } = await adminClient
+      .from('student_profiles')
+      .select('course_slot')
+      .eq('user_id', params.userId)
+      .maybeSingle();
+    courseSlot = studentProfile?.course_slot || null;
+  }
+
   const attendanceData = {
     user_id: params.userId,
     role: params.role,
@@ -104,6 +114,7 @@ export async function markAttendance(params: {
     marked_by: caller.id,
     school_id: callerProfile.school_id,
     class_id: params.classId || null,
+    course_slot: courseSlot,
     approved_by: (params.method === 'qr' && finalStatus === 'pending') ? null : caller.id
   };
 
@@ -125,6 +136,25 @@ export async function markAttendance(params: {
       .single();
     error = insertErr;
     attendanceId = insertedData?.id || null;
+  }
+
+  if (error && (error.message?.includes('course_slot') || error.code === '42703')) {
+    const { course_slot, ...fallbackData } = attendanceData;
+    if (existing) {
+      const { error: retryErr } = await adminClient
+        .from('attendance')
+        .update(fallbackData)
+        .eq('id', existing.id);
+      error = retryErr;
+    } else {
+      const { data: insertedData, error: retryErr } = await adminClient
+        .from('attendance')
+        .insert(fallbackData)
+        .select('id')
+        .single();
+      error = retryErr;
+      attendanceId = insertedData?.id || null;
+    }
   }
 
   if (error) return { error: error.message };

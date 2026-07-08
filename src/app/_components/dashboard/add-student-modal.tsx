@@ -98,9 +98,12 @@ export function AddStudentModal({ isOpen, onClose, classes, courses = [], school
 
     // Academy-only
     batch_id: '',
+    course_slot: '',
   });
 
   const selectedClass = classes.find(c => c.id === formData.class_id);
+  const selectedCourse = courses.find(c => c.id === formData.batch_id);
+  const courseSlots = selectedCourse?.course_details?.slots || [];
   const showGroupField = selectedClass?.name === 'Class 11' || selectedClass?.name === 'Class 12';
 
   // Fetch dynamic groups from database
@@ -168,12 +171,13 @@ export function AddStudentModal({ isOpen, onClose, classes, courses = [], school
         group: editStudent.group || 'General',
         session_year: editStudent.session_year || new Date().getFullYear().toString(),
         batch_id: editStudent.batch_id || '',
+        course_slot: editStudent.course_slot || '',
       });
       setPreviewImage(editStudent.profiles?.avatar_url || null);
       setStep(1);
     } else if (isOpen && !editStudent) {
       setFormData({
-        full_name: '', email: '', phone: '', registration_no: '', admission_date: new Date().toISOString().split('T')[0], class_id: '', roll_number: '', fee_discount: '0', sms_phone: '', avatar_url: '', password: '', dob: '', birth_form_id: '', is_orphan: 'false', gender: 'male', student_cast: '', is_osc: 'false', id_mark: '', previous_school: '', religion: 'Islam', blood_group: '', family_id: '', disease: '', additional_note: '', total_siblings: '0', address: '', cnic: '', father_name: '', father_cnic: '', father_occupation: '', father_education: '', father_phone: '', father_profession: '', father_income: '', mother_name: '', mother_cnic: '', mother_occupation: '', mother_education: '', mother_phone: '', mother_profession: '', mother_income: '', section: '', shift: 'morning', group: 'General', session_year: new Date().getFullYear().toString(), batch_id: ''
+        full_name: '', email: '', phone: '', registration_no: '', admission_date: new Date().toISOString().split('T')[0], class_id: '', roll_number: '', fee_discount: '0', sms_phone: '', avatar_url: '', password: '', dob: '', birth_form_id: '', is_orphan: 'false', gender: 'male', student_cast: '', is_osc: 'false', id_mark: '', previous_school: '', religion: 'Islam', blood_group: '', family_id: '', disease: '', additional_note: '', total_siblings: '0', address: '', cnic: '', father_name: '', father_cnic: '', father_occupation: '', father_education: '', father_phone: '', father_profession: '', father_income: '', mother_name: '', mother_cnic: '', mother_occupation: '', mother_education: '', mother_phone: '', mother_profession: '', mother_income: '', section: '', shift: 'morning', group: 'General', session_year: new Date().getFullYear().toString(), batch_id: '', course_slot: ''
       });
       setPreviewImage(null);
       setStep(1);
@@ -339,16 +343,52 @@ export function AddStudentModal({ isOpen, onClose, classes, courses = [], school
                       />
                       {/* Academy: Batch / Course selector */}
                       {isAcademy && (
-                        <Select
-                          label="Select Batch / Course"
-                          value={formData.batch_id}
-                          onChange={(e) => setFormData(prev => ({ ...prev, batch_id: e.target.value }))}
-                          options={[
-                            { label: 'No specific batch', value: '' },
-                            ...courses.map(c => ({ label: c.name, value: c.id }))
-                          ]}
-                          className="h-14 bg-bg-tertiary/30"
-                        />
+                        <>
+                          <Select
+                            label="Select Batch / Course"
+                            value={formData.batch_id}
+                            onChange={(e) => setFormData(prev => ({ ...prev, batch_id: e.target.value, course_slot: '' }))}
+                            options={[
+                              { label: 'No specific batch', value: '' },
+                              ...courses.map(c => ({ label: c.name, value: c.id }))
+                            ]}
+                            className="h-14 bg-bg-tertiary/30"
+                          />
+                          {selectedCourse && (
+                            <div className="md:col-span-2 rounded-[1.5rem] border border-accent/20 bg-accent/5 p-4 space-y-3">
+                              <div className="flex items-center justify-between gap-3">
+                                <div>
+                                  <p className="text-[10px] font-black uppercase tracking-[0.25em] text-text-tertiary">Course details</p>
+                                  <p className="text-sm font-black text-text-primary">{selectedCourse.name}</p>
+                                </div>
+                                <Badge variant="accent" className="uppercase text-[9px] tracking-[0.2em]">Academy</Badge>
+                              </div>
+                              {selectedCourse.course_details?.start_date && (
+                                <p className="text-xs font-semibold text-text-secondary">Start: {selectedCourse.course_details.start_date}</p>
+                              )}
+                              {selectedCourse.course_details?.end_date && (
+                                <p className="text-xs font-semibold text-text-secondary">End: {selectedCourse.course_details.end_date}</p>
+                              )}
+                              {selectedCourse.course_details?.days && (
+                                <p className="text-xs font-semibold text-text-secondary">Days: {selectedCourse.course_details.days}</p>
+                              )}
+                              {courseSlots.length > 0 ? (
+                                <Select
+                                  label="Choose preferred time slot"
+                                  value={formData.course_slot}
+                                  onChange={(e) => setFormData(prev => ({ ...prev, course_slot: e.target.value }))}
+                                  options={[
+                                    { label: 'No preference', value: '' },
+                                    ...courseSlots.map((slot: string) => ({ label: slot, value: slot }))
+                                  ]}
+                                  className="h-14 bg-white"
+                                />
+                              ) : (
+                                <p className="text-xs font-semibold text-text-secondary">No time slots have been added for this course yet.</p>
+                              )}
+                            </div>
+                          )}
+                        </>
                       )}
                       {showGroupField && (
                         <Select 

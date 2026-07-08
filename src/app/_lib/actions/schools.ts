@@ -358,6 +358,68 @@ function getDefaultCourseSeeds(institutionType?: string): string[] {
   return [];
 }
 
+function parseCourseDetails(raw: string | null | undefined) {
+  if (!raw) {
+    return {
+      summary: '',
+      start_date: '',
+      end_date: '',
+      duration_weeks: '',
+      days: '',
+      slots: [] as string[],
+      level: ''
+    };
+  }
+
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object') {
+      return {
+        summary: parsed.summary || parsed.description || '',
+        start_date: parsed.start_date || '',
+        end_date: parsed.end_date || '',
+        duration_weeks: parsed.duration_weeks || '',
+        days: parsed.days || '',
+        slots: Array.isArray(parsed.slots) ? parsed.slots.filter(Boolean) : [],
+        level: parsed.level || ''
+      };
+    }
+  } catch {
+    // Fall back to plain text description
+  }
+
+  return {
+    summary: raw,
+    start_date: '',
+    end_date: '',
+    duration_weeks: '',
+    days: '',
+    slots: [],
+    level: ''
+  };
+}
+
+function buildCourseDescription(description: string = '', metadata: any = {}) {
+  const slotList = Array.isArray(metadata.slots)
+    ? metadata.slots.filter(Boolean)
+    : (typeof metadata.course_slots === 'string'
+      ? metadata.course_slots
+          .split('\n')
+          .map((item: string) => item.trim())
+          .filter(Boolean)
+      : []);
+
+  return JSON.stringify({
+    summary: metadata.description || description || '',
+    start_date: metadata.start_date || '',
+    end_date: metadata.end_date || '',
+    duration_weeks: metadata.duration_weeks || '',
+    days: metadata.days || '',
+    slots: slotList,
+    level: metadata.level || ''
+  });
+}
+
 /**
  * Get basic class info for public signup page by school.
  */
@@ -773,17 +835,37 @@ export async function getCourses() {
       .eq('school_id', profile.school_id)
       .order('name');
     if (subErr) return { data: [], error: subErr.message };
-    return { data: allSubjects || [], error: null };
+    return {
+      data: (allSubjects || []).map((item: any) => {
+        const parsed = parseCourseDetails(item.description);
+        return {
+          ...item,
+          description: parsed.summary || item.description || '',
+          course_details: parsed
+        };
+      }),
+      error: null
+    };
   }
 
   if (error) return { data: [], error: error.message };
-  return { data: data || [], error: null };
+  return {
+    data: (data || []).map((item: any) => {
+      const parsed = parseCourseDetails(item.description);
+      return {
+        ...item,
+        description: parsed.summary || item.description || '',
+        course_details: parsed
+      };
+    }),
+    error: null
+  };
 }
 
 /**
  * Add a new course (stored as a subject with is_course=true).
  */
-export async function addCourse(name: string, description: string = '') {
+export async function addCourse(name: string, description: string = '', metadata: any = {}) {
   const adminClient = createAdminClient();
   const { createClient } = await import('@/app/_lib/supabase/server');
   const supabase = await createClient();
@@ -798,13 +880,22 @@ export async function addCourse(name: string, description: string = '') {
 
   if (!profile?.school_id) return { error: 'No school found' };
 
-  // Try inserting with is_course flag
+  const serializedDetails = buildCourseDescription(description, metadata);
+
+  // Try inserting with the richer academy course payload first
   const insertPayload: any = {
     name: name.trim(),
     school_id: profile.school_id,
-    description: description.trim() || null,
+    description: serializedDetails,
     is_course: true,
   };
+
+  if (metadata.start_date) insertPayload.course_start_date = metadata.start_date;
+  if (metadata.end_date) insertPayload.course_end_date = metadata.end_date;
+  if (metadata.duration_weeks) insertPayload.course_duration_weeks = Number(metadata.duration_weeks);
+  if (metadata.days) insertPayload.course_days = metadata.days;
+  if (metadata.slots?.length) insertPayload.course_slots = metadata.slots;
+  if (metadata.level) insertPayload.course_level = metadata.level;
 
   const { data, error } = await adminClient
     .from('subjects')
@@ -812,11 +903,14 @@ export async function addCourse(name: string, description: string = '') {
     .select()
     .single();
 
-  // If is_course column doesn't exist, insert without it
-  if (error && error.message?.includes('is_course')) {
+  if (error && (error.message?.includes('is_course') || error.message?.includes('course_') || error.code === '42703')) {
     const { data: d2, error: e2 } = await adminClient
       .from('subjects')
-      .insert({ name: name.trim(), school_id: profile.school_id })
+      .insert({
+        name: name.trim(),
+        school_id: profile.school_id,
+        description: serializedDetails,
+      })
       .select()
       .single();
     if (e2) return { error: e2.message };

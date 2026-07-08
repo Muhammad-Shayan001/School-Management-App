@@ -256,6 +256,9 @@ export function StudentManagement({ students, classes, school, schoolInfo, cours
                       {student.batch?.name && (
                         <span className="text-[10px] font-black text-accent uppercase tracking-wider mt-1">{student.batch.name}</span>
                       )}
+                      {student.course_slot && (
+                        <span className="text-[10px] font-black text-amber-600 uppercase tracking-wider mt-1">Slot: {student.course_slot}</span>
+                      )}
                     </div>
                   </td>
                   <td className="px-6 py-5">
