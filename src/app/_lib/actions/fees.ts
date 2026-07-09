@@ -83,17 +83,38 @@ export async function getStudentsWithFees(filters?: { class_id?: string; query?:
         .in('user_id', userIds);
 
       let spMap: Record<string, any> = {};
+      const classIds: string[] = [];
       if (!spErr && spData) {
-        spData.forEach((s: any) => { spMap[s.user_id] = s; });
+        spData.forEach((s: any) => {
+          spMap[s.user_id] = s;
+          if (s.class_id) classIds.push(s.class_id);
+        });
       }
 
-      result = (studentAccounts || []).map((p: any) => ({
-        user_id: p.id,
-        roll_number: spMap[p.id]?.roll_number || null,
-        fee_status: spMap[p.id]?.fee_status || 'unpaid',
-        profiles: { full_name: p.full_name, email: p.email },
-        classes: spMap[p.id]?.class_id ? { id: spMap[p.id].class_id } : null,
-      }));
+      // Fetch class details (name, section) for any referenced class_ids so we can
+      // return the same shape as the primary query (classes: [{ name, section }])
+      let classMap: Record<string, any> = {};
+      if (classIds.length > 0) {
+        const { data: classRows } = await adminClient
+          .from('classes')
+          .select('id, name, section')
+          .in('id', classIds);
+        (classRows || []).forEach((c: any) => { classMap[c.id] = c; });
+      }
+
+      result = (studentAccounts || []).map((p: any) => {
+        const sp = spMap[p.id] || {};
+        const cls = sp.class_id ? (classMap[sp.class_id] ? [classMap[sp.class_id]] : []) : [];
+        return {
+          user_id: p.id,
+          roll_number: sp.roll_number || null,
+          fee_status: sp.fee_status || 'unpaid',
+          // Match primary query shape: profiles comes back as an array of objects
+          profiles: [{ full_name: p.full_name, email: p.email }],
+          // classes should be an array (possibly empty) with name/section
+          classes: cls,
+        };
+      });
     }
   }
 
