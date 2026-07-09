@@ -50,6 +50,31 @@ export function StudentManagement({ students, classes, school, schoolInfo, cours
 
   const { campuses, activeCampus } = useCampusStore();
 
+  // Helpers to support different shapes returned from Supabase joins.
+  // Some queries return related rows as objects, others as arrays — normalize to a single object.
+  const getProfile = (s: any) => {
+    if (!s) return {} as any;
+    const p = s.profiles;
+    if (Array.isArray(p)) return p[0] || {};
+    return p || {};
+  };
+
+  const getClass = (s: any) => {
+    if (!s) return null as any;
+    const c = s.classes;
+    if (Array.isArray(c)) return c[0] || null;
+    return c || null;
+  };
+
+  const getRoll = (s: any) => {
+    const r = s.roll_number ?? getProfile(s).roll_number ?? '';
+    return r == null ? '' : String(r);
+  };
+
+  const getFullName = (s: any) => getProfile(s).full_name || getProfile(s).name || '';
+  const getEmail = (s: any) => getProfile(s).email || '';
+
+
   const handleRemoveStudent = async (studentUserId: string, name: string) => {
     if (!confirm(`Are you absolutely sure you want to delete ${name || 'this student'}? This will permanently remove their profile, attendance, results, fees, and account. This action cannot be undone.`)) {
       return;
@@ -134,11 +159,13 @@ export function StudentManagement({ students, classes, school, schoolInfo, cours
   };
 
   const filteredStudents = students.filter(s => {
-    const matchesSearch = 
-      s.profiles?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      s.roll_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      s.profiles?.email?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesClass = classFilter === 'all' || s.class_id === classFilter;
+    const q = searchTerm.toLowerCase();
+    const fullName = getFullName(s).toLowerCase();
+    const email = getEmail(s).toLowerCase();
+    const roll = getRoll(s).toLowerCase();
+
+    const matchesSearch = fullName.includes(q) || email.includes(q) || roll.includes(q);
+    const matchesClass = classFilter === 'all' || s.class_id === classFilter || (getClass(s) && getClass(s).id === classFilter);
     const matchesCampus = selectedCampusId === 'all' || s.campus_id === selectedCampusId || (activeCampus && s.campus_id === activeCampus.id);
     return matchesSearch && matchesClass && matchesCampus;
   });
@@ -228,18 +255,18 @@ export function StudentManagement({ students, classes, school, schoolInfo, cours
                   <td className="px-10 py-5">
                     <div className="flex items-center gap-5">
                       <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-bg-tertiary to-border/30 flex-shrink-0 overflow-hidden border border-border/50 shadow-sm relative">
-                        {student.profiles?.avatar_url ? (
-                          <img src={student.profiles.avatar_url} alt="" className="h-full w-full object-cover" />
+                        {getProfile(student).avatar_url ? (
+                          <img src={getProfile(student).avatar_url} alt="" className="h-full w-full object-cover" />
                         ) : (
                           <div className="h-full w-full flex items-center justify-center bg-accent/5 text-accent font-black text-xl uppercase">
-                            {student.profiles?.full_name?.charAt(0)}
+                            {getProfile(student).full_name?.charAt(0)}
                           </div>
                         )}
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors" />
                       </div>
                       <div>
-                        <p className="text-sm font-black text-text-primary leading-tight group-hover:text-accent transition-colors duration-300">{student.profiles?.full_name}</p>
-                        <p className="text-[11px] font-bold text-text-tertiary mt-1 lowercase opacity-70">{student.profiles?.email}</p>
+                        <p className="text-sm font-black text-text-primary leading-tight group-hover:text-accent transition-colors duration-300">{getProfile(student).full_name}</p>
+                        <p className="text-[11px] font-bold text-text-tertiary mt-1 lowercase opacity-70">{getProfile(student).email}</p>
                       </div>
                     </div>
                   </td>
@@ -251,8 +278,8 @@ export function StudentManagement({ students, classes, school, schoolInfo, cours
                   </td>
                   <td className="px-6 py-5">
                     <div className="flex flex-col">
-                      <span className="text-sm font-black text-text-primary leading-tight">{student.classes?.name || 'Pending'}</span>
-                      <span className="text-[10px] font-black text-text-tertiary uppercase tracking-widest mt-1 opacity-60">Section {student.classes?.section || '---'}</span>
+                      <span className="text-sm font-black text-text-primary leading-tight">{getClass(student)?.name || 'Pending'}</span>
+                      <span className="text-[10px] font-black text-text-tertiary uppercase tracking-widest mt-1 opacity-60">Section {getClass(student)?.section || '---'}</span>
                       {student.batch?.name && (
                         <span className="text-[10px] font-black text-accent uppercase tracking-wider mt-1">{student.batch.name}</span>
                       )}
@@ -285,9 +312,9 @@ export function StudentManagement({ students, classes, school, schoolInfo, cours
                      <div className="flex items-center gap-2.5">
                         <div className={cn(
                           "h-2.5 w-2.5 rounded-full shadow-sm", 
-                          student.profiles?.status === 'approved' ? "bg-success shadow-success/40 animate-pulse" : "bg-rose-500 shadow-rose-500/40"
+                          getProfile(student).status === 'approved' ? "bg-success shadow-success/40 animate-pulse" : "bg-rose-500 shadow-rose-500/40"
                         )} />
-                        <span className="text-[10px] font-black text-text-secondary uppercase tracking-[0.1em]">{student.profiles?.status === 'approved' ? 'Active' : student.profiles?.status || 'Disabled'}</span>
+                        <span className="text-[10px] font-black text-text-secondary uppercase tracking-[0.1em]">{getProfile(student).status === 'approved' ? 'Active' : getProfile(student).status || 'Disabled'}</span>
                      </div>
                   </td>
                   <td className="px-10 py-5 text-right">
@@ -321,24 +348,24 @@ export function StudentManagement({ students, classes, school, schoolInfo, cours
                           <Key className="h-4 w-4" />
                         </button>
                         <button 
-                          onClick={() => handleToggleStatus(student.user_id, student.profiles?.status, student.profiles?.full_name)}
+                          onClick={() => handleToggleStatus(student.user_id, getProfile(student).status, getProfile(student).full_name)}
                           className={cn(
                             "h-10 w-10 rounded-xl flex items-center justify-center transition-all duration-300 shadow-sm active:scale-95",
-                            student.profiles?.status === 'approved' ? "bg-amber-50 text-amber-600 hover:bg-amber-600 hover:text-white" : "bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white"
+                            getProfile(student).status === 'approved' ? "bg-amber-50 text-amber-600 hover:bg-amber-600 hover:text-white" : "bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white"
                           )}
                           title="Toggle Account Enable/Disable Status"
                          >
                           <Shield className="h-4 w-4" />
                         </button>
                         <button 
-                          onClick={() => handleResetPassword(student.user_id, student.profiles?.full_name)}
+                          onClick={() => handleResetPassword(student.user_id, getProfile(student).full_name)}
                           className="h-10 w-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-all duration-300 shadow-sm active:scale-95"
                           title="Reset Account Password"
                          >
                           <Lock className="h-4 w-4" />
                         </button>
                         <button 
-                          onClick={() => handleRemoveStudent(student.user_id, student.profiles?.full_name)}
+                          onClick={() => handleRemoveStudent(student.user_id, getProfile(student).full_name)}
                           disabled={isDeleting === student.user_id}
                           className="h-10 w-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center hover:bg-rose-600 hover:text-white transition-all duration-300 shadow-sm active:scale-95 disabled:opacity-50 ml-1"
                           title="Purge Student Record"
@@ -381,11 +408,11 @@ export function StudentManagement({ students, classes, school, schoolInfo, cours
                 
                 <div className="relative z-10 h-32 w-32 md:h-40 md:w-40 rounded-[2.5rem] bg-white p-1.5 shadow-2xl transition-transform duration-700 hover:rotate-3 flex-shrink-0">
                    <div className="h-full w-full rounded-[2.2rem] overflow-hidden bg-bg-tertiary relative">
-                     {selectedStudent.profiles?.avatar_url ? (
-                        <img src={selectedStudent.profiles.avatar_url} alt="" className="h-full w-full object-cover" />
+                     {getProfile(selectedStudent).avatar_url ? (
+                        <img src={getProfile(selectedStudent).avatar_url} alt="" className="h-full w-full object-cover" />
                       ) : (
                         <div className="h-full w-full flex items-center justify-center text-4xl md:text-5xl font-black text-accent uppercase">
-                          {selectedStudent.profiles?.full_name?.charAt(0)}
+                          {getProfile(selectedStudent).full_name?.charAt(0)}
                         </div>
                       )}
                       <div className="absolute inset-0 ring-1 ring-inset ring-black/5 rounded-[2.2rem]" />
@@ -397,15 +424,15 @@ export function StudentManagement({ students, classes, school, schoolInfo, cours
 
                 <div className="space-y-4 text-center md:text-left relative z-10 flex-1 min-w-0">
                    <div className="flex flex-wrap items-center justify-center md:justify-start gap-4">
-                      <h2 className="text-3xl md:text-4xl font-black text-text-primary tracking-tighter leading-tight break-words max-w-full">{selectedStudent.profiles?.full_name}</h2>
+                      <h2 className="text-3xl md:text-4xl font-black text-text-primary tracking-tighter leading-tight break-words max-w-full">{getProfile(selectedStudent).full_name}</h2>
                       <Badge variant="accent" className="uppercase text-[10px] font-black tracking-[0.3em] px-5 py-1.5 shadow-xl shadow-accent/20">STUDENT</Badge>
                    </div>
                    <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-8 gap-y-3 text-sm font-bold text-text-secondary opacity-80">
                       <div className="flex items-center gap-3 min-w-0">
                          <div className="h-2 w-2 rounded-full bg-accent animate-pulse flex-shrink-0" /> 
-                         <span className="font-black text-text-primary truncate">{selectedStudent.classes?.name || 'Class'}</span> 
+                         <span className="font-black text-text-primary truncate">{getClass(selectedStudent)?.name || 'Class'}</span> 
                          <span className="opacity-50 flex-shrink-0">•</span> 
-                         <span className="truncate">Section {selectedStudent.classes?.section || '---'}</span>
+                         <span className="truncate">Section {getClass(selectedStudent)?.section || '---'}</span>
                       </div>
                       {selectedStudent.batch?.name && (
                          <div className="flex items-center gap-3 flex-shrink-0">
@@ -453,7 +480,7 @@ export function StudentManagement({ students, classes, school, schoolInfo, cours
                         <div className="h-1 w-4 bg-accent rounded-full" /> Personal Dossier
                       </h4>
                       <div className="space-y-4 md:space-y-5">
-                         <InfoItem icon={Mail} label="Contact Email" value={selectedStudent.profiles?.email} />
+                         <InfoItem icon={Mail} label="Contact Email" value={getProfile(selectedStudent).email} />
                          <InfoItem icon={Phone} label="Emergency Contact" value={selectedStudent.sms_phone || selectedStudent.phone} />
                          <InfoItem icon={Calendar} label="Date of Birth" value={selectedStudent.dob} />
                          <InfoItem icon={User} label="Gender Category" value={selectedStudent.gender} />
@@ -615,14 +642,14 @@ export function StudentManagement({ students, classes, school, schoolInfo, cours
           <div className="flex justify-center items-center py-4">
             <StudentIDCard 
               student={{
-                id: selectedStudent.profiles?.id || selectedStudent.user_id,
-                name: selectedStudent.profiles?.full_name || 'Unnamed Student',
+                id: getProfile(selectedStudent).id || selectedStudent.user_id,
+                name: getProfile(selectedStudent).full_name || 'Unnamed Student',
                 rollNo: selectedStudent.roll_number || 'N/A',
-                class: selectedStudent.classes?.name || 'Class',
-                section: selectedStudent.classes?.section || 'A',
+                class: getClass(selectedStudent)?.name || 'Class',
+                section: getClass(selectedStudent)?.section || 'A',
                 parentName: selectedStudent.father_name || selectedStudent.parent_name || 'Guardian',
                 phone: selectedStudent.sms_phone || selectedStudent.phone || 'N/A',
-                image: selectedStudent.profiles?.avatar_url || '',
+                image: getProfile(selectedStudent).avatar_url || '',
                 schoolName: school?.name || 'Skolic International',
                 schoolLogo: school?.logo_url
               }}
