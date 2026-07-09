@@ -1,6 +1,8 @@
+'use client';
+
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { triggerPdfDownload } from './webview-download';
+import { triggerPdfDownload, interceptWebViewDownload } from './webview-download';
 
 // Helper to safely load and convert external images to base64 with CORS support
 function getBase64ImageFromUrl(url: string): Promise<string> {
@@ -28,6 +30,11 @@ function getBase64ImageFromUrl(url: string): Promise<string> {
 }
 
 export async function generateAdmissionForm(student: any, school: any) {
+  // If running inside an Android WebView, let the webview open the page in an external browser
+  // so the browser download dialog works correctly. This must run synchronously at the start
+  // of the click handler to be effective on many WebView clients.
+  if (typeof window !== 'undefined' && interceptWebViewDownload()) return;
+
   const doc = new jsPDF();
   const primaryColor = '#101828'; // Deep Navy
   const accentColor = '#2563eb'; // Blue Accent
@@ -213,5 +220,22 @@ export async function generateAdmissionForm(student: any, school: any) {
   doc.text('Page 1 of 1', 180, 285);
 
   const fileName = `Admission_Form_${student.profiles?.full_name?.replace(/\s+/g, '_')}.pdf`;
-  await triggerPdfDownload(doc, fileName);
+
+  // Create a Blob and open the download viewer page so the user is taken to
+  // a dedicated website page for downloading the file. This is more
+  // reliable across mobile webviews and matches the behavior used for
+  // other downloads in the app.
+  try {
+    const blob = doc.output('blob');
+    const objectUrl = URL.createObjectURL(blob);
+    const viewerUrl = `${window.location.origin}/download-viewer?fileUrl=${encodeURIComponent(objectUrl)}&fileName=${encodeURIComponent(fileName)}`;
+    window.open(viewerUrl, '_blank');
+
+    // Revoke the object URL after a minute to free memory. The download
+    // viewer will already have triggered the browser download.
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 60 * 1000);
+  } catch (e) {
+    // Fallback: if something goes wrong, still attempt to trigger an in-page save
+    await triggerPdfDownload(doc, fileName);
+  }
 }

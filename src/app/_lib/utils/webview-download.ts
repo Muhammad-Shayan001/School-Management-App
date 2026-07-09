@@ -83,11 +83,46 @@ export async function triggerDownload(
 /**
  * Download a Blob (e.g. CSV export).
  */
+/**
+ * Open the app's download viewer in a new tab using an object URL created
+ * from the provided Blob. The viewer will auto-trigger the download and
+ * show a friendly UI. The object URL is revoked after a timeout.
+ */
+export async function openDownloadViewerWithBlob(blob: Blob, fileName: string): Promise<void> {
+  if (typeof window === 'undefined') return;
+  try {
+    const objectUrl = URL.createObjectURL(blob);
+    const viewerUrl = `${window.location.origin}/download-viewer?fileUrl=${encodeURIComponent(objectUrl)}&fileName=${encodeURIComponent(fileName)}`;
+    // Open in a new tab so users keep the app open; browsers will block popups
+    // if not triggered by a user gesture — callers should ensure this runs
+    // directly from click handlers where possible.
+    window.open(viewerUrl, '_blank');
+
+    // Revoke the object URL after 60s to free memory.
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 60 * 1000);
+  } catch (e) {
+    // If anything goes wrong, fall through to the fallback download method.
+    console.error('Failed to open download viewer', e);
+    throw e;
+  }
+}
+
 export async function triggerBlobDownload(
   blob: Blob,
   fileName: string,
   mimeType: string
 ): Promise<void> {
+  // Prefer opening the download viewer for a consistent UX (auto-trigger, progress UI).
+  if (typeof window !== 'undefined') {
+    try {
+      await openDownloadViewerWithBlob(blob, fileName);
+      return;
+    } catch (e) {
+      // Ignore and fallback to direct anchor download
+    }
+  }
+
+  // Fallback: direct anchor download
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
@@ -102,11 +137,30 @@ export async function triggerBlobDownload(
 }
 
 /**
- * Download a jsPDF document instance.
+ * Download a jsPDF document instance. Prefer the download viewer when possible.
  */
 export async function triggerPdfDownload(
   pdf: any,
   fileName: string
 ): Promise<void> {
-  pdf.save(fileName);
+  if (typeof window !== 'undefined') {
+    try {
+      // jsPDF supports output('blob') in modern versions
+      const blob: Blob | null = (typeof pdf.output === 'function') ? (pdf.output('blob') as Blob) : null;
+      if (blob) {
+        await openDownloadViewerWithBlob(blob, fileName);
+        return;
+      }
+    } catch (e) {
+      // If blob conversion fails, fall back to save()
+      console.warn('Failed to convert PDF to blob for viewer, falling back to save()', e);
+    }
+  }
+
+  // Last-resort fallback
+  try {
+    pdf.save(fileName);
+  } catch (e) {
+    console.error('Failed to save PDF directly', e);
+  }
 }
