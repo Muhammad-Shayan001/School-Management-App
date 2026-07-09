@@ -7,11 +7,11 @@ import { GraduationCap } from 'lucide-react';
 import { createAdminClient } from '@/app/_lib/supabase/admin';
 
 export default async function AdminStudentsPage() {
-  // Try normal authenticated flow first
   const user = await getCurrentUser();
   const schoolId = user?.school_id;
+  const isSuperAdmin = user?.role === 'super_admin';
+  const adminClient = createAdminClient();
 
-  // Helper UI pieces
   const Header = (
     <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
       <div className="space-y-1">
@@ -28,6 +28,43 @@ export default async function AdminStudentsPage() {
     </div>
   );
 
+  async function fetchFallbackStudents(schoolId?: string) {
+    let query = adminClient
+      .from('student_profiles')
+      .select('*, profiles(id, full_name, email, avatar_url, phone, status), classes(name, section)')
+      .order('created_at', { ascending: false });
+
+    if (schoolId) query = query.eq('school_id', schoolId);
+
+    const { data, error } = await query;
+    if (!error && data && data.length > 0) {
+      return data;
+    }
+
+    // If no student_profiles exist for this school, fall back to the student account records.
+    let profileQuery = adminClient
+      .from('profiles')
+      .select('*')
+      .eq('role', 'student')
+      .order('created_at', { ascending: false });
+
+    if (schoolId) profileQuery = profileQuery.eq('school_id', schoolId);
+
+    const { data: studentAccounts, error: profileError } = await profileQuery;
+    if (profileError || !studentAccounts) return [];
+
+    return studentAccounts.map((p: any) => ({
+      id: p.id,
+      user_id: p.id,
+      profiles: p,
+      roll_number: p.roll_number || null,
+      class_id: p.class_id || null,
+      campus_id: p.campus_id || null,
+      fee_status: p.fee_status || 'unpaid',
+      classes: null,
+    }));
+  }
+
   // If we have a valid schoolId and normal APIs work, use them
   if (schoolId) {
     const [studentsResult, classesResult, schoolResult, schoolInfoResult] = await Promise.all([
@@ -39,13 +76,19 @@ export default async function AdminStudentsPage() {
 
     const isAcademy = schoolInfoResult.data?.institution_type === 'academy';
     const coursesResult = isAcademy ? await getCourses() : { data: [] };
+    let students = studentsResult.data || [];
+    let classes = classesResult.data || [];
+
+    if ((!students || students.length === 0) || studentsResult.error) {
+      students = await fetchFallbackStudents(schoolId);
+    }
 
     return (
       <div className="space-y-8">
         {Header}
         <StudentManagement 
-          students={studentsResult.data || []} 
-          classes={classesResult.data || []} 
+          students={students} 
+          classes={classes} 
           school={schoolResult.data}
           schoolInfo={schoolInfoResult.data}
           courses={coursesResult.data || []}
@@ -54,15 +97,31 @@ export default async function AdminStudentsPage() {
     );
   }
 
-  // FALLBACK: server-side session may be missing (common when cookies are not forwarded).
-  // Use the admin service client to fetch a sensible default school and students so the
-  // page doesn't render blank. This is a graceful fallback for local/dev environments
-  // and for cases where session cookies are not available to server components.
-  try {
-    const adminClient = createAdminClient();
+  if (isSuperAdmin) {
+    const students = await fetchFallbackStudents();
+    const { data: classes } = await adminClient.from('classes').select('*').order('name');
+    const { data: schoolInfo } = await adminClient.from('schools').select('institution_type').order('created_at', { ascending: true }).limit(1).single();
+    const courses = schoolInfo?.institution_type === 'academy'
+      ? (await adminClient.from('subjects').select('*').order('name')).data || []
+      : [];
 
-    // Pick the first configured school as a fallback
-    const { data: schools } = await adminClient.from('schools').select('id, name').order('created_at', { ascending: true }).limit(1);
+    return (
+      <div className="space-y-8">
+        {Header}
+        <div className="text-xs text-center text-text-tertiary">(Showing student data for all schools as Super Admin)</div>
+        <StudentManagement 
+          students={students} 
+          classes={classes || []} 
+          school={null}
+          schoolInfo={schoolInfo}
+          courses={courses || []}
+        />
+      </div>
+    );
+  }
+
+  try {
+    const { data: schools } = await adminClient.from('schools').select('id, name, institution_type').order('created_at', { ascending: true }).limit(1);
     const fallbackSchool = (schools && schools[0]) || null;
 
     if (!fallbackSchool) {
@@ -74,24 +133,7 @@ export default async function AdminStudentsPage() {
       );
     }
 
-    // Fetch students (profiles with role=student) for the fallback school. Keep shape compatible with StudentManagement.
-    const { data: studentProfiles } = await adminClient
-      .from('profiles')
-      .select('*')
-      .eq('role', 'student')
-      .eq('school_id', fallbackSchool.id)
-      .order('created_at', { ascending: false });
-
-    const students = (studentProfiles || []).map((p: any) => ({
-      id: p.id,
-      user_id: p.id,
-      profiles: p,
-      roll_number: p.roll_number || null,
-      class_id: p.class_id || null,
-      campus_id: p.campus_id || null,
-      fee_status: p.fee_status || 'unpaid'
-    }));
-
+    const students = await fetchFallbackStudents(fallbackSchool.id);
     const { data: classes } = await adminClient.from('classes').select('*').eq('school_id', fallbackSchool.id).order('name');
     const { data: school } = await adminClient.from('schools').select('*').eq('id', fallbackSchool.id).single();
     const { data: schoolInfo } = await adminClient.from('schools').select('institution_type').eq('id', fallbackSchool.id).single();
@@ -112,7 +154,6 @@ export default async function AdminStudentsPage() {
       </div>
     );
   } catch (err) {
-    // If fallback also fails, show a clear error instead of a blank page
     console.error('Failed to load students (fallback):', err);
     return (
       <div className="space-y-8">

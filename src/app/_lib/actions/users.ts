@@ -247,7 +247,8 @@ export async function getStudentProfiles(filters?: { class_id?: string; query?: 
   if (!caller || !['super_admin', 'admin', 'teacher'].includes(caller.role)) {
     return { data: null, error: 'Unauthorized' };
   }
-
+ 
+  const isSuperAdmin = caller.role === 'super_admin';
   let allowedClassIds: string[] | null = null;
   if (caller.role === 'teacher') {
     const { data: teacherProfile } = await adminClient
@@ -270,7 +271,7 @@ export async function getStudentProfiles(filters?: { class_id?: string; query?: 
       return { data: [], error: null };
     }
   }
-
+ 
   // Build initial query including the academy batch join. If the DB schema
   // doesn't include the batch_id column (migration not applied yet) the
   // query will fail — in that case retry without the batch join so the
@@ -280,11 +281,14 @@ export async function getStudentProfiles(filters?: { class_id?: string; query?: 
       profiles(id, full_name, email, avatar_url, phone, status),
       classes(name, section)
     `;
-
+ 
   let initialQuery = adminClient
     .from('student_profiles')
-    .select(`${baseSelect}, batch:subjects!batch_id(id, name)`)
-    .eq('school_id', caller.school_id);
+    .select(`${baseSelect}, batch:subjects!batch_id(id, name)`);
+
+  if (!isSuperAdmin) {
+    initialQuery = initialQuery.eq('school_id', caller.school_id);
+  }
 
   if (filters?.class_id) {
     if (allowedClassIds && !allowedClassIds.includes(filters.class_id)) {
@@ -307,19 +311,24 @@ export async function getStudentProfiles(filters?: { class_id?: string; query?: 
     // try a simpler query without the batch join so the students list continues to work.
     const errMsg = String(initialError.message || '').toLowerCase();
     if (errMsg.includes('batch_id') || initialError.code === '42703' || errMsg.includes('column') ) {
-      const { data: fallbackData, error: fallbackErr } = await adminClient
+      let fallbackQuery = adminClient
         .from('student_profiles')
-        .select(baseSelect)
-        .eq('school_id', caller.school_id);
+        .select(baseSelect);
 
+      if (!isSuperAdmin) {
+        fallbackQuery = fallbackQuery.eq('school_id', caller.school_id);
+      }
       if (filters?.class_id) {
-        // repeat the class filter for fallback
         if (allowedClassIds && !allowedClassIds.includes(filters.class_id)) {
           return { data: [], error: 'Unauthorized class access' };
         }
-        // supabase-js returns a query builder; we've already executed fallback, so we apply class filter above
+        fallbackQuery = fallbackQuery.eq('class_id', filters.class_id);
+      }
+      if (filters?.campus_id) {
+        fallbackQuery = fallbackQuery.eq('campus_id', filters.campus_id);
       }
 
+      const { data: fallbackData, error: fallbackErr } = await fallbackQuery;
       if (fallbackErr) return { data: null, error: fallbackErr.message };
       data = fallbackData;
     } else {
@@ -334,11 +343,14 @@ export async function getStudentProfiles(filters?: { class_id?: string; query?: 
   // case, fall back to finding student user profiles (profiles.role = 'student')
   // for this school and then fetch any matching student_profiles by user_id.
   if ((!data || data.length === 0) && caller.role !== 'teacher') {
-    const { data: studentAccounts } = await adminClient
+    let profileQuery = adminClient
       .from('profiles')
-      .select('id, full_name, email, avatar_url, phone, status')
-      .eq('role', 'student')
-      .eq('school_id', caller.school_id);
+      .select('id, full_name, email, avatar_url, phone, status');
+
+    if (!isSuperAdmin) {
+      profileQuery = profileQuery.eq('school_id', caller.school_id);
+    }
+    const { data: studentAccounts } = await profileQuery.eq('role', 'student');
 
     if (studentAccounts && studentAccounts.length > 0) {
       const userIds = studentAccounts.map((p: any) => p.id);
@@ -384,7 +396,7 @@ export async function getStudentProfiles(filters?: { class_id?: string; query?: 
         if (sp) return sp;
         return {
           user_id: p.id,
-          school_id: caller.school_id,
+          school_id: caller.school_id || null,
           roll_number: null,
           class_id: null,
           campus_id: null,
