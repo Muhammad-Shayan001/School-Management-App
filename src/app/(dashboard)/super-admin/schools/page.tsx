@@ -180,6 +180,7 @@ export default function SchoolsPage() {
                     variant="outline" 
                     size="sm" 
                     className="h-8 rounded-xl text-[10px] font-black uppercase tracking-widest border-border/50"
+                    onClick={() => window.location.href = `/super-admin/schools/${school.id}/edit`}
                   >
                     Manage
                   </Button>

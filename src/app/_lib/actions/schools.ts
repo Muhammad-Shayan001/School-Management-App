@@ -634,6 +634,137 @@ export async function getSchoolInfo() {
   return { data };
 }
 
+export async function getSchool(id: string) {
+  const adminClient = createAdminClient();
+  const { data, error } = await adminClient
+    .from('schools')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (error) return { data: null, error: error.message };
+  return { data, error: null };
+}
+
+export async function updateSchool(schoolId: string, formData: FormData) {
+  const adminClient = createAdminClient();
+  const { createClient } = await import('@/app/_lib/supabase/server');
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { error: 'Unauthorized' };
+
+  // Check if caller is super_admin
+  const { data: caller } = await adminClient
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
+  if (!caller || caller.role !== 'super_admin') {
+    return { error: 'Unauthorized: Only super admins can update schools.' };
+  }
+
+  // Basic Info
+  const name = formData.get('name') as string;
+  const short_name = formData.get('short_name') as string;
+  const code = formData.get('campus_code') as string;
+  const institution_type = formData.get('institution_type') as string || 'school';
+  const school_type = formData.get('school_type') as string;
+  const education_board = formData.get('education_board') as string;
+  const established_year = formData.get('established_year') ? parseInt(formData.get('established_year') as string) : null;
+  const registration_number = formData.get('registration_number') as string;
+  const ntn_number = formData.get('ntn_number') as string;
+  const school_motto = formData.get('school_motto') as string;
+  const description = formData.get('description') as string;
+
+  // Branding
+  const primary_color = formData.get('primary_color') as string;
+  const secondary_color = formData.get('secondary_color') as string;
+  const accent_color = formData.get('accent_color') as string;
+  const banner_url = formData.get('banner_url') as string;
+
+  // Contact & Location
+  const country = formData.get('country') as string;
+  const province = formData.get('province') as string;
+  const city = formData.get('city') as string;
+  const postal_code = formData.get('postal_code') as string;
+  const map_url = formData.get('map_url') as string;
+  const address = formData.get('address') as string;
+
+  const phone = formData.get('phone') as string;
+  const whatsapp_number = formData.get('whatsapp_number') as string;
+  const email = formData.get('email') as string;
+  const website_url = formData.get('website_url') as string;
+  const facebook_url = formData.get('facebook_url') as string;
+  const instagram_url = formData.get('instagram_url') as string;
+
+  // Settings JSON
+  const settings = {
+    academic_year: formData.get('academic_year') as string,
+    result_system_type: formData.get('result_system_type') as string,
+    passing_percentage: parseInt(formData.get('passing_percentage') as string) || 40,
+    qr_attendance_enabled: formData.get('qr_attendance') === 'on',
+    late_time_limit: formData.get('late_time_limit') as string,
+    auto_absent_time: formData.get('auto_absent_time') as string,
+    currency: formData.get('currency') as string,
+    monthly_fee: parseInt(formData.get('monthly_fee') as string) || 0,
+    period_duration: parseInt(formData.get('period_duration') as string) || 45,
+  };
+
+  if (!name) {
+    return { error: 'Missing required field: Name.' };
+  }
+
+  // Handle Logo Upload
+  let logo_url = formData.get('existing_logo_url') as string | null;
+  const logoFile = formData.get('logo_file') as File;
+  if (logoFile && logoFile.size > 0) {
+    const fileExt = logoFile.name.split('.').pop();
+    const fileName = `${code || 'logo'}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+    const filePath = `school-logos/${fileName}`;
+
+    const { data: uploadData, error: uploadError } = await adminClient
+      .storage
+      .from('profiles')
+      .upload(filePath, logoFile, { contentType: logoFile.type, upsert: true });
+
+    if (!uploadError) {
+      const { data: { publicUrl } } = adminClient.storage.from('profiles').getPublicUrl(filePath);
+      logo_url = publicUrl;
+    }
+  }
+
+  // Update School
+  const { data: school, error: schoolError } = await adminClient
+    .from('schools')
+    .update({
+      name, short_name: short_name || null, code: code || null, institution_type, school_type: school_type || null,
+      education_board: education_board || null, established_year, registration_number: registration_number || null,
+      ntn_number: ntn_number || null, school_motto: school_motto || null, description: description || null,
+      primary_color: primary_color || null, secondary_color: secondary_color || null, accent_color: accent_color || null,
+      logo_url, banner_url: banner_url || null, country: country || null, province: province || null,
+      city: city || null, postal_code: postal_code || null, map_url: map_url || null, address: address || null,
+      phone: phone || null, whatsapp_number: whatsapp_number || null, email: email || null, website_url: website_url || null,
+      facebook_url: facebook_url || null, instagram_url: instagram_url || null,
+      settings: settings
+    })
+    .eq('id', schoolId)
+    .select()
+    .single();
+
+  if (schoolError) {
+    console.error('SCHOOL UPDATE ERROR:', schoolError);
+    if (schoolError.code === '23505') {
+      return { error: 'This School Code is already taken. Please use a unique code.' };
+    }
+    return { error: schoolError.message };
+  }
+
+  revalidatePath('/super-admin/schools');
+  return { data: school, error: null };
+}
+
 export async function deleteSchool(schoolId: string) {
   const adminClient = createAdminClient();
   const { createClient } = await import('@/app/_lib/supabase/server');
