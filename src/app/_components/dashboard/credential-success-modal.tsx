@@ -1,15 +1,13 @@
 'use client';
 
-import { useState, useRef } from 'react';
-import { 
-  CheckCircle2, Copy, Share2, Printer, 
-  Mail, MessageSquare, ExternalLink, ShieldCheck,
-  Download, QrCode
-} from 'lucide-react';
+
+import { Copy, Printer, MessageSquare, ShieldCheck, Link } from 'lucide-react';
 import { Modal } from '@/app/_components/ui/modal';
 import { Button } from '@/app/_components/ui/button';
 import { toast } from 'sonner';
 import QRCode from "react-qr-code";
+
+const PORTAL_BASE_URL = 'https://skolic-schools-management-system.netlify.app';
 
 interface CredentialSuccessModalProps {
   isOpen: boolean;
@@ -26,22 +24,66 @@ interface CredentialSuccessModalProps {
 export function CredentialSuccessModal({ isOpen, onClose, credentials }: CredentialSuccessModalProps) {
   if (!credentials) return null;
 
+  // Build a shareable pre-filled login link with email and password in URL params
+  const portalLink = `${PORTAL_BASE_URL}/login?email=${encodeURIComponent(credentials.email)}&password=${encodeURIComponent(credentials.password)}`;
+
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     toast.success(`${label} copied to clipboard`);
   };
 
   const shareOnWhatsApp = () => {
-    const text = `*School Management Login Credentials*\n\n` +
-      `*Email:* ${credentials.email}\n` +
+    const text = `*School Management Portal – Login Credentials*\n\n` +
+      `*Name/Email:* ${credentials.email}\n` +
       `*Password:* ${credentials.password}\n` +
-      `*Portal:* https://skolic-schools-management-system.netlify.app/login\n\n` +
-      `Please log in and change your password immediately.`;
+      `${credentials.rollNumber ? `*Roll Number:* ${credentials.rollNumber}\n` : ''}` +
+      `${credentials.studentId ? `*Student ID:* ${credentials.studentId}\n` : ''}` +
+      `\n*Click to Login Directly:*\n${portalLink}\n\n` +
+      `_Credentials are pre-filled in the link. Please change your password after first login._`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
   };
 
   const printCredentials = () => {
-    window.print();
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Student Login Credentials</title>
+            <style>
+              body { font-family: Arial, sans-serif; padding: 40px; background: #fff; color: #000; }
+              h1 { font-size: 20px; margin-bottom: 4px; }
+              .subtitle { color: #666; font-size: 12px; margin-bottom: 24px; }
+              .box { border: 2px solid #e5e7eb; border-radius: 12px; padding: 24px; margin-bottom: 16px; }
+              .label { font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; color: #9ca3af; margin-bottom: 4px; }
+              .value { font-size: 18px; font-weight: 900; margin-bottom: 16px; word-break: break-all; }
+              .value.accent { color: #6366f1; letter-spacing: 0.1em; }
+              .link { font-size: 11px; color: #6366f1; word-break: break-all; }
+              .note { font-size: 11px; color: #ef4444; margin-top: 16px; padding: 10px; background: #fef2f2; border-radius: 8px; }
+            </style>
+          </head>
+          <body>
+            <h1>School Management Portal</h1>
+            <p class="subtitle">Login credentials — Keep this safe and confidential</p>
+            <div class="box">
+              <div class="label">Email / Username</div>
+              <div class="value">${credentials.email}</div>
+              <div class="label">Password</div>
+              <div class="value accent">${credentials.password}</div>
+              ${credentials.rollNumber ? `<div class="label">Roll Number</div><div class="value">${credentials.rollNumber}</div>` : ''}
+              ${credentials.studentId ? `<div class="label">Student ID</div><div class="value">${credentials.studentId}</div>` : ''}
+            </div>
+            <div class="box">
+              <div class="label">Login Portal</div>
+              <a class="link" href="${portalLink}">${portalLink}</a>
+            </div>
+            <div class="note">⚠️ Please change your password after first login.</div>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.print();
+    }
   };
 
   return (
@@ -59,7 +101,7 @@ export function CredentialSuccessModal({ isOpen, onClose, credentials }: Credent
            </div>
            <div className="space-y-2">
               <h3 className="text-2xl font-black text-text-primary tracking-tight uppercase">Account Security Ready</h3>
-               <p className="text-sm font-bold text-text-tertiary">Login credentials have been securely generated for the new user.</p>
+               <p className="text-sm font-bold text-text-tertiary">Login credentials have been securely generated. Share the link below with the student.</p>
            </div>
         </div>
 
@@ -78,14 +120,26 @@ export function CredentialSuccessModal({ isOpen, onClose, credentials }: Credent
                  <p className="text-[10px] font-black text-text-tertiary uppercase tracking-widest mb-2 flex items-center justify-between">
                     Access Password <Copy className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                  </p>
-                 <p className="text-lg font-black text-accent tracking-[0.2em]">{credentials.password}</p>
+                 <p className="text-xl font-black text-accent tracking-[0.2em] font-mono">{credentials.password}</p>
               </div>
 
+              {credentials.rollNumber && (
+                <div>
+                  <p className="text-[10px] font-black text-text-tertiary uppercase tracking-widest mb-1">Roll Number</p>
+                  <p className="text-base font-black text-text-primary">{credentials.rollNumber}</p>
+                </div>
+              )}
+
               <div className="pt-4 border-t border-border/40">
-                 <p className="text-[10px] font-black text-text-tertiary uppercase tracking-widest mb-2">Login Portal</p>
-                 <div className="flex items-center gap-2 text-xs font-black text-text-secondary">
-                    <span>https://skolic-schools-management-system.netlify.app/login</span>
-                    <ExternalLink className="h-3 w-3" />
+                 <p className="text-[10px] font-black text-text-tertiary uppercase tracking-widest mb-2">Pre-Filled Login Portal Link</p>
+                 <div
+                   className="flex items-center gap-2 text-xs font-bold text-accent cursor-pointer hover:underline group"
+                   onClick={() => copyToClipboard(portalLink, 'Portal link with credentials')}
+                   title="Click to copy"
+                 >
+                    <Link className="h-3 w-3 shrink-0" />
+                    <span className="break-all line-clamp-2">{portalLink.substring(0, 60)}…</span>
+                    <Copy className="h-3 w-3 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
                  </div>
               </div>
            </div>
@@ -93,37 +147,37 @@ export function CredentialSuccessModal({ isOpen, onClose, credentials }: Credent
            <div className="flex flex-col items-center justify-center space-y-6 relative z-10 border-l border-border/40 pl-8">
               <div className="p-5 bg-white rounded-[2rem] shadow-2xl shadow-black/5 border border-border/30">
                  <QRCode 
-                   value={JSON.stringify({ 
-                     email: credentials.email, 
-                     id: credentials.studentId || credentials.teacherId 
-                   })} 
+                   value={portalLink} 
                    size={140} 
                  />
               </div>
-              <p className="text-[10px] font-black text-text-tertiary uppercase tracking-[0.2em]">Security Access QR</p>
+              <p className="text-[10px] font-black text-text-tertiary uppercase tracking-[0.2em] text-center">Scan to Login Directly</p>
            </div>
         </div>
 
+        {/* Share Actions */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
            <button onClick={shareOnWhatsApp} className="flex flex-col items-center justify-center gap-3 p-6 rounded-[2rem] bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 transition-all group">
               <MessageSquare className="h-6 w-6 group-hover:scale-110 transition-transform" />
               <span className="text-[9px] font-black uppercase tracking-widest">WhatsApp</span>
            </button>
-           <button onClick={() => copyToClipboard(`${credentials.email}\n${credentials.password}`, 'Full credentials')} className="flex flex-col items-center justify-center gap-3 p-6 rounded-[2rem] bg-accent/10 text-accent hover:bg-accent/20 transition-all group">
-              <Copy className="h-6 w-6 group-hover:scale-110 transition-transform" />
-              <span className="text-[9px] font-black uppercase tracking-widest">Copy Text</span>
+           <button 
+             onClick={() => copyToClipboard(portalLink, 'Portal link with credentials')} 
+             className="flex flex-col items-center justify-center gap-3 p-6 rounded-[2rem] bg-accent/10 text-accent hover:bg-accent/20 transition-all group"
+           >
+              <Link className="h-6 w-6 group-hover:scale-110 transition-transform" />
+              <span className="text-[9px] font-black uppercase tracking-widest">Copy Link</span>
            </button>
-           <button onClick={() => window.open('/login', '_blank')} className="flex flex-col items-center justify-center gap-3 p-6 rounded-[2rem] bg-success/10 text-success hover:bg-success/20 transition-all group">
-              <ExternalLink className="h-6 w-6 group-hover:scale-110 transition-transform" />
-              <span className="text-[9px] font-black uppercase tracking-widest">Portal Link</span>
+           <button 
+             onClick={() => copyToClipboard(`Email: ${credentials.email}\nPassword: ${credentials.password}\nPortal: ${portalLink}`, 'Full credentials')} 
+             className="flex flex-col items-center justify-center gap-3 p-6 rounded-[2rem] bg-success/10 text-success hover:bg-success/20 transition-all group"
+           >
+              <Copy className="h-6 w-6 group-hover:scale-110 transition-transform" />
+              <span className="text-[9px] font-black uppercase tracking-widest">Copy All</span>
            </button>
            <button onClick={printCredentials} className="flex flex-col items-center justify-center gap-3 p-6 rounded-[2rem] bg-text-primary/5 text-text-primary hover:bg-text-primary/10 transition-all group">
               <Printer className="h-6 w-6 group-hover:scale-110 transition-transform" />
-              <span className="text-[9px] font-black uppercase tracking-widest">Print Slips</span>
-           </button>
-           <button className="flex flex-col items-center justify-center gap-3 p-6 rounded-[2rem] bg-text-primary/5 text-text-primary hover:bg-text-primary/10 transition-all group">
-              <Download className="h-6 w-6 group-hover:scale-110 transition-transform" />
-              <span className="text-[9px] font-black uppercase tracking-widest">PDF Export</span>
+              <span className="text-[9px] font-black uppercase tracking-widest">Print Slip</span>
            </button>
         </div>
 
